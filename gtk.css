@@ -1,0 +1,62 @@
+/* === Icon Scaling for Panel Plugins === */
+#whiskermenu-button image { -gtk-icon-transform: scale(0.90); }
+#pulseaudio-button image { -gtk-icon-transform: scale(0.50); }
+#xfce4-power-manager-plugin image { -gtk-icon-transform: scale(0.50); }
+#xfce4-notification-plugin image { -gtk-icon-transform: scale(0.50); }
+#xfce4-status-tray-plugin image { -gtk-icon-transform: scale(0.50); }
+
+/* === Tasklist Buttons === */
+.tasklist button:hover {
+    background-color: #3a5f9e; /* Deep Ocean Blue */
+    color: #b0c7f1; /* Glowing Ice Blue */
+}
+.tasklist button:checked {
+    box-shadow: none;
+    background-color: #2b4c7e; /* Wavy Cosmic Blue */
+    color: #b0c7f1;
+}
+
+/* === Workspace Indicator (Pager) === */
+#pager-4 grid {
+    background-color: rgba(137, 160, 214, 0.05); /* Soft cosmic blue tint */
+    margin: 4px;
+    border-radius: 3px;
+}
+#pager-4 button {
+    padding: 3px;
+    margin: 5px;
+    background-color: transparent;
+}
+#pager-4 button:hover {
+    background-color: rgba(137, 160, 214, 0.10); /* Slight cosmic blue tint */
+}
+#pager-4 button:checked {
+    box-shadow: none;
+    background-color: #2b4c7e; /* Wavy Cosmic Blue */
+    color: #b0c7f1;
+}
+
+/* === Applications Button (Whisker Menu) === */
+window#whiskermenu-window > frame > border {
+    border-radius: 10px;
+}
+#whiskermenu-button {
+    background-color: #0a0b12; /* Very deep space black-blue */
+    color: #89a0d6; /* Soft cosmic blue */
+    border-radius: 2px;
+    margin: 4px;
+    padding: 4px;
+}
+#whiskermenu-window treeview {
+    margin: 4px;
+    padding: 4px;
+}
+#whiskermenu-button:checked {
+    background-color: #2b4c7e; /* Wavy Cosmic Blue */
+    color: #b0c7f1;
+}
+#whiskermenu-button:hover {
+    background-color: #3a5f9e; /* Deep Ocean Blue */
+    color: #b0c7f1;
+}
+
