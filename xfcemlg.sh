@@ -1,3 +1,6 @@
+# dock like config be like
+# the first 3 checked 2 not , 2 last are checked
+# active color #007ACC and inactive color 3A506B
 # removing firefox 
 sudo apt purge firefox 
 sudo apt autoremove
@@ -66,7 +69,36 @@ fc-cache -fv
 sudo fc-cache -fv
 
 echo "✅ Essential Nerd Fonts installed successfully!"
-# dock like config be like
-# the first 3 checked 2 not , 2 last are checked
-# active color #007ACC and inactive color 3A506B
+#xfce4 tweaks 
+#!/bin/bash
+
+echo "🔧 Applying XFWM compositor optimizations..."
+
+# Enable Compositing
+xfconf-query -c xfwm4 -p /general/use_compositing -s true
+
+# Set Opacity (No Transparency for Inactive Apps)
+xfconf-query -c xfwm4 -p /general/frame_opacity -s 90     # Slight transparency on window borders
+xfconf-query -c xfwm4 -p /general/active_opacity -s 100   # Fully visible active windows
+xfconf-query -c xfwm4 -p /general/inactive_opacity -s 100 # No transparency for inactive apps
+
+# Smoother Animations & Transitions
+xfconf-query -c xfwm4 -p /general/focus_delay -s 150      # Adjust focus delay
+xfconf-query -c xfwm4 -p /general/click_to_focus -s true
+xfconf-query -c xfwm4 -p /general/placement_mode -s center  # Open new windows centered
+
+# Disable Shadows for Performance
+xfconf-query -c xfwm4 -p /general/show_frame_shadow -s false
+xfconf-query -c xfwm4 -p /general/show_dock_shadow -s false
+xfconf-query -c xfwm4 -p /general/show_popup_shadow -s false
+
+# Reduce Lag & Improve Responsiveness
+xfconf-query -c xfwm4 -p /general/move_resize -s false    # Disable window content display while moving/resizing
+xfconf-query -c xfwm4 -p /general/sync_to_vblank -s true  # Enable VSync to reduce tearing
+
+# Restart XFWM to apply changes
+xfwm4 --replace &
+
+echo "✅Everything is installed :D Time To Reboot "
+
 
