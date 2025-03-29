@@ -5,7 +5,7 @@
 sudo apt purge firefox 
 sudo apt autoremove
 # installing ohmybash and replacing firefox with firefox-esr
-sudo apt install firefox-esr vlc fonts-font-awesome fonts-terminus telegram-desktop exa zoxide  linux-headers-amd64 firmware-iwlwifi firmware-misc-nonfree libreoffice 
+sudo apt install firefox-esr vlc fonts-font-awesome fonts-terminus telegram-desktop exa zoxide  linux-headers-amd64 firmware-iwlwifi firmware-misc-nonfree libreoffice fonts-noto-extra
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
 #paste this in xfce4-pannel 0a0b12
 #pasting my own config 
