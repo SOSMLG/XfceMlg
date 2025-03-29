@@ -21,12 +21,12 @@ mkdir -p "$THEME_DIR" "$ICON_DIR"
 
 git clone --depth=1 https://github.com/vinceliuice/Orchis-theme.git
 cd Orchis-theme
-./install.sh -d "$THEME_DIR" -t dark -c blue
+./install.sh -d "$THEME_DIR" 
 cd ..
 
 git clone --depth=1 https://github.com/vinceliuice/Colloid-icon-theme.git
 cd Colloid-icon-theme
-./install.sh -d "$ICON_DIR" -t Colloid-blue-dark
+./install.sh -d "$ICON_DIR" -t blue
 cd ..
 
 rm -rf Orchis-theme Colloid-icon-theme
