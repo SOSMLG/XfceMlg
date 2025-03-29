@@ -1,8 +1,8 @@
-/* XFCE Panel */
+/* XFCE PANEL (Dark Transparent Bar) */
 #xfce-panel {
-    background: rgba(10, 15, 30, 0.8);  /* Dark blue with transparency */
+    background: rgba(10, 15, 30, 0.85);  /* Dark navy blue with transparency */
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 5px;
+    border-radius: 8px;
 }
 
 /* Panel Buttons */
@@ -35,5 +35,35 @@
 button:hover {
     background: rgba(50, 60, 80, 0.8);
     transition: 0.3s ease-in-out;
+}
+
+/* 🌌 THUNAR (Dark Blue Aesthetic) */
+thunar .sidebar {
+    background: rgba(10, 15, 30, 0.85);  /* Dark blue background */
+    color: #AFCBFF;       /* Light blue text */
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+thunar .view {
+    background: rgba(10, 15, 30, 0.9);  /* Dark background */
+    color: #F1F1F0;
+}
+
+/* Selected Items */
+thunar .view:selected {
+    background: rgba(57, 85, 140, 0.5);
+    color: #FFFFFF;
+}
+
+/* Toolbar */
+thunar toolbar {
+    background: rgba(10, 15, 30, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Status Bar */
+thunar .statusbar {
+    background: rgba(10, 15, 30, 0.85);
+    color: #AFCBFF;
 }
 
