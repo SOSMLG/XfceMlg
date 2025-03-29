@@ -32,6 +32,39 @@ cd ..
 rm -rf Orchis-theme Colloid-icon-theme
 
 echo "✅ Installation complete! Apply the themes using your system's appearance settings."
+# fonts 
+#!/bin/bash
+
+# Define font directories for user and root
+USER_FONT_DIR="$HOME/.local/share/fonts"
+ROOT_FONT_DIR="/root/.local/share/fonts"
+
+# Create font directories if they don't exist
+mkdir -p "$USER_FONT_DIR"
+sudo mkdir -p "$ROOT_FONT_DIR"
+
+# Clone the Nerd Fonts repository
+git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git "$HOME/nerd-fonts"
+
+# Move to the font directory
+cd "$HOME/nerd-fonts"
+
+# Install only essential fonts for user
+./install.sh JetBrainsMono FiraCode Hack DejaVuSansMono UbuntuMono
+
+# Install fonts for root user as well
+sudo cp -r "$USER_FONT_DIR" "$ROOT_FONT_DIR"
+sudo fc-cache -fv
+
+# Clean up
+cd ..
+rm -rf "$HOME/nerd-fonts"
+
+# Refresh font cache for both user and root
+fc-cache -fv
+sudo fc-cache -fv
+echo "✅ Essential Nerd Fonts installed system-wide! Now Lock down And you will Some Dock Like config"
 # dock like config be like
 # the first 3 checked 2 not , 2 last are checked
 # active color #007ACC and inactive color 3A506B
+
