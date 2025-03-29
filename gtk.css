@@ -1,62 +1,39 @@
-/* === Icon Scaling for Panel Plugins === */
-#whiskermenu-button image { -gtk-icon-transform: scale(0.90); }
-#pulseaudio-button image { -gtk-icon-transform: scale(0.50); }
-#xfce4-power-manager-plugin image { -gtk-icon-transform: scale(0.50); }
-#xfce4-notification-plugin image { -gtk-icon-transform: scale(0.50); }
-#xfce4-status-tray-plugin image { -gtk-icon-transform: scale(0.50); }
-
-/* === Tasklist Buttons === */
-.tasklist button:hover {
-    background-color: #3a5f9e; /* Deep Ocean Blue */
-    color: #b0c7f1; /* Glowing Ice Blue */
-}
-.tasklist button:checked {
-    box-shadow: none;
-    background-color: #2b4c7e; /* Wavy Cosmic Blue */
-    color: #b0c7f1;
+/* XFCE Panel */
+#xfce-panel {
+    background: rgba(10, 15, 30, 0.8);  /* Dark blue with transparency */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
 }
 
-/* === Workspace Indicator (Pager) === */
-#pager-4 grid {
-    background-color: rgba(137, 160, 214, 0.05); /* Soft cosmic blue tint */
-    margin: 4px;
-    border-radius: 3px;
-}
-#pager-4 button {
-    padding: 3px;
-    margin: 5px;
-    background-color: transparent;
-}
-#pager-4 button:hover {
-    background-color: rgba(137, 160, 214, 0.10); /* Slight cosmic blue tint */
-}
-#pager-4 button:checked {
-    box-shadow: none;
-    background-color: #2b4c7e; /* Wavy Cosmic Blue */
-    color: #b0c7f1;
+/* Panel Buttons */
+#whiskermenu-button, #tasklist button, #clock-button, #systray {
+    background: rgba(20, 25, 40, 0.6);
+    color: #AFCBFF;  /* Light blue text */
+    border-radius: 5px;
 }
 
-/* === Applications Button (Whisker Menu) === */
-window#whiskermenu-window > frame > border {
-    border-radius: 10px;
+#whiskermenu-button:hover, #tasklist button:hover, #clock-button:hover, #systray:hover {
+    background: rgba(40, 50, 70, 0.8);
+    color: #ffffff;
 }
-#whiskermenu-button {
-    background-color: #0a0b12; /* Very deep space black-blue */
-    color: #89a0d6; /* Soft cosmic blue */
-    border-radius: 2px;
-    margin: 4px;
-    padding: 4px;
+
+/* Window List */
+#tasklist {
+    font-size: 12px;
 }
-#whiskermenu-window treeview {
-    margin: 4px;
-    padding: 4px;
+
+/* Notification & Indicators */
+#systray {
+    padding: 2px;
 }
-#whiskermenu-button:checked {
-    background-color: #2b4c7e; /* Wavy Cosmic Blue */
-    color: #b0c7f1;
+
+#clock {
+    font-weight: bold;
 }
-#whiskermenu-button:hover {
-    background-color: #3a5f9e; /* Deep Ocean Blue */
-    color: #b0c7f1;
+
+/* Hover Effects */
+button:hover {
+    background: rgba(50, 60, 80, 0.8);
+    transition: 0.3s ease-in-out;
 }
 
