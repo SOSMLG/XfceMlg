@@ -26,7 +26,7 @@ cd ..
 
 git clone --depth=1 https://github.com/vinceliuice/Colloid-icon-theme.git
 cd Colloid-icon-theme
-./install.sh -d "$ICON_DIR" -t blue
+./install.sh -d "$ICON_DIR" 
 cd ..
 
 rm -rf Orchis-theme Colloid-icon-theme
