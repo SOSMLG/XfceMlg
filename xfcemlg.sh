@@ -32,3 +32,6 @@ cd ..
 rm -rf Orchis-theme Colloid-icon-theme
 
 echo "✅ Installation complete! Apply the themes using your system's appearance settings."
+# dock like config be like
+# the first 3 checked 2 not , 2 last are checked
+# active color #007ACC and inactive color 3A506B
