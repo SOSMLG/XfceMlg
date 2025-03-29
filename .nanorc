@@ -1,0 +1,15 @@
+# Display Enhancements
+set linenumbers          # Show line numbers
+set titlecolor brightcyan,black
+set statuscolor brightyellow,black
+set numbercolor brightmagenta,black
+set functioncolor brightblue
+
+# Editing Improvements
+set softwrap             # Enable soft wrapping
+set autoindent           # Auto-indent new lines
+set tabsize 4            # Set tab size to 4 spaces
+set tabstospaces         # Convert tabs to spaces
+set nowrap               # Disable auto-wrapping
+set historylog           # Keep history of commands
+set constantshow         # Always show cursor position
