@@ -43,27 +43,29 @@ ROOT_FONT_DIR="/root/.local/share/fonts"
 mkdir -p "$USER_FONT_DIR"
 sudo mkdir -p "$ROOT_FONT_DIR"
 
-# Clone the Nerd Fonts repository
-git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git "$HOME/nerd-fonts"
+# List of essential Nerd Fonts
+FONTS=("JetBrainsMono" "FiraCode" "Hack" "DejaVuSansMono" "UbuntuMono")
 
-# Move to the font directory
-cd "$HOME/nerd-fonts"
+# Download and install fonts
+for FONT in "${FONTS[@]}"; do
+    echo "Downloading $FONT Nerd Font..."
+    wget -q --show-progress "https://github.com/ryanoasis/nerd-fonts/releases/latest/download/${FONT}.zip" -O "/tmp/${FONT}.zip"
+    
+    echo "Extracting $FONT..."
+    unzip -q "/tmp/${FONT}.zip" -d "$USER_FONT_DIR"
+    
+    # Copy to root's font directory as well
+    sudo cp -r "$USER_FONT_DIR" "$ROOT_FONT_DIR"
 
-# Install only essential fonts for user
-./install.sh JetBrainsMono FiraCode Hack DejaVuSansMono UbuntuMono
-
-# Install fonts for root user as well
-sudo cp -r "$USER_FONT_DIR" "$ROOT_FONT_DIR"
-sudo fc-cache -fv
-
-# Clean up
-cd ..
-rm -rf "$HOME/nerd-fonts"
+    # Remove zip file to save space
+    rm "/tmp/${FONT}.zip"
+done
 
 # Refresh font cache for both user and root
 fc-cache -fv
 sudo fc-cache -fv
-echo "✅ Essential Nerd Fonts installed system-wide! Now Lock down And you will Some Dock Like config"
+
+echo "✅ Essential Nerd Fonts installed successfully!"
 # dock like config be like
 # the first 3 checked 2 not , 2 last are checked
 # active color #007ACC and inactive color 3A506B
