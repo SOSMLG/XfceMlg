@@ -67,11 +67,9 @@ done
 # Refresh font cache for both user and root
 fc-cache -fv
 sudo fc-cache -fv
-
 echo "✅ Essential Nerd Fonts installed successfully!"
-#xfce4 tweaks 
-#!/bin/bash
-
-echo "✅Everything is installed :D Time To Reboot "
+#i3 tweaks 
+sudo apt install pip
+pip install autotiling --break-system-packages
 
 
