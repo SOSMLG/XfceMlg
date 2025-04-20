@@ -36,6 +36,6 @@ cd Colloid-icon-theme
 ./install.sh -d "$ICON_DIR" 
 cd ..
 
-rm -rf Orchis-theme Colloid-icon-theme
+rm -rf Graphite-gtk-theme Colloid-icon-theme
 
 echo "✅ Installation complete! Apply the themes using your system's appearance settings."
