@@ -27,7 +27,7 @@ mkdir -p "$THEME_DIR" "$ICON_DIR"
 git clone https://github.com/vinceliuice/Graphite-gtk-theme.git || exit 1
 cd Graphite-gtk-theme || exit 1
 
-./install.sh --color purple --tweaks square --dest -d "$THEME_DIR"
+./install.sh --t purple --tweaks rimless darker  -d "$THEME_DIR"
 
 cd ..
 
