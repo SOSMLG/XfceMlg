@@ -1,19 +1,19 @@
-/* XFCE PANEL (Dark Transparent Bar) */
+/* XFCE PANEL (Solid Dark Purple-Blue) */
 #xfce-panel {
-    background: rgba(10, 15, 30, 0.85);  /* Dark navy blue with transparency */
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #120b2f;  /* Deep indigo/purple tone */
+    border: 1px solid #2a1d50;
     border-radius: 8px;
 }
 
 /* Panel Buttons */
 #whiskermenu-button, #tasklist button, #clock-button, #systray {
-    background: rgba(20, 25, 40, 0.6);
-    color: #AFCBFF;  /* Light blue text */
+    background: #1d1242;
+    color: #b7caff;  /* Light lavender blue */
     border-radius: 5px;
 }
 
 #whiskermenu-button:hover, #tasklist button:hover, #clock-button:hover, #systray:hover {
-    background: rgba(40, 50, 70, 0.8);
+    background: #3d2a75;
     color: #ffffff;
 }
 
@@ -33,37 +33,36 @@
 
 /* Hover Effects */
 button:hover {
-    background: rgba(50, 60, 80, 0.8);
+    background: #45307d;
     transition: 0.3s ease-in-out;
 }
 
-/* 🌌 THUNAR (Dark Blue Aesthetic) */
+/* 🌌 THUNAR (Deep Blue Aesthetic) */
 thunar .sidebar {
-    background: rgba(10, 15, 30, 0.85);  /* Dark blue background */
-    color: #AFCBFF;       /* Light blue text */
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background: #120b2f;
+    color: #b7caff;
+    border-right: 1px solid #2a1d50;
 }
 
 thunar .view {
-    background: rgba(10, 15, 30, 0.9);  /* Dark background */
-    color: #F1F1F0;
+    background: #120b2f;
+    color: #f0f0f0;
 }
 
 /* Selected Items */
 thunar .view:selected {
-    background: rgba(57, 85, 140, 0.5);
-    color: #FFFFFF;
+    background: #394d99;  /* Blue highlight */
+    color: #ffffff;
 }
 
 /* Toolbar */
 thunar toolbar {
-    background: rgba(10, 15, 30, 0.85);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: #120b2f;
+    border-bottom: 1px solid #2a1d50;
 }
 
 /* Status Bar */
 thunar .statusbar {
-    background: rgba(10, 15, 30, 0.85);
-    color: #AFCBFF;
+    background: #120b2f;
+    color: #b7caff;
 }
-
