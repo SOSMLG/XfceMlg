@@ -39,3 +39,33 @@ cd ..
 rm -rf Graphite-gtk-theme Colloid-icon-theme
 
 echo "✅ Installation complete! Apply the themes using your system's appearance settings."
+
+#!/bin/bash
+
+# Create fonts directory if it doesn't exist
+mkdir -p ~/.local/share/fonts
+
+# Temp file for download
+TMP_FONT="/tmp/HackNerdFont-Regular.ttf"
+
+echo "📦 Downloading Hack Nerd Font (Powerline + Nerd icons)..."
+curl -fLo "$TMP_FONT" \
+  https://github.com/ryanoasis/nerd-fonts/raw/master/patched-fonts/Hack/Regular/complete/Hack%20Nerd%20Font%20Complete.ttf
+
+if [ -f "$TMP_FONT" ]; then
+    mv "$TMP_FONT" ~/.local/share/fonts/
+    echo "✅ Font moved to ~/.local/share/fonts"
+else
+    echo "❌ Download failed. Exiting."
+    exit 1
+fi
+
+# Refresh font cache
+echo "🔄 Updating font cache..."
+fc-cache -fv > /dev/null
+
+# Remove temp file just in case
+rm -f "$TMP_FONT"
+
+echo "🎉 Done! Set your terminal font to 'Hack Nerd Font' to use Agnoster + exa icons properly."
+
