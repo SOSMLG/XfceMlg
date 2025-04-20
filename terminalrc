@@ -1,15 +1,14 @@
 [Configuration]
 FontName=JetBrainsMono Nerd Font 12
-ColorForeground=#AFCBFF
-ColorBackground=#0A0F1E
-ColorCursor=#AFCBFF
+ColorForeground=#C3BFF7
+ColorBackground=#0D0B1F
+ColorCursor=#C3BFF7
 ColorCursorUseDefault=FALSE
-ColorPalette=#0A0F1E;#FF5C57;#5AF78E;#F3F99D;#57C7FF;#FF6AC1;#9AEDFE;#F1F1F0;
-ColorPalette+=#686868;#FF6E67;#5AF78E;#F3F99D;#57C7FF;#FF6AC1;#9AEDFE;#FFFFFF
+
+ColorPalette=#0D0B1F;#B84D57;#71D99C;#E5E591;#6C8BF1;#D586E3;#86D2F5;#E6E6E6;
+ColorPalette+=#5C5C5C;#FF5F6E;#71D99C;#E5E591;#6C8BF1;#D586E3;#86D2F5;#FFFFFF
+
 MiscAlwaysShowTabs=FALSE
 MiscBell=FALSE
 MiscCursorBlink=TRUE
 MiscDefaultGeometry=120x35
-MiscMenubarDefault=FALSE
-MiscToolbarDefault=FALSE
-
