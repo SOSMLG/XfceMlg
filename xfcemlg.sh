@@ -22,9 +22,13 @@ ICON_DIR="$HOME/.icons"
 
 mkdir -p "$THEME_DIR" "$ICON_DIR"
 
-git clone --depth=1 https://github.com/vinceliuice/Orchis-theme.git
-cd Orchis-theme
-./install.sh -d "$THEME_DIR" 
+#!/bin/bash
+
+git clone https://github.com/vinceliuice/Graphite-gtk-theme.git || exit 1
+cd Graphite-gtk-theme || exit 1
+
+./install.sh --color purple --tweaks square --dest -d "$THEME_DIR"
+
 cd ..
 
 git clone --depth=1 https://github.com/vinceliuice/Colloid-icon-theme.git
