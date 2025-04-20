@@ -5,7 +5,7 @@ ColorBackground=#0D0B1F
 ColorCursor=#C3BFF7
 ColorCursorUseDefault=FALSE
 
-ColorPalette=#5C5C5C;#FF5F6E;#71D99C;#E5E591;#6C8BF1;#D586E3;#86D2F5;#FFFFFF
+ColorPalette=#5C5C5C;#6A4E98;#8A5CB2;#B79FE4;#4C68A4;#C77CC2;#6AB5D6;#FFFFFF
 
 MiscAlwaysShowTabs=FALSE
 MiscBell=FALSE
