@@ -64,12 +64,5 @@ for FONT in "${FONTS[@]}"; do
     rm "/tmp/${FONT}.zip"
 done
 
-# Refresh font cache for both user and root
-fc-cache -fv
-sudo fc-cache -fv
-echo "✅ Essential Nerd Fonts installed successfully!"
-#i3 tweaks 
-sudo apt install pip
-pip install autotiling --break-system-packages
 
 
