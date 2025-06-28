@@ -4,12 +4,16 @@ case $- in
     *) return;;
 esac
 
+#Terminal Match
+cat ~/.cache/wal/sequences
+source ~/.cache/wal/colors-tty.sh
+
 # Path to your oh-my-bash installation.
 export OSH='/home/sosmlg/.oh-my-bash'
 
 # Set name of the theme to load. Optionally, if you set this to "random"
 # it'll load a random theme each time that oh-my-bash is loaded.
-OSH_THEME="ht"
+OSH_THEME="agnoster"
 
 # If you set OSH_THEME to "random", you can ignore themes you don't like.
 # OMB_THEME_RANDOM_IGNORED=("powerbash10k" "wanelo")
@@ -156,9 +160,11 @@ alias dl="z ~/Downloads" # Jump to Download
 alias poweroff="sudo poweroff"    # Shutdown system
 alias reboot="sudo reboot"        # Reboot system
 alias md="mkdir -p"              # Create directory
-alias ls="exa --icons"           # Default replacement for `ls`
-alias ll="exa -l --icons"        # Long list format
-alias la="exa -la --icons"       # Show hidden files
-alias lt="exa -T --icons"        # Tree view
-alias lsd="exa -d --icons */"    # Show directories only
+alias ls="eza --icons"           # Default replacement for `ls`
+alias ll="eza -l --icons"        # Long list format
+alias la="eza -la --icons"       # Show hidden files
+alias lt="eza -T --icons"        # Tree view
+alias lsd="eza -d --icons */"    # Show directories only
 
+# Created by `pipx` on 2025-06-07 07:52:06
+export PATH="$PATH:/home/sosmlg/.local/bin"
