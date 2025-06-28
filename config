@@ -9,8 +9,7 @@
 #
 # Please see https://i3wm.org/docs/userguide.html for a complete reference!
 exec --no-startup-id picom -b
-exec --no-startup-id feh --bg-fill ~/Pictures/lol.jpg
-exec --no-startup-id wal -R
+exec --no-startup-id feh --bg-fill ~/Pictures/wallpaper2.jpg
 set $mod Mod4
 
 #gaps 
