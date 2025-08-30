@@ -19,7 +19,9 @@ sudo apt update && sudo apt install librewolf -y
 git clone https://github.com/powerline/fonts.git 
 cd fonts   
 ./install.sh    
-sudo fc-cache -fv 
+wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/FiraCode.zip
+unzip FiraCode.zip -d ~/.local/share/fonts
+fc-cache -fv
 #micro plugins 
 micro -plugin install filemanager  
 micro -plugin install fzf           
