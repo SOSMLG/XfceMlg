@@ -8,11 +8,8 @@ sudo apt update -yy
 sudo apt upgrade -yy
 sudo apt install flatpak -yy
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-# Oh My Bash
-sudo apt install git -yy
-bash -c "$(wget https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh -O -)"
 # installing Other Apps 
-sudo apt install vlc micro libreoffice tilix fastfetch unzip cargo p7zip ntfs-3g eza zoxide vlc gimp imagemagick fzf ffmpeg fonts-firacode fonts-jetbrains-mono fonts-croscore fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto fonts-noto-cjk extrepo -yy
+sudo apt install vlc micro libreoffice tilix fastfetch unzip cargo p7zip ntfs-3g eza zoxide vlc gimp imagemagick fzf ffmpeg fonts-firacode fonts-jetbrains-mono fonts-croscore fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto fonts-noto-cjk git extrepo -yy
 sudo apt purge nano xfce4-terminal firefox-esr -yy
 sudo apt autoremove
 # librewolf
@@ -35,4 +32,6 @@ micro -plugin install fish
 #pipx 
 sudo apt install pipx 
 pipx install pywal 
-pipx ensurepath
+# Oh My Bash
+bash -c "$(wget https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh -O -)"
+
