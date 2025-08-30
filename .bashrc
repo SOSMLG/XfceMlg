@@ -4,19 +4,19 @@ case $- in
     *) return;;
 esac
 
-#Terminal Match
-cat ~/.cache/wal/sequences
-source ~/.cache/wal/colors-tty.sh
-
 # Path to your oh-my-bash installation.
 export OSH='/home/sosmlg/.oh-my-bash'
 
+
+
 # Set name of the theme to load. Optionally, if you set this to "random"
 # it'll load a random theme each time that oh-my-bash is loaded.
-OSH_THEME="agnoster"
+OSH_THEME="modern"
 
 # If you set OSH_THEME to "random", you can ignore themes you don't like.
 # OMB_THEME_RANDOM_IGNORED=("powerbash10k" "wanelo")
+# You can also specify the list from which a theme is randomly selected:
+# OMB_THEME_RANDOM_CANDIDATES=("font" "powerline-light" "minimal")
 
 # Uncomment the following line to use case-sensitive completion.
 # OMB_CASE_SENSITIVE="true"
@@ -68,8 +68,7 @@ OSH_THEME="agnoster"
 # If not set, the default value is 'yyyy-mm-dd'.
 # HIST_STAMPS='yyyy-mm-dd'
 
-# Uncomment the following line if you do not want OMB to overwrite the existing
-# aliases by the default OMB aliases defined in lib/*.sh
+
 # OMB_DEFAULT_ALIASES="check"
 
 # Would you like to use another custom folder than $OSH/custom?
@@ -93,8 +92,9 @@ OMB_USE_SUDO=true
 # Add wisely, as too many completions slow down shell startup.
 completions=(
   git
-  composer
   ssh
+  pip
+  npm
 )
 
 # Which aliases would you like to load? (aliases can be found in ~/.oh-my-bash/aliases/*)
@@ -111,8 +111,10 @@ aliases=(
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(
   git
-  bashmarks
+  sudo
+  colored-man-pages
   zoxide
+  fzf 
 )
 
 # Which plugins would you like to conditionally load? (plugins can be found in ~/.oh-my-bash/plugins/*)
@@ -121,6 +123,13 @@ plugins=(
 #  if [ "$DISPLAY" ] || [ "$SSH" ]; then
 #      plugins+=(tmux-autoattach)
 #  fi
+
+# If you want to reduce the initialization cost of the "tput" command to
+# initialize color escape sequences, you can uncomment the following setting.
+# This disables the use of the "tput" command, and the escape sequences are
+# initialized to be the ANSI version:
+#
+#OMB_TERM_USE_TPUT=no
 
 source "$OSH"/oh-my-bash.sh
 
@@ -148,23 +157,24 @@ source "$OSH"/oh-my-bash.sh
 # users are encouraged to define aliases within the OSH_CUSTOM folder.
 # For a full list of active aliases, run `alias`.
 #
-# Example aliases
-# alias bashconfig="mate ~/.bashrc"
-# alias ohmybash="mate ~/.oh-my-bash"
-alias cd="z"             # Use `z` instead of `cd`
-alias ..="z .."          # Go up one directory
-alias ...="z ../.."      # Go up two directories
-alias ....="z ../../.."  # Go up three directories
-alias dh="z ~"            # Go to home directory
-alias dl="z ~/Downloads" # Jump to Download
-alias poweroff="sudo poweroff"    # Shutdown system
-alias reboot="sudo reboot"        # Reboot system
-alias md="mkdir -p"              # Create directory
-alias ls="eza --icons"           # Default replacement for `ls`
-alias ll="eza -l --icons"        # Long list format
-alias la="eza -la --icons"       # Show hidden files
-alias lt="eza -T --icons"        # Tree view
-alias lsd="eza -d --icons */"    # Show directories only
+# aliases
+alias e='micro'
+alias bashrc='nano ~/.bashrc && source ~/.bashrc'
+alias reload='source ~/.bashrc'
+alias ls='eza --icons'
+alias ll='eza -alh --icons --group-directories-first'
+alias la='eza -a --icons'
+alias lt='eza -alh --sort=modified --icons'
+alias tree='eza --tree --icons'
+alias ..='z ..'
+alias ...='z ../..'
+alias ....='z ../../..'
+alias -- -='z -'     
 
-# Created by `pipx` on 2025-06-07 07:52:06
+# Created by `pipx` on 2025-08-26 20:54:56
 export PATH="$PATH:/home/sosmlg/.local/bin"
+#pywal
+x=`gsettings get org.gnome.desktop.background picture-uri | wc -c`
+y=$((x-2))
+wall_length=`gsettings get org.gnome.desktop.background picture-uri | cut -c 9-$y`
+wal -q -i $wall_length
