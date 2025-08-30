@@ -173,8 +173,6 @@ alias -- -='z -'
 
 # Created by `pipx` on 2025-08-26 20:54:56
 export PATH="$PATH:/home/sosmlg/.local/bin"
-#pywal
-x=`xfconf-query -c xfce4-desktop -l | grep last-image | head -n 1`
-y=`xfconf-query -c xfce4-desktop -p $x`
-wall_length=$y
-wal -q -i $wall_length
+
+wallpaper=$(xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitoreDP-1/workspace0/last-image)
+wal -q -i "$wallpaper"
