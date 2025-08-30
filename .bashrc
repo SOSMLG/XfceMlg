@@ -174,7 +174,7 @@ alias -- -='z -'
 # Created by `pipx` on 2025-08-26 20:54:56
 export PATH="$PATH:/home/sosmlg/.local/bin"
 #pywal
-x=`gsettings get org.gnome.desktop.background picture-uri | wc -c`
-y=$((x-2))
-wall_length=`gsettings get org.gnome.desktop.background picture-uri | cut -c 9-$y`
+x=`xfconf-query -c xfce4-desktop -l | grep last-image | head -n 1`
+y=`xfconf-query -c xfce4-desktop -p $x`
+wall_length=$y
 wal -q -i $wall_length
