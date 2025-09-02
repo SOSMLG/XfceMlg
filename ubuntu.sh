@@ -9,7 +9,7 @@ sudo apt upgrade -yy
 sudo apt install flatpak -yy
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 # installing Other Apps 
-sudo apt install vlc micro libreoffice tilix fastfetch unzip cargo p7zip ntfs-3g eza zoxide vlc gimp imagemagick docklike-plugin  xfce4-panel-profiles fzf ffmpeg fonts-firacode fonts-jetbrains-mono fonts-croscore fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto fonts-noto-cjk git extrepo -yy
+sudo apt install vlc micro libreoffice tilix gvfs-backends samba fastfetch unzip cargo p7zip ntfs-3g eza zoxide vlc gimp imagemagick docklike-plugin  xfce4-panel-profiles fzf ffmpeg fonts-firacode fonts-jetbrains-mono fonts-croscore fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto fonts-noto-cjk git extrepo -yy
 sudo apt purge nano firefox-esr -yy
 sudo apt autoremove
 # librewolf
