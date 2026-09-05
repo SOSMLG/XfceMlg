@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Modular .bashrc configuration
+
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return
+
+# ============================================================================
+# SHELL OPTIONS
+# ============================================================================
+
+# Disable ctrl-s and ctrl-q (terminal pause)
+stty -ixon
+
+# Better history management
+shopt -s histappend              # Append to history, don't overwrite
+shopt -s checkwinsize            # Check window size after each command
+shopt -s cdspell                 # Autocorrect typos in path names when using cd
+shopt -s dirspell                # Correct directory name typos
+shopt -s autocd                  # Type directory name to cd
+shopt -s globstar                # Allow ** for recursive matching
+shopt -s nocaseglob              # Case-insensitive globbing
+shopt -s extglob                 # Extended pattern matching
+
+# ============================================================================
+# HISTORY CONFIGURATION
+# ============================================================================
+
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoreboth:erasedups
+export HISTIGNORE="ls:ll:cd:pwd:exit:clear:history"
+export HISTTIMEFORMAT="%F %T "
+
+# Immediately write history (not exported — keeps it out of child scripts)
+PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+
+# ============================================================================
+# ENVIRONMENT VARIABLES
+# ============================================================================
+
+# Path configuration
+export PATH="$HOME/scripts:$HOME/.local/bin:/usr/local/go/bin:$HOME/.cargo/bin:$PATH"
+
+# Default editors
+export EDITOR=$(command -v nvim || command -v vim || command -v micro || echo nano)
+export VISUAL="$EDITOR"
+
+# Better less defaults
+export LESS='-R -F -X -i -P %f (%i/%m) '
+export LESSHISTFILE=/dev/null
+
+# Colored man pages
+export LESS_TERMCAP_mb=$'\e[1;32m'
+export LESS_TERMCAP_md=$'\e[1;32m'
+export LESS_TERMCAP_me=$'\e[0m'
+export LESS_TERMCAP_se=$'\e[0m'
+export LESS_TERMCAP_so=$'\e[01;33m'
+export LESS_TERMCAP_ue=$'\e[0m'
+export LESS_TERMCAP_us=$'\e[1;4;31m'
+
+# Locale - set to en_US.UTF-8 if available, otherwise fall back to C.UTF-8
+if locale -a 2>/dev/null | grep -qi "en_US.utf"; then
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
+elif locale -a 2>/dev/null | grep -qi "C.UTF"; then
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+fi
+
+# ============================================================================
+# LOAD MODULAR CONFIGURATIONS
+# ============================================================================
+
+BASH_CONFIG_DIR="$HOME/.config/bash"
+
+# Load all bash configuration files
+if [ -d "$BASH_CONFIG_DIR" ]; then
+    # Load main configuration files
+    for config in "$BASH_CONFIG_DIR"/*.bash; do
+        if [ -f "$config" ]; then
+            # Source config files - errors will be shown by bash directly
+            # Don't treat non-zero exit codes as errors (config files may use conditionals)
+            source "$config" || true
+        fi
+    done
+
+    # Load function files
+    if [ -d "$BASH_CONFIG_DIR/functions" ]; then
+        for func in "$BASH_CONFIG_DIR/functions"/*.bash; do
+            if [ -f "$func" ]; then
+                # Source function files - errors will be shown by bash directly
+                # Don't treat non-zero exit codes as errors
+                source "$func" || true
+            fi
+        done
+    fi
+fi
+
+# ============================================================================
+# COMPLETION
+# ============================================================================
+
+# Enable programmable completion
+if ! shopt -oq posix; then
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
+fi
+
+# Git completion
+if [ -f /usr/share/bash-completion/completions/git ]; then
+    . /usr/share/bash-completion/completions/git
+fi
+
+# ============================================================================
+# LOCAL OVERRIDES
+# ============================================================================
+
+# Source local bashrc if it exists (for machine-specific settings)
+if [ -f "$HOME/.bashrc.local" ]; then
+    . "$HOME/.bashrc.local"
+fi
