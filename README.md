@@ -3,13 +3,13 @@
 Post-install polish for a Devuan (or Debian) box where **XFCE is already
 installed** by the distro's own installer. This does *not* install XFCE —
 it swaps a couple of defaults (Geany over Mousepad, VLC over Parole — XFCE's
-own task install is already fairly lean, unlike KDE's `kde-standard`), then
+own task install is already fairly lean, unlike 's `-standard`), then
 fills in the rest: codecs, WiFi/Bluetooth firmware, fonts, ButterBash for a
 proper terminal, Flatpak, printing, GParted, GUFW, Timeshift, and an optional
 from-source build of the Windows XP theme.
 
 Built from your `myxfce` and `Butterbian-XFCE` repos the same way the
-KDE-side version of this toolkit was built from `DebianSway` — as the seed
+-side version of this toolkit was built from `DebianSway` — as the seed
 to extend with the same process (ordered `run.sh` + flat `scripts/` dir,
 granular y/N prompts, backups before anything destructive), while adopting
 real improvements found along the way (see "What changed" below).
@@ -54,7 +54,7 @@ chmod +x run.sh scripts/*.sh
 
 Run it as your **normal user**, not as root. Every script calls `sudo`
 itself for the parts that need it. `run.sh` walks through each step in
-order asking `Y/n` (or `y/N`), same pattern as the KDE-side version. Run
+order asking `Y/n` (or `y/N`), same pattern as the -side version. Run
 any script standalone too:
 
 ```bash
@@ -110,7 +110,7 @@ entirely (no longer needed) and the fallback-detection logic in every
 other script.
 
 **ButterBash is now the main shell config**, not a standalone `.bashrc`.
-`terminalButterbash.sh` installs it the same way the KDE-side toolkit
+`terminalButterbash.sh` installs it the same way the -side toolkit
 does (its own `install.sh` backs up and replaces `~/.bashrc`), then
 appends an "XFCE additions" block on top — the genuinely XFCE-specific
 pieces from your reference `.bashrc` that ButterBash doesn't already
