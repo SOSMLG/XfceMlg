@@ -30,16 +30,19 @@ devuan-xfce-setup/
 │   ├── bluetoothSetup.sh         # bluez + Blueman GUI + audio bridge (Pulse/PipeWire) + codec negotiation
 │   ├── multimediaCodecs.sh       # ffmpeg/GStreamer codecs, DVD playback, Audacity/Shotcut
 │   ├── firefoxHarden.sh          # Firefox ESR + Betterfox, system-wide defaults (see below)
+│   ├── firewallSetup.sh          # ufw baseline: deny incoming, allow outgoing, SSH-safe
 │   ├── policies.json             # firefox enterprise policy used by the above
 │   ├── installFonts.sh           # Noto, Font Awesome, JetBrainsMono Nerd Font
 │   ├── terminalRedTheme.sh       # Catppuccin Red xfce4-terminal colors, optional Alacritty/Kitty
 │   ├── terminalButterbash.sh     # ButterBash + XFCE-specific shell additions
 │   ├── fastfetchConfig.sh        # fastfetch + your curated config presets
 │   ├── usefulApps.sh             # base tools, Python/data-science stack, Geany, VLC
+│   ├── mintStyleApps.sh          # Mint-style everyday apps, Debian-packaged: Ristretto, Atril, GNOME Disks
 │   ├── desktopEssentials.sh      # Flatpak, printing, GParted, GUFW
 │   ├── timeshiftSetup.sh         # Timeshift system snapshot/restore
 │   ├── installPhotogimp.sh       # (optional) GIMP + PhotoGIMP layout/theme, fetched live from GitHub
 │   ├── installVscodium.sh        # (optional) VSCodium via official APT repo
+│   ├── btopSetup.sh              # (optional) btop + official Catppuccin theming (all 4 flavors)
 │   ├── vscodiumDevSetup.sh       # (optional) VSCodium C++/Python dev environment
 │   ├── gamingSetup.sh            # (optional) Steam / Heroic Games Launcher / Wine
 │   └── vesktopTelegram.sh        # (optional) Vesktop (Discord client) / Telegram
@@ -62,6 +65,55 @@ any script standalone too:
 ```bash
 bash scripts/touchpadTrackpointFix.sh
 ```
+
+- **New `mintStyleApps.sh`.** Covers the everyday Mint conveniences
+  without the compatibility risk: Mint's own equivalents (xviewer,
+  xreader, mintstick) are XApps distributed via Mint's own APT repo,
+  built against Ubuntu package versions — confirmed by checking
+  upstream's own docs, which state outright they're "not in the
+  official Ubuntu or Debian repositories." Installing those `.deb`s
+  on Devuan/Debian risks dependency conflicts; building from source
+  pulls in a meson/gtk-doc/libwebkit2gtk toolchain for what's meant
+  to stay a thin `apt install` toolkit. So this script gets the same
+  job done with packages Debian/Devuan actually carry: **Ristretto**
+  (image viewer) set as the default handler for common image types,
+  **Atril** (MATE's evince fork — same PDF-viewing job, lighter
+  dependency chain than pulling in evince itself) set as the default
+  for PDFs, and **GNOME Disks**, whose dedicated "Disk Image Writer"
+  launcher is the direct equivalent of Mint's USB Image Writer
+  (mintstick) — write an ISO/IMG to a USB stick from a GUI. All three
+  package names, their exact `.desktop` file names, and the
+  `xdg-mime default` calls were verified by actually installing them
+  and checking `dpkg -L` — Ristretto's turned out to be
+  `org.xfce.ristretto.desktop`, not the `ristretto.desktop` an
+  assumption would've produced.
+
+- **Checked dougburks/ohmydebn in full (all ~150 `bin/` scripts, `config/`,
+  `install/config/`).** Most of it doesn't transfer: it's a full Cinnamon/
+  Mutter desktop-ricing framework (gTile tiling, its own keybinding system,
+  Cinnamon-specific theming) — none of that runs on xfwm4, porting it would
+  mean rewriting the tiling/gesture logic against a different window
+  manager, not "adding" it. Its `bat`/`eza`/`zoxide`/`starship`/`fzf` setup
+  is already covered by `terminalButterbash.sh`. Two pieces were genuinely
+  portable, in-scope, and missing, so those got added:
+  - **New `btopSetup.sh`.** Installs btop and themes it with Catppuccin —
+    sourced directly from catppuccin/btop's own repo (verified by actually
+    downloading all four flavor files) rather than reverse-engineered from
+    ohmydebn's theme-carousel template. Also carries over a real fix from
+    ohmydebn's `theme-set-btop`: btop's SIGUSR2 hot-reload only exists on
+    btop ≥ 1.3.1 (confirmed against the installed version, 1.3.0, in
+    testing) — on anything older, sending that signal has no handler and
+    falls back to SIGUSR2's default action, which terminates the process.
+    The script checks the version before ever sending the signal.
+  - **New `firewallSetup.sh`.** Same ufw deny-incoming/allow-outgoing
+    baseline as ohmydebn's `ufw.sh`, tested end-to-end (`ufw allow ssh`,
+    `default deny incoming`, `default allow outgoing`, `--force enable` all
+    run and verified via `ufw status verbose`), plus a safety check
+    ohmydebn doesn't need but this toolkit does: ohmydebn only ever runs on
+    a machine you're physically at, so a bare deny-incoming is safe there.
+    This toolkit might run over SSH on a headless box, where the same
+    command would drop your own session — so it detects an active SSH
+    session or listening sshd and allows SSH through first.
 
 ## Latest fixes & additions
 
