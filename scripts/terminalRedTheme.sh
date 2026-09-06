@@ -121,7 +121,28 @@ if ask "Also install Alacritty with a matching Catppuccin Red config?" "N"; then
     sudo apt-get update -qq
     if sudo apt-get install -y alacritty; then
         mkdir -p "$HOME/.config/alacritty"
+
+        # Alacritty's config keys for "what shell to launch" changed at
+        # 0.14: [terminal].shell (0.14+) vs [shell] program (pre-0.14).
+        # Debian/Devuan releases ship different Alacritty versions, so
+        # detect which syntax this install actually understands instead
+        # of guessing — same fix dougburks/ohmydebn applies for the same
+        # reason. One template, rewritten post-hoc, instead of two
+        # configs to keep in sync.
+        ALACRITTY_VERSION=$(dpkg-query -W -f='${Version}' alacritty 2>/dev/null || echo "0")
+        SHELL_BLOCK="[terminal]
+shell = \"/bin/bash\""
+        if dpkg --compare-versions "$ALACRITTY_VERSION" lt "0.14.0" 2>/dev/null; then
+            info "Detected Alacritty $ALACRITTY_VERSION (pre-0.14) — using the older [shell] config syntax."
+            SHELL_BLOCK="[shell]
+program = \"/bin/bash\""
+        else
+            info "Detected Alacritty $ALACRITTY_VERSION — using the current [terminal].shell syntax."
+        fi
+
         cat > "$HOME/.config/alacritty/alacritty.toml" << EOF
+${SHELL_BLOCK}
+
 [window]
 opacity = 0.90
 decorations = "full"

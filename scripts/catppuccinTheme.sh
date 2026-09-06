@@ -83,7 +83,7 @@ ok "Chicago95 remnants cleared (if any existed)."
 step "3/8  GTK + Window Manager theme (Catppuccin, Black/Red)"
 # ══════════════════════════════════════════════════════════════
 GTK_THEME_NAME=""
-if ask "Install the Catppuccin GTK/xfwm4 theme (Black variant, Red accent)?"; then
+if ask "Install the Catppuccin GTK/xfwm4 theme (black background, red accent)?"; then
     if [[ -d "$WORK_DIR/Catppuccin-GTK-Theme" ]]; then
         rm -rf "$WORK_DIR/Catppuccin-GTK-Theme"
     fi
@@ -92,43 +92,79 @@ if ask "Install the Catppuccin GTK/xfwm4 theme (Black variant, Red accent)?"; th
         "$WORK_DIR/Catppuccin-GTK-Theme" 2>/tmp/catppuccin-gtk-clone.log; then
 
         cd "$WORK_DIR/Catppuccin-GTK-Theme"
-        chmod +x install.sh
 
-        info "Building the Black/Red variant (this can take a minute)..."
-        INSTALL_OK=0
-        if ./install.sh -t red -c black -s compact -d "$THEMES_DIR" -n Catppuccin \
-            >/tmp/catppuccin-gtk-install.log 2>&1; then
-            INSTALL_OK=1
+        # Upstream has moved install.sh before (it used to sit at the repo
+        # root; as of the "installer orchestrator" rewrite it lives under
+        # themes/install.sh instead). Find it wherever it actually is
+        # rather than hardcoding a path — that hardcoded path is exactly
+        # what broke this step previously ("No such file or directory").
+        INSTALLER=$(find . -maxdepth 2 -iname "install.sh" 2>/dev/null | sort | head -1)
+
+        if [[ -z "$INSTALLER" ]]; then
+            err "Couldn't find install.sh anywhere in the cloned repo — upstream layout changed again."
+            err "Browse https://github.com/Fausto-Korpsvart/Catppuccin-GTK-Theme and install manually."
         else
-            warn "Flagged install.sh call didn't take (upstream CLI may have changed since this script was written)."
-            info "Falling back to a full default install — every flavour/accent gets built, we'll pick Red/Black out of it."
-            if ./install.sh -d "$THEMES_DIR" -n Catppuccin >/tmp/catppuccin-gtk-install.log 2>&1 \
-                || ./install.sh >>/tmp/catppuccin-gtk-install.log 2>&1; then
+            chmod +x "$INSTALLER"
+            info "Building the Red accent / black background variant via $INSTALLER (this can take a minute)..."
+            INSTALL_OK=0
+            # Expected folder name under the CURRENT upstream naming scheme:
+            # ${name}${accent}${mode}${size}${tweaks} -> Catppuccin-Red-Dark-Compact-BK
+            EXPECTED_NAME="Catppuccin-Red-Dark-Compact-BK"
+
+            # BATCH_MODE=true is load-bearing, not cosmetic: the current
+            # installer ends its run with an interactive "Do you want to
+            # apply Vague?" arrow-key menu (interactive_menu()). With no
+            # TTY attached (piped into a log file, as we do here) that
+            # menu blocks forever instead of failing — the script would
+            # just hang. BATCH_MODE=true skips it; we apply the theme
+            # ourselves via xfconf-query/gsettings below regardless, so
+            # skipping the installer's own "apply now" step costs nothing.
+
+            # 1) Current upstream CLI: accent/mode/tweaks-based flags.
+            if BATCH_MODE=true timeout 300 "$INSTALLER" -d "$THEMES_DIR" -n Catppuccin -a red -m dark -s compact --tweaks black \
+                >/tmp/catppuccin-gtk-install.log 2>&1; then
                 INSTALL_OK=1
-            fi
-        fi
-
-        if [[ $INSTALL_OK -eq 1 ]]; then
-            # Discover whatever the installer actually named the Black+Red
-            # folder — don't hardcode a name we can't be 100% sure of.
-            GTK_THEME_NAME=$(find "$THEMES_DIR" -maxdepth 1 -type d \
-                \( -iname "*black*red*" -o -iname "*red*black*" \) -printf '%f\n' 2>/dev/null | head -1)
-            [[ -z "$GTK_THEME_NAME" ]] && GTK_THEME_NAME=$(find "$THEMES_DIR" -maxdepth 1 -type d \
-                -iname "*catppuccin*red*" -printf '%f\n' 2>/dev/null | head -1)
-            [[ -z "$GTK_THEME_NAME" ]] && GTK_THEME_NAME=$(find "$THEMES_DIR" -maxdepth 1 -type d \
-                -iname "*catppuccin*" -printf '%f\n' 2>/dev/null | head -1)
-
-            if [[ -n "$GTK_THEME_NAME" ]]; then
-                ok "Installed as: $GTK_THEME_NAME"
-                xfconf-query -c xsettings -p /Net/ThemeName -s "$GTK_THEME_NAME" 2>/dev/null || true
-                xfconf-query -c xfwm4 -p /general/theme -s "$GTK_THEME_NAME" 2>/dev/null || true
-                gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME_NAME" 2>/dev/null || true
+            # 2) Older upstream CLI this script originally targeted.
+            elif BATCH_MODE=true timeout 300 "$INSTALLER" -t red -c black -s compact -d "$THEMES_DIR" -n Catppuccin \
+                >>/tmp/catppuccin-gtk-install.log 2>&1; then
+                INSTALL_OK=1
             else
-                warn "Theme installed but couldn't auto-detect its folder name under $THEMES_DIR."
-                warn "Open Settings → Appearance and pick the Catppuccin Black/Red variant manually."
+                warn "Neither known install.sh call style worked (upstream CLI may have changed again since this script was written)."
+                info "Falling back to a full default install — every flavour/accent gets built, we'll pick Red/Black out of it."
+                if BATCH_MODE=true timeout 600 "$INSTALLER" -d "$THEMES_DIR" -n Catppuccin >>/tmp/catppuccin-gtk-install.log 2>&1 \
+                    || BATCH_MODE=true timeout 600 "$INSTALLER" >>/tmp/catppuccin-gtk-install.log 2>&1; then
+                    INSTALL_OK=1
+                fi
             fi
-        else
-            err "Catppuccin-GTK-Theme install.sh failed. Log: /tmp/catppuccin-gtk-install.log"
+
+            if [[ $INSTALL_OK -eq 1 ]]; then
+                # Discover whatever the installer actually named the
+                # Red/Black folder — check the exact expected name first,
+                # then fall back to progressively looser pattern matches.
+                if [[ -d "$THEMES_DIR/$EXPECTED_NAME" ]]; then
+                    GTK_THEME_NAME="$EXPECTED_NAME"
+                fi
+                [[ -z "$GTK_THEME_NAME" ]] && GTK_THEME_NAME=$(find "$THEMES_DIR" -maxdepth 1 -type d \
+                    \( -iname "*red*dark*" -o -iname "*dark*red*" \) -printf '%f\n' 2>/dev/null | sort | head -1)
+                [[ -z "$GTK_THEME_NAME" ]] && GTK_THEME_NAME=$(find "$THEMES_DIR" -maxdepth 1 -type d \
+                    \( -iname "*black*red*" -o -iname "*red*black*" \) -printf '%f\n' 2>/dev/null | head -1)
+                [[ -z "$GTK_THEME_NAME" ]] && GTK_THEME_NAME=$(find "$THEMES_DIR" -maxdepth 1 -type d \
+                    -iname "*catppuccin*red*" -printf '%f\n' 2>/dev/null | head -1)
+                [[ -z "$GTK_THEME_NAME" ]] && GTK_THEME_NAME=$(find "$THEMES_DIR" -maxdepth 1 -type d \
+                    -iname "*catppuccin*" -printf '%f\n' 2>/dev/null | head -1)
+
+                if [[ -n "$GTK_THEME_NAME" ]]; then
+                    ok "Installed as: $GTK_THEME_NAME"
+                    xfconf-query -c xsettings -p /Net/ThemeName -s "$GTK_THEME_NAME" 2>/dev/null || true
+                    xfconf-query -c xfwm4 -p /general/theme -s "$GTK_THEME_NAME" 2>/dev/null || true
+                    gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME_NAME" 2>/dev/null || true
+                else
+                    warn "Theme installed but couldn't auto-detect its folder name under $THEMES_DIR."
+                    warn "Open Settings → Appearance and pick the Catppuccin Red/Dark variant manually."
+                fi
+            else
+                err "Catppuccin-GTK-Theme install failed under every known CLI style. Log: /tmp/catppuccin-gtk-install.log"
+            fi
         fi
         cd "$WORK_DIR"
     else

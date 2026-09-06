@@ -3,13 +3,13 @@
 Post-install polish for a Devuan (or Debian) box where **XFCE is already
 installed** by the distro's own installer. This does *not* install XFCE —
 it swaps a couple of defaults (Geany over Mousepad, VLC over Parole — XFCE's
-own task install is already fairly lean, unlike 's `-standard`), then
+own task install is already fairly lean, unlike KDE's `kde-standard`), then
 fills in the rest: codecs, WiFi/Bluetooth firmware, fonts, ButterBash for a
 proper terminal, Flatpak, printing, GParted, GUFW, Timeshift, and an optional
 from-source build of the Windows XP theme.
 
 Built from your `myxfce` and `Butterbian-XFCE` repos the same way the
--side version of this toolkit was built from `DebianSway` — as the seed
+KDE-side version of this toolkit was built from `DebianSway` — as the seed
 to extend with the same process (ordered `run.sh` + flat `scripts/` dir,
 granular y/N prompts, backups before anything destructive), while adopting
 real improvements found along the way (see "What changed" below).
@@ -24,8 +24,10 @@ devuan-xfce-setup/
 │   ├── addUserToGroups.sh        # input/video/render groups
 │   ├── xfceDebloat.sh            # Mousepad→Geany, Parole→VLC, optional Xfburn removal
 │   ├── catppuccinTheme.sh        # Catppuccin (Black+Red) GTK/xfwm4 theme, icons, cursors, panel CSS
+│   ├── picomSetup.sh             # picom compositor — fades only, no shadows/blur, battery-friendly
 │   ├── touchpadTrackpointFix.sh  # usbhid mousepoll fix + optional libinput tuning
 │   ├── hardwareSupport.sh        # WiFi/BT firmware, CPU microcode, fwupd
+│   ├── bluetoothSetup.sh         # bluez + Blueman GUI + audio bridge (Pulse/PipeWire) + codec negotiation
 │   ├── multimediaCodecs.sh       # ffmpeg/GStreamer codecs, DVD playback, Audacity/Shotcut
 │   ├── firefoxHarden.sh          # Firefox ESR + Betterfox, system-wide defaults (see below)
 │   ├── policies.json             # firefox enterprise policy used by the above
@@ -54,12 +56,64 @@ chmod +x run.sh scripts/*.sh
 
 Run it as your **normal user**, not as root. Every script calls `sudo`
 itself for the parts that need it. `run.sh` walks through each step in
-order asking `Y/n` (or `y/N`), same pattern as the -side version. Run
+order asking `Y/n` (or `y/N`), same pattern as the KDE-side version. Run
 any script standalone too:
 
 ```bash
 bash scripts/touchpadTrackpointFix.sh
 ```
+
+## Latest fixes & additions
+
+- **`catppuccinTheme.sh`'s theme step is fixed.** Fausto-Korpsvart/Catppuccin-GTK-Theme
+  restructured twice upstream: `install.sh` moved from the repo root into
+  `themes/install.sh`, and its CLI flags changed from `-t <accent> -c <color>`
+  to `-a <accent> -m <light|dark> --tweaks <black|border|macos|...>`. The
+  script now **finds** `install.sh` wherever it actually lives instead of
+  assuming a path, tries the current CLI first, falls back to the old CLI,
+  then falls back to a full default build — and runs the installer with
+  `BATCH_MODE=true` and a `timeout`, because its newest version ends with
+  an interactive "Do you want to apply Vague?" arrow-key menu that hangs
+  forever with no TTY attached (which is exactly why the run in the
+  screenshot got stuck). Verified end-to-end with the installer's own
+  `--dry-run` against upstream's current `main` — it now resolves to
+  `Catppuccin-Red-Dark-Compact-BK` and exits `0`.
+- **New `bluetoothSetup.sh`.** Bluetooth firmware alone (what
+  `hardwareSupport.sh` installs) isn't enough to make earbuds work — the
+  most common real-world failure is that a device *pairs* but never shows
+  up as an audio output, because the PulseAudio/PipeWire ↔ BlueZ bridge
+  package was never installed. This script installs the core stack (bluez,
+  rfkill), auto-detects whether PulseAudio or PipeWire actually owns audio
+  on the box and installs the matching bridge package
+  (`pulseaudio-module-bluetooth` or `libspa-0.2-bluetooth` + `wireplumber`),
+  adds the GStreamer plugins apps like Rhythmbox/Parole route audio
+  through, optionally turns on BlueZ's `Experimental` flag so AAC/aptX/LDAC
+  get negotiated instead of falling back to low-quality SBC, and installs
+  **Blueman** (XFCE ships no Bluetooth GUI of its own) autostarted in the
+  panel tray.
+- **`terminalRedTheme.sh`'s Alacritty config is now version-aware.**
+  Alacritty changed its config syntax at 0.14 (`[terminal].shell` +
+  `[general].import` are unrecognized before that). Debian/Devuan point
+  releases ship different Alacritty versions, so the script now checks the
+  installed version and rewrites the two syntax-sensitive keys to their
+  pre-0.14 form when needed, the same compatibility trick
+  [dougburks/ohmydebn](https://github.com/dougburks/ohmydebn) uses for the
+  same problem — one config, both syntaxes, instead of two configs to keep
+  in sync.
+
+- **New `picomSetup.sh`.** Adds "a little bit of animation" the way that
+  doesn't cost battery: picom with fades only (window open/close + menus),
+  explicitly no shadows and no blur (those, not fades, are what actually
+  keep a GPU from idling), the `xrender` backend so it works on old/
+  integrated hardware without holding a GLX context open, and
+  `unredir-if-possible` — the real battery win, since it makes picom fully
+  step aside (zero compositing overhead) whenever a fullscreen window
+  (video, a game, a presentation) has focus. It also turns off xfwm4's
+  own built-in compositor first, since running two compositors against
+  the same display at once causes flicker and doubles the GPU work for
+  no benefit. Config syntax verified by installing picom and running it
+  against the generated config directly (fails only at "Can't open
+  display", i.e. it parses cleanly with no display to attach to).
 
 ## What changed — Chicago95 retired for a modern, ThinkPad-red theme
 
@@ -110,7 +164,7 @@ entirely (no longer needed) and the fallback-detection logic in every
 other script.
 
 **ButterBash is now the main shell config**, not a standalone `.bashrc`.
-`terminalButterbash.sh` installs it the same way the -side toolkit
+`terminalButterbash.sh` installs it the same way the KDE-side toolkit
 does (its own `install.sh` backs up and replaces `~/.bashrc`), then
 appends an "XFCE additions" block on top — the genuinely XFCE-specific
 pieces from your reference `.bashrc` that ButterBash doesn't already
