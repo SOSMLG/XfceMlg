@@ -5,8 +5,10 @@
 #  repo (codeberg.org/justaguylinux/butterscripts), same source
 #  your Butterbian-XFCE ISO's own hook uses — just targeting your
 #  actual $HOME instead of /etc/skel, since this runs against an
-#  existing user, not a new-account template.
-#  Privilege: sudo (only to install the fastfetch package itself)
+#  existing user, not a new-account template. Also offers btop
+#  (system monitor), themed with Catppuccin's own official colors —
+#  same "terminal tells you about the system" family as fastfetch.
+#  Privilege: sudo (fastfetch/btop package installs)
 # ══════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -32,7 +34,7 @@ ask() {
 
 echo -e "\n${B}${W}══════ fastfetch ══════${Z}"
 
-step "1/2  Install fastfetch"
+step "1/3  Install fastfetch"
 if is_installed fastfetch; then
     ok "fastfetch already installed."
 else
@@ -41,7 +43,7 @@ else
     ok "fastfetch installed."
 fi
 
-step "2/2  Config presets"
+step "2/3  Config presets"
 if ask "Pull your curated fastfetch presets (config/minimal/fancy/neon/debian-red/justaguy/server)?"; then
     FF_DIR="$HOME/.config/fastfetch"
     mkdir -p "$FF_DIR"
@@ -70,3 +72,46 @@ if ask "Pull your curated fastfetch presets (config/minimal/fancy/neon/debian-re
 fi
 
 ok "fastfetch setup complete. Try it: fastfetch"
+
+step "3/3  btop (system monitor) — Catppuccin theming"
+if ask "Install btop and theme it with Catppuccin (Mocha, matches the Red/Black GTK theme)?" "N"; then
+    sudo apt-get install -y btop || err "btop failed to install."
+    if is_installed btop; then
+        BTOP_VERSION=$(btop --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        mkdir -p "$HOME/.config/btop/themes"
+        BASE_URL="https://raw.githubusercontent.com/catppuccin/btop/main/themes"
+        FETCHED=0
+        for flavor in mocha macchiato frappe latte; do
+            curl -fsSL "${BASE_URL}/catppuccin_${flavor}.theme" \
+                -o "$HOME/.config/btop/themes/catppuccin_${flavor}.theme" \
+                && FETCHED=$((FETCHED + 1)) \
+                || warn "Couldn't fetch the ${flavor} flavor — skipping it."
+        done
+
+        if [[ $FETCHED -gt 0 ]]; then
+            ok "Fetched $FETCHED/4 Catppuccin flavors into ~/.config/btop/themes/"
+            BTOP_CONF="$HOME/.config/btop/btop.conf"
+            if [[ -f "$HOME/.config/btop/themes/catppuccin_mocha.theme" ]]; then
+                if [[ -f "$BTOP_CONF" ]]; then
+                    cp "$BTOP_CONF" "${BTOP_CONF}.bak.$(date +%Y%m%d%H%M%S)"
+                    grep -q '^color_theme' "$BTOP_CONF" \
+                        && sed -i 's/^color_theme.*/color_theme = "catppuccin_mocha"/' "$BTOP_CONF" \
+                        || echo 'color_theme = "catppuccin_mocha"' >> "$BTOP_CONF"
+                else
+                    mkdir -p "$HOME/.config/btop"
+                    echo 'color_theme = "catppuccin_mocha"' > "$BTOP_CONF"
+                fi
+                ok "btop.conf set to catppuccin_mocha (switch flavors any time: Esc → Options → color_theme)."
+            fi
+            # SIGUSR2 hot-reload only exists from btop 1.3.1 onward — on
+            # older builds it has no handler and the default POSIX action
+            # is to terminate, which would kill a running btop instead of
+            # re-theming it. Version-gate it rather than assume.
+            if [[ -n "$BTOP_VERSION" ]] && printf '%s\n' "1.3.1" "$BTOP_VERSION" | sort -C -V 2>/dev/null; then
+                pkill -SIGUSR2 btop 2>/dev/null && info "Hot-reloaded the theme into your running btop."
+            fi
+        else
+            err "Couldn't fetch any Catppuccin theme files — check your network and rerun this step."
+        fi
+    fi
+fi

@@ -101,12 +101,33 @@ if ask "Install GParted?"; then
     install_pkgs "GParted" gparted
 fi
 
-step "4/4  GUFW (firewall panel — installed only, NOT enabled)"
-if ask "Install GUFW (GTK firewall front-end, not enabled by default)?"; then
-    install_pkgs "Firewall" gufw ufw
-    warn "Installed only — ufw is NOT enabled. Turning on default-deny-incoming automatically"
-    warn "could silently break something you rely on (SSH into this machine, local file"
-    warn "sharing). Open GUFW yourself and enable it once you've confirmed it's safe to."
+step "4/4  Firewall (ufw + GUFW panel)"
+if ask "Install ufw + GUFW and enable a deny-incoming/allow-outgoing baseline?"; then
+    install_pkgs "Firewall" ufw gufw
+
+    if is_installed ufw; then
+        # Guard against locking out an SSH session: allow SSH through
+        # *before* flipping to default-deny, not after.
+        NEEDS_SSH_RULE=0
+        if [[ -n "${SSH_CONNECTION:-}${SSH_TTY:-}" ]]; then
+            NEEDS_SSH_RULE=1
+        elif command -v ss &>/dev/null && ss -tln 2>/dev/null | grep -qE ':22\b'; then
+            NEEDS_SSH_RULE=1
+        fi
+        if [[ $NEEDS_SSH_RULE -eq 1 ]]; then
+            info "Active SSH session or listening sshd detected — allowing SSH before enabling default-deny."
+            sudo ufw allow ssh comment 'preserve SSH access before enabling default-deny' \
+                || warn "Couldn't add the SSH allow-rule — double-check before enabling ufw if you're on SSH."
+        fi
+
+        sudo ufw default deny incoming
+        sudo ufw default allow outgoing
+        if sudo ufw --force enable; then
+            ok "ufw enabled: incoming denied by default, outgoing allowed. Manage exceptions via GUFW or 'ufw allow <port>'."
+        else
+            warn "ufw failed to enable — check 'sudo ufw status verbose'."
+        fi
+    fi
 fi
 
 ok "Desktop essentials step complete."

@@ -14,6 +14,40 @@ to extend with the same process (ordered `run.sh` + flat `scripts/` dir,
 granular y/N prompts, backups before anything destructive), while adopting
 real improvements found along the way (see "What changed" below).
 
+## Consolidated: 24 scripts → 19, Alacritty replaces xfce4-terminal
+
+Five scripts were folded into the ones they were really extending, not
+removed — same functionality, fewer files to keep track of:
+
+| Was | Now lives in |
+|---|---|
+| `terminalRedTheme.sh` | `catppuccinTheme.sh` (final step) |
+| `picomSetup.sh` | `catppuccinTheme.sh` ("Extras" step) |
+| `firewallSetup.sh` | `desktopEssentials.sh` (step 4) |
+| `mintStyleApps.sh` | `usefulApps.sh` (steps 5–7) |
+| `btopSetup.sh` | `fastfetchConfig.sh` (step 3) |
+
+The firewall merge also fixed a real contradiction: `desktopEssentials.sh`
+used to install GUFW while explicitly saying "not enabled," but
+`firewallSetup.sh` ran later in `run.sh` and enabled ufw anyway — so the
+message was already wrong by the time you'd see it. It's one step now,
+with the SSH-safe enable logic actually attached to the install.
+
+**`catppuccinTheme.sh` also stopped asking permission for its own point.**
+Choosing to run it already means "yes, do the theme" — so the GTK/xfwm4
+theme, cursors, icons, panel CSS, picom, and Alacritty setup now just run,
+instead of a `Y/n` before each of 8 sub-steps. The only prompts left in it
+are genuinely optional extras: Whisker Menu and NumLock-on-login.
+
+**xfce4-terminal is gone, not kept as a fallback.** `catppuccinTheme.sh`'s
+last step installs Alacritty with a Catppuccin Red config, sets it as the
+default terminal everywhere XFCE looks (`x-terminal-emulator`, `exo`'s
+`helpers.rc` — covers Thunar's "Open Terminal Here", Whisker Menu, and any
+shortcut that spawns a terminal), then `apt purge`s xfce4-terminal. Kitty
+support (previously an option alongside Alacritty) was dropped too —
+one well-configured terminal beats a three-way menu nobody needed.
+`terminalButterbash.sh`'s `term` alias was updated to launch Alacritty.
+
 ## Structure
 
 ```
@@ -23,26 +57,21 @@ devuan-xfce-setup/
 ├── scripts/
 │   ├── addUserToGroups.sh        # input/video/render groups
 │   ├── xfceDebloat.sh            # Mousepad→Geany, Parole→VLC, optional Xfburn removal
-│   ├── catppuccinTheme.sh        # Catppuccin (Black+Red) GTK/xfwm4 theme, icons, cursors, panel CSS
-│   ├── picomSetup.sh             # picom compositor — fades only, no shadows/blur, battery-friendly
+│   ├── catppuccinTheme.sh        # Catppuccin Red/Black GTK/xfwm4/cursors/icons/panel + picom + Alacritty
 │   ├── touchpadTrackpointFix.sh  # usbhid mousepoll fix + optional libinput tuning
 │   ├── hardwareSupport.sh        # WiFi/BT firmware, CPU microcode, fwupd
 │   ├── bluetoothSetup.sh         # bluez + Blueman GUI + audio bridge (Pulse/PipeWire) + codec negotiation
 │   ├── multimediaCodecs.sh       # ffmpeg/GStreamer codecs, DVD playback, Audacity/Shotcut
 │   ├── firefoxHarden.sh          # Firefox ESR + Betterfox, system-wide defaults (see below)
-│   ├── firewallSetup.sh          # ufw baseline: deny incoming, allow outgoing, SSH-safe
 │   ├── policies.json             # firefox enterprise policy used by the above
 │   ├── installFonts.sh           # Noto, Font Awesome, JetBrainsMono Nerd Font
-│   ├── terminalRedTheme.sh       # Catppuccin Red xfce4-terminal colors, optional Alacritty/Kitty
 │   ├── terminalButterbash.sh     # ButterBash + XFCE-specific shell additions
-│   ├── fastfetchConfig.sh        # fastfetch + your curated config presets
-│   ├── usefulApps.sh             # base tools, Python/data-science stack, Geany, VLC
-│   ├── mintStyleApps.sh          # Mint-style everyday apps, Debian-packaged: Ristretto, Atril, GNOME Disks
-│   ├── desktopEssentials.sh      # Flatpak, printing, GParted, GUFW
+│   ├── fastfetchConfig.sh        # fastfetch + curated presets, plus optional Catppuccin-themed btop
+│   ├── usefulApps.sh             # base tools, Python/data-science stack, Geany, VLC, Ristretto/Atril/GNOME Disks
+│   ├── desktopEssentials.sh      # Flatpak, printing, GParted, ufw+GUFW (SSH-safe baseline)
 │   ├── timeshiftSetup.sh         # Timeshift system snapshot/restore
 │   ├── installPhotogimp.sh       # (optional) GIMP + PhotoGIMP layout/theme, fetched live from GitHub
 │   ├── installVscodium.sh        # (optional) VSCodium via official APT repo
-│   ├── btopSetup.sh              # (optional) btop + official Catppuccin theming (all 4 flavors)
 │   ├── vscodiumDevSetup.sh       # (optional) VSCodium C++/Python dev environment
 │   ├── gamingSetup.sh            # (optional) Steam / Heroic Games Launcher / Wine
 │   └── vesktopTelegram.sh        # (optional) Vesktop (Discord client) / Telegram
@@ -66,7 +95,7 @@ any script standalone too:
 bash scripts/touchpadTrackpointFix.sh
 ```
 
-- **New `mintStyleApps.sh`.** Covers the everyday Mint conveniences
+- **New `mintStyleApps.sh`** *(since merged into `usefulApps.sh` — see the consolidation table above)*. Covers the everyday Mint conveniences
   without the compatibility risk: Mint's own equivalents (xviewer,
   xreader, mintstick) are XApps distributed via Mint's own APT repo,
   built against Ubuntu package versions — confirmed by checking
@@ -96,7 +125,7 @@ bash scripts/touchpadTrackpointFix.sh
   manager, not "adding" it. Its `bat`/`eza`/`zoxide`/`starship`/`fzf` setup
   is already covered by `terminalButterbash.sh`. Two pieces were genuinely
   portable, in-scope, and missing, so those got added:
-  - **New `btopSetup.sh`.** Installs btop and themes it with Catppuccin —
+  - **New `btopSetup.sh`** *(since merged into `fastfetchConfig.sh`)*. Installs btop and themes it with Catppuccin —
     sourced directly from catppuccin/btop's own repo (verified by actually
     downloading all four flavor files) rather than reverse-engineered from
     ohmydebn's theme-carousel template. Also carries over a real fix from
@@ -105,7 +134,7 @@ bash scripts/touchpadTrackpointFix.sh
     testing) — on anything older, sending that signal has no handler and
     falls back to SIGUSR2's default action, which terminates the process.
     The script checks the version before ever sending the signal.
-  - **New `firewallSetup.sh`.** Same ufw deny-incoming/allow-outgoing
+  - **New `firewallSetup.sh`** *(since merged into `desktopEssentials.sh`)*. Same ufw deny-incoming/allow-outgoing
     baseline as ohmydebn's `ufw.sh`, tested end-to-end (`ufw allow ssh`,
     `default deny incoming`, `default allow outgoing`, `--force enable` all
     run and verified via `ufw status verbose`), plus a safety check
@@ -143,7 +172,7 @@ bash scripts/touchpadTrackpointFix.sh
   get negotiated instead of falling back to low-quality SBC, and installs
   **Blueman** (XFCE ships no Bluetooth GUI of its own) autostarted in the
   panel tray.
-- **`terminalRedTheme.sh`'s Alacritty config is now version-aware.**
+- **Alacritty's config is version-aware** *(this logic now lives in `catppuccinTheme.sh`'s terminal step)*.
   Alacritty changed its config syntax at 0.14 (`[terminal].shell` +
   `[general].import` are unrecognized before that). Debian/Devuan point
   releases ship different Alacritty versions, so the script now checks the
@@ -153,7 +182,7 @@ bash scripts/touchpadTrackpointFix.sh
   same problem — one config, both syntaxes, instead of two configs to keep
   in sync.
 
-- **New `picomSetup.sh`.** Adds "a little bit of animation" the way that
+- **New `picomSetup.sh`** *(since merged into `catppuccinTheme.sh`'s "Extras" step)*. Adds "a little bit of animation" the way that
   doesn't cost battery: picom with fades only (window open/close + menus),
   explicitly no shadows and no blur (those, not fades, are what actually
   keep a GPU from idling), the `xrender` backend so it works on old/
@@ -197,15 +226,9 @@ contrast a pure-white/red combo would put on your eyes:
 - Optional Whisker Menu, compositor (shadows/transparency), and
   NumLock-on-login — small Mint-XFCE-style laptop touches, all opt-in
 
-**`terminalRedTheme.sh` is new too** — recolors `xfce4-terminal` to
-match (Catppuccin Mocha backgrounds, Red cursor/accent, official
-Catppuccin 16-color ANSI mapping), and can optionally install
-Alacritty and/or Kitty with the same palette if you'd rather have a
-GPU-accelerated terminal — including switching XFCE's default
-terminal emulator to one of them while leaving `xfce4-terminal`
-installed as a fallback. This runs before `terminalButterbash.sh` on
-purpose: this script is about the terminal's colors, the other is
-about the shell running inside it.
+**Terminal theming was `terminalRedTheme.sh`; it's now the last step of
+`catppuccinTheme.sh`, and it's Alacritty-only** — xfce4-terminal and Kitty
+were both dropped in the consolidation above, see that section for why.
 
 ## What changed from the first version of this toolkit
 

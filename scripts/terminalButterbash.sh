@@ -105,7 +105,7 @@ alias restart-panel='xfce4-panel -r && echo "XFCE4 panel restarted"'
 alias screenshot='xfce4-screenshooter -f'
 
 # Terminal / file manager helpers
-alias term='xfce4-terminal --default-working-directory="$(pwd)"'
+alias term='alacritty --working-directory "$(pwd)"'
 alias thunar-daemon='thunar --daemon'
 alias here='thunar "$(pwd)"'
 

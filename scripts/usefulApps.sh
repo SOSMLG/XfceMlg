@@ -2,7 +2,10 @@
 # ══════════════════════════════════════════════════════════════
 #  usefulApps.sh — daily-use essentials
 #  Base tools, Python/data-science stack, Geany (this project's
-#  editor of choice, replacing Mousepad), and VLC.
+#  editor of choice, replacing Mousepad), VLC, plus the Mint-style
+#  everyday apps (Ristretto/Atril/GNOME Disks) — same job Mint's
+#  own xviewer/xreader/mintstick do, using packages Debian/Devuan
+#  actually carry instead of Mint's Ubuntu-built .debs.
 #  Privilege: sudo
 # ══════════════════════════════════════════════════════════════
 set -euo pipefail
@@ -42,25 +45,33 @@ install_pkgs() {
     sudo apt-get install -y "${to_install[@]}" || warn "$label: some packages failed to install (continuing)."
 }
 
+set_default() {
+    local desktop_file="$1"; shift
+    command -v xdg-mime &>/dev/null || { warn "xdg-mime not found — skipping default-app association."; return; }
+    for mime in "$@"; do
+        xdg-mime default "$desktop_file" "$mime" 2>/dev/null || true
+    done
+}
+
 echo -e "\n${B}${W}══════ Useful Apps ══════${Z}"
 info "Refreshing package lists..."
 sudo apt-get update -qq
 
-step "1/4  Base tools"
+step "1/7  Base tools"
 if ask "Install base tools (git, curl, wget, rsync, wine, xdg-user-dirs, zram-tools)?"; then
     install_pkgs "Base tools" \
         bash-completion ca-certificates curl git gnupg lsb-release \
         rsync wget wine xdg-user-dirs zram-tools
 fi
 
-step "2/4  Python & dev tools"
+step "2/7  Python & dev tools"
 if ask "Install Python + data-science stack (numpy/pandas/scipy/matplotlib)?"; then
     install_pkgs "Python/dev tools" \
         build-essential python3 python3-dev python3-pip python3-venv \
         python3-numpy python3-pandas python3-scipy python3-matplotlib
 fi
 
-step "3/4  Geany (text editor)"
+step "3/7  Geany (text editor)"
 if ask "Install Geany + plugins?"; then
     install_pkgs "Geany" \
         geany geany-plugin-addons geany-plugin-git-changebar \
@@ -68,7 +79,7 @@ if ask "Install Geany + plugins?"; then
         geany-plugin-spellcheck geany-plugin-treebrowser geany-plugin-vimode
 fi
 
-step "4/4  VLC"
+step "4/7  VLC"
 if ask "Install VLC (media player)?"; then
     install_pkgs "VLC" vlc
 
@@ -86,6 +97,30 @@ if ask "Install VLC (media player)?"; then
             warn "Could not set MIME defaults (non-fatal — set manually via right-click > Open With if needed)."
         fi
     fi
+fi
+
+step "5/7  Image viewer (Ristretto — Mint-style everyday app)"
+if ask "Install/confirm Ristretto and set it as the default image viewer?"; then
+    if install_pkgs "Ristretto" ristretto; then
+        set_default org.xfce.ristretto.desktop \
+            image/jpeg image/png image/gif image/bmp image/webp image/tiff image/x-icon
+        ok "Ristretto set as the default handler for common image types."
+    fi
+fi
+
+step "6/7  PDF/document viewer (Atril)"
+if ask "Install Atril (lightweight PDF viewer) and set it as the default?"; then
+    if install_pkgs "Atril" atril; then
+        set_default atril.desktop application/pdf
+        ok "Atril set as the default handler for PDFs."
+    fi
+fi
+
+step "7/7  USB/ISO writer (GNOME Disks)"
+if ask "Install GNOME Disks (ISO/IMG-to-USB writer, right-click a drive → Restore Disk Image)?"; then
+    install_pkgs "GNOME Disks" gnome-disk-utility
+    info "Open 'Disks', select the target USB drive, then use its menu → 'Restore Disk Image...' —"
+    info "the closest match to Mint's single-purpose USB Image Writer (mintstick)."
 fi
 
 ok "Useful apps step complete."
