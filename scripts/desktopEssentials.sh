@@ -3,10 +3,11 @@
 #  desktopEssentials.sh — completeness pass
 #  XFCE's own task install already ships Synaptic and
 #  system-config-printer as recommends, so this focuses on what
-#  it doesn't: Flatpak/Flathub, GParted (the GTK/XFCE-native
-#  partition tool, same role as KDE's Partition Manager), and
-#  GUFW (the GTK firewall front-end — same role as KDE's
-#  plasma-firewall, and literally what Linux Mint ships).
+#  it doesn't: Flatpak/Flathub, GParted, ufw+GUFW, the gvfs/tumbler
+#  stack Thunar actually needs for trash/auto-mount/thumbnails to
+#  work at all, a clipboard manager, Redshift, and a panel update
+#  indicator (Devuan has no Mint-style Update Manager, so we build
+#  the minimum viable version of one).
 #  Privilege: sudo
 # ══════════════════════════════════════════════════════════════
 set -euo pipefail
@@ -61,7 +62,7 @@ echo -e "\n${B}${W}══════ Desktop Essentials ══════${Z}"
 info "Refreshing package lists..."
 sudo apt-get update -qq
 
-step "1/4  Flatpak + Flathub"
+step "1/8  Flatpak + Flathub"
 if ask "Set up Flatpak + Flathub?"; then
     install_pkgs "Flatpak" flatpak gnome-software-plugin-flatpak
 
@@ -77,7 +78,7 @@ if ask "Set up Flatpak + Flathub?"; then
     warn "gnome-software separately if you want a graphical store."
 fi
 
-step "2/4  Printing"
+step "2/8  Printing"
 if ask "Ensure printing support is installed (CUPS + drivers + network discovery)?"; then
     install_pkgs "Printing" cups cups-browsed printer-driver-all system-config-printer
 
@@ -96,12 +97,12 @@ if ask "Ensure printing support is installed (CUPS + drivers + network discovery
     fi
 fi
 
-step "3/4  GParted (partition tool)"
+step "3/8  GParted (partition tool)"
 if ask "Install GParted?"; then
     install_pkgs "GParted" gparted
 fi
 
-step "4/4  Firewall (ufw + GUFW panel)"
+step "4/8  Firewall (ufw + GUFW panel)"
 if ask "Install ufw + GUFW and enable a deny-incoming/allow-outgoing baseline?"; then
     install_pkgs "Firewall" ufw gufw
 
@@ -127,6 +128,109 @@ if ask "Install ufw + GUFW and enable a deny-incoming/allow-outgoing baseline?";
         else
             warn "ufw failed to enable — check 'sudo ufw status verbose'."
         fi
+    fi
+fi
+
+step "5/8  File manager essentials (auto-mount, trash, thumbnails, archives)"
+if ask "Install gvfs/thunar-volman/tumbler stack (auto-mount USB, trash, thumbnails, archive extract)?"; then
+    install_pkgs "File manager essentials" \
+        gvfs gvfs-backends gvfs-fuse thunar-volman \
+        tumbler ffmpegthumbnailer libgsf-bin \
+        thunar-archive-plugin thunar-media-tags-plugin xarchiver
+    warn "Restart Thunar to pick up the new plugins: thunar -q (it relaunches on next open)."
+    warn "Without gvfs, Thunar's Trash silently does nothing and USB drives won't auto-mount —"
+    warn "this is the single most common \"XFCE feels broken\" complaint, now fixed."
+fi
+
+step "6/8  Clipboard manager (xfce4-clipman)"
+if ask "Install xfce4-clipman and add it to the panel?"; then
+    install_pkgs "Clipman" xfce4-clipman-plugin
+    xfce4-panel --add=clipman 2>/dev/null \
+        && ok "Clipman added to the panel — right-click it to set history size/behavior." \
+        || warn "Couldn't auto-add Clipman — add it manually via Panel → Add New Items."
+fi
+
+step "7/8  Night light (Redshift)"
+if ask "Install Redshift (warms colors after sunset, auto-located via geoclue)?"; then
+    install_pkgs "Redshift" redshift redshift-gtk geoclue-2.0
+
+    mkdir -p "$HOME/.config"
+    REDSHIFT_CONF="$HOME/.config/redshift.conf"
+    [[ -f "$REDSHIFT_CONF" ]] && cp "$REDSHIFT_CONF" "${REDSHIFT_CONF}.bak.$(date +%Y%m%d%H%M%S)"
+    cat > "$REDSHIFT_CONF" << 'EOF'
+[redshift]
+; Gentle values — this is for eye comfort, not an orange-screen effect.
+temp-day=6500
+temp-night=4500
+transition=1
+location-provider=geoclue2
+EOF
+
+    mkdir -p "$HOME/.config/autostart"
+    if [[ ! -f /etc/xdg/autostart/redshift-gtk.desktop && ! -f "$HOME/.config/autostart/redshift-gtk.desktop" ]]; then
+        cat > "$HOME/.config/autostart/redshift-gtk.desktop" << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Redshift
+Comment=Adjusts screen color temperature after sunset
+Exec=redshift-gtk
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+EOF
+    fi
+    (redshift-gtk &>/dev/null & disown) || true
+    ok "Redshift configured (~/.config/redshift.conf). If location detection fails, swap"
+    ok "location-provider=geoclue2 for manual lat/lon — see 'man redshift.conf'."
+fi
+
+step "8/8  Update notifier (periodic list refresh + panel indicator)"
+if ask "Set up periodic apt list refresh + a panel icon showing pending updates?"; then
+    install_pkgs "Update notifier" unattended-upgrades xfce4-genmon-plugin
+
+    APT_AUTO="/etc/apt/apt.conf.d/20auto-upgrades"
+    [[ -f "$APT_AUTO" ]] && sudo cp "$APT_AUTO" "${APT_AUTO}.bak.$(date +%Y%m%d%H%M%S)"
+    AUTO_INSTALL=0
+    ask "Also auto-install security updates unattended (not just refresh the list)?" "N" && AUTO_INSTALL=1
+    sudo tee "$APT_AUTO" > /dev/null << EOF
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "${AUTO_INSTALL}";
+EOF
+    if [[ $AUTO_INSTALL -eq 1 ]]; then
+        ok "Package lists refresh periodically AND security updates install unattended."
+        info "Review /etc/apt/apt.conf.d/50unattended-upgrades if you want to tune what's covered."
+    else
+        ok "Package lists refresh periodically; nothing installs without you running it."
+    fi
+
+    mkdir -p "$HOME/.local/bin"
+    cat > "$HOME/.local/bin/check-apt-updates.sh" << 'CHECKEOF'
+#!/usr/bin/env bash
+COUNT=$(apt list --upgradable 2>/dev/null | grep -c '\[upgradable' || true)
+if [[ "$COUNT" -gt 0 ]]; then
+    echo "<txt>⬆ ${COUNT}</txt><tool>${COUNT} package(s) can be updated — click to upgrade</tool>"
+else
+    echo "<txt></txt><tool>System is up to date</tool>"
+fi
+CHECKEOF
+    chmod +x "$HOME/.local/bin/check-apt-updates.sh"
+
+    BEFORE_IDS=$(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -oE '/plugins/plugin-[0-9]+' | sort -u)
+    if xfce4-panel --add=genmon 2>/dev/null; then
+        sleep 1
+        AFTER_IDS=$(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -oE '/plugins/plugin-[0-9]+' | sort -u)
+        NEW_ID=$(comm -13 <(echo "$BEFORE_IDS") <(echo "$AFTER_IDS") | head -1)
+        if [[ -n "$NEW_ID" ]]; then
+            xfconf-query -c xfce4-panel -p "${NEW_ID}/command" -n -t string -s "$HOME/.local/bin/check-apt-updates.sh" 2>/dev/null || true
+            xfconf-query -c xfce4-panel -p "${NEW_ID}/period" -n -t int -s 3600 2>/dev/null || true
+            xfconf-query -c xfce4-panel -p "${NEW_ID}/click-command" -n -t string -s "alacritty -e sudo apt upgrade" 2>/dev/null || true
+            ok "Update indicator added to the panel (hourly check, click to upgrade)."
+        else
+            warn "genmon added but couldn't auto-configure it — right-click it → Properties, and set"
+            warn "the command to: $HOME/.local/bin/check-apt-updates.sh"
+        fi
+    else
+        warn "Couldn't auto-add the genmon plugin — add it manually via Panel → Add New Items,"
+        warn "then point its command at: $HOME/.local/bin/check-apt-updates.sh"
     fi
 fi
 

@@ -48,14 +48,14 @@ echo -e "\n${B}${W}══════ Hardware Support ══════${Z}"
 info "Refreshing package lists..."
 sudo apt-get update -qq
 
-step "1/3  WiFi/Bluetooth firmware"
+step "1/4  WiFi/Bluetooth firmware"
 if ask "Install common WiFi/Bluetooth firmware (Intel/Realtek/Atheros/Broadcom)?"; then
     install_pkgs "WiFi/Bluetooth firmware" \
         firmware-iwlwifi firmware-realtek firmware-atheros \
         firmware-brcm80211 firmware-misc-nonfree firmware-linux
 fi
 
-step "2/3  CPU microcode (auto-detected)"
+step "2/4  CPU microcode (auto-detected)"
 if ask "Install CPU microcode updates?"; then
     VENDOR="$(grep -m1 -oE 'GenuineIntel|AuthenticAMD' /proc/cpuinfo || true)"
     case "$VENDOR" in
@@ -65,7 +65,7 @@ if ask "Install CPU microcode updates?"; then
     esac
 fi
 
-step "3/3  fwupd (BIOS/UEFI + peripheral firmware updates)"
+step "3/4  fwupd (BIOS/UEFI + peripheral firmware updates)"
 if ask "Install fwupd?"; then
     install_pkgs "fwupd" fwupd
 
@@ -75,6 +75,53 @@ if ask "Install fwupd?"; then
         sudo service fwupd start &>/dev/null || true
     fi
     ok "fwupd installed. Check for updates with: fwupdmgr get-updates"
+fi
+
+step "4/4  TLP (laptop power management, ThinkPad battery thresholds)"
+if ask "Install TLP for battery/power tuning?"; then
+    # power-profiles-daemon and TLP both try to manage the same knobs
+    # (CPU governor, PCIe ASPM, etc.) — running both fights itself and
+    # is a well-known source of "my settings keep reverting" reports.
+    if is_installed power-profiles-daemon; then
+        info "power-profiles-daemon conflicts with TLP — removing it first."
+        sudo systemctl disable --now power-profiles-daemon &>/dev/null || true
+        sudo apt-get purge -y power-profiles-daemon &>/dev/null || warn "Couldn't remove power-profiles-daemon — TLP may fight it for control."
+    fi
+
+    install_pkgs "TLP" tlp tlp-rdw
+
+    if command -v systemctl &>/dev/null && [[ -d /run/systemd/system ]]; then
+        sudo systemctl enable --now tlp &>/dev/null || true
+    else
+        sudo service tlp start &>/dev/null || true
+    fi
+
+    if is_installed tlp; then
+        ok "TLP installed and running. Check status any time with: sudo tlp-stat -s"
+
+        # Charge thresholds only exist on hardware that exposes them
+        # (ThinkPads via the in-kernel thinkpad_acpi driver, and some
+        # others) — check rather than assume, and don't silently pick
+        # a number for someone's battery.
+        BAT_PATH=$(find /sys/class/power_supply -maxdepth 1 -iname 'BAT*' -print -quit 2>/dev/null)
+        if [[ -n "$BAT_PATH" && -f "${BAT_PATH}/charge_control_end_threshold" ]]; then
+            BAT_NAME=$(basename "$BAT_PATH")
+            info "Charge-threshold support detected on ${BAT_NAME} (common on ThinkPads)."
+            if ask "Cap charging at 80% to slow long-term battery wear (common ThinkPad recommendation)?" "N"; then
+                sudo mkdir -p /etc/tlp.d
+                cat | sudo tee /etc/tlp.d/60-battery-threshold.conf > /dev/null << EOF
+# Written by hardwareSupport.sh — charge threshold for ${BAT_NAME}.
+# Full-charge fans of 100% can delete this file and run: sudo tlp start
+START_CHARGE_THRESH_BAT0=75
+STOP_CHARGE_THRESH_BAT0=80
+EOF
+                sudo tlp start &>/dev/null || true
+                ok "Charge capped at 80% (starts topping up again below 75%). Edit /etc/tlp.d/60-battery-threshold.conf to change it."
+            fi
+        else
+            info "No charge-threshold sysfs entry found on this machine — skipping (nothing to configure, not an error)."
+        fi
+    fi
 fi
 
 ok "Hardware support step complete."

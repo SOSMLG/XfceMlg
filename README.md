@@ -4,9 +4,11 @@ Post-install polish for a Devuan (or Debian) box where **XFCE is already
 installed** by the distro's own installer. This does *not* install XFCE —
 it swaps a couple of defaults (Geany over Mousepad, VLC over Parole — XFCE's
 own task install is already fairly lean, unlike KDE's `kde-standard`), then
-fills in the rest: codecs, WiFi/Bluetooth firmware, fonts, ButterBash for a
-proper terminal, Flatpak, printing, GParted, GUFW, Timeshift, and an optional
-from-source build of the Windows XP theme.
+fills in the rest: a full Catppuccin (Red/Black) theme from boot splash to
+login screen to desktop, Bluetooth, TLP battery tuning, codecs, WiFi/BT
+firmware, fonts, ButterBash for a proper terminal, and the gvfs/Thunar
+plumbing, Flatpak, printing, GUFW, Timeshift, and update-notifier that make
+it feel like a finished laptop distro instead of a bare XFCE session.
 
 Built from your `myxfce` and `Butterbian-XFCE` repos the same way the
 KDE-side version of this toolkit was built from `DebianSway` — as the seed
@@ -14,7 +16,49 @@ to extend with the same process (ordered `run.sh` + flat `scripts/` dir,
 granular y/N prompts, backups before anything destructive), while adopting
 real improvements found along the way (see "What changed" below).
 
+## Closing the "is this actually enough" gaps
+
+Four things that "the desktop looks great" was papering over:
+
+- **Boot → login didn't match the desktop.** New `bootThemeSetup.sh`:
+  Catppuccin Plymouth splash ([catppuccin/plymouth](https://github.com/catppuccin/plymouth)),
+  GRUB theme ([catppuccin/grub](https://github.com/catppuccin/grub)), and
+  the LightDM login screen. The greeter runs as its own system user with
+  no access to your `$HOME`, so this step copies your already-installed
+  GTK/icon/cursor theme folders from `~/.themes` and `~/.local/share/icons`
+  into `/usr/share/` rather than re-downloading anything — run
+  `catppuccinTheme.sh` first so there's something to copy. This is the
+  most invasive script in the toolkit (edits `/etc/default/grub`, rebuilds
+  the initramfs) — every edit is backed up first, and it checks for GRUB
+  and LightDM before touching either rather than assuming they're there.
+
+- **No laptop power management, despite the ThinkPad-specific focus
+  everywhere else.** `hardwareSupport.sh` now installs TLP, removes
+  `power-profiles-daemon` first (the two fight over the same knobs if
+  both run), and — only on hardware that actually exposes it — offers to
+  cap charging at 80% via `/etc/tlp.d/60-battery-threshold.conf`.
+
+- **The stuff that makes a fresh XFCE session not feel broken was
+  missing.** `desktopEssentials.sh` gained: the `gvfs`/`thunar-volman`/
+  `tumbler` stack (without this, Thunar's Trash silently does nothing
+  and USB drives don't auto-mount — the single most common "XFCE feels
+  broken" complaint), `thunar-archive-plugin` + `xarchiver`, and
+  `xfce4-clipman` for clipboard history.
+
+- **Eye comfort and update visibility.** Also in `desktopEssentials.sh`:
+  Redshift (geoclue-located, gentle 6500K→4500K) and a real update
+  path — Devuan has no Mint-style Update Manager, so this configures
+  `unattended-upgrades` for periodic list refresh (auto-installing
+  security updates stays opt-in) plus an `xfce4-genmon-plugin` panel
+  icon that shows the pending-update count and opens an upgrade on click.
+
 ## Consolidated: 24 scripts → 19, Alacritty replaces xfce4-terminal
+
+*(One file came back after this — `bootThemeSetup.sh`, added above. It
+touches `/etc/default/grub` and rebuilds the initramfs, a genuinely
+different risk profile from anything else here, so it stays separate
+rather than getting folded into `catppuccinTheme.sh`'s purely-userspace
+changes. Current count: 20.)*
 
 Five scripts were folded into the ones they were really extending, not
 removed — same functionality, fewer files to keep track of:
@@ -58,8 +102,9 @@ devuan-xfce-setup/
 │   ├── addUserToGroups.sh        # input/video/render groups
 │   ├── xfceDebloat.sh            # Mousepad→Geany, Parole→VLC, optional Xfburn removal
 │   ├── catppuccinTheme.sh        # Catppuccin Red/Black GTK/xfwm4/cursors/icons/panel + picom + Alacritty
+│   ├── bootThemeSetup.sh         # Plymouth splash + GRUB theme + LightDM greeter (boot → login)
 │   ├── touchpadTrackpointFix.sh  # usbhid mousepoll fix + optional libinput tuning
-│   ├── hardwareSupport.sh        # WiFi/BT firmware, CPU microcode, fwupd
+│   ├── hardwareSupport.sh        # WiFi/BT firmware, CPU microcode, fwupd, TLP + ThinkPad battery thresholds
 │   ├── bluetoothSetup.sh         # bluez + Blueman GUI + audio bridge (Pulse/PipeWire) + codec negotiation
 │   ├── multimediaCodecs.sh       # ffmpeg/GStreamer codecs, DVD playback, Audacity/Shotcut
 │   ├── firefoxHarden.sh          # Firefox ESR + Betterfox, system-wide defaults (see below)
@@ -68,7 +113,7 @@ devuan-xfce-setup/
 │   ├── terminalButterbash.sh     # ButterBash + XFCE-specific shell additions
 │   ├── fastfetchConfig.sh        # fastfetch + curated presets, plus optional Catppuccin-themed btop
 │   ├── usefulApps.sh             # base tools, Python/data-science stack, Geany, VLC, Ristretto/Atril/GNOME Disks
-│   ├── desktopEssentials.sh      # Flatpak, printing, GParted, ufw+GUFW (SSH-safe baseline)
+│   ├── desktopEssentials.sh      # Flatpak, printing, GParted, ufw+GUFW, gvfs/Thunar essentials, Clipman, Redshift, update notifier
 │   ├── timeshiftSetup.sh         # Timeshift system snapshot/restore
 │   ├── installPhotogimp.sh       # (optional) GIMP + PhotoGIMP layout/theme, fetched live from GitHub
 │   ├── installVscodium.sh        # (optional) VSCodium via official APT repo
