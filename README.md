@@ -16,6 +16,81 @@ to extend with the same process (ordered `run.sh` + flat `scripts/` dir,
 granular y/N prompts, backups before anything destructive), while adopting
 real improvements found along the way (see "What changed" below).
 
+## An actual bug-hunt pass, not just new features
+
+Asked to do "intense rethinking" of the whole toolkit — so this pass
+went back through every script looking for real bugs, not just gaps to
+fill. Found and fixed:
+
+- **A real `set -e` bug in the update-notifier step** (`desktopEssentials.sh`).
+  `BEFORE_IDS=$(xfconf-query ... | grep ... | sort -u)` — if that pipeline
+  came up empty (a real possibility: a fresh panel with no `/plugins`
+  property indexed yet), `grep` returns non-zero, `pipefail` propagates
+  that to the whole pipeline, and a *plain variable assignment* failing
+  under `set -e` kills the script right there — silently, mid-step, no
+  error message pointing at why. Same latent bug existed in `fastfetchConfig.sh`'s
+  btop version check. Both now end their pipelines with `|| true`.
+- **`install_pkgs()` always returned success, even when the install
+  genuinely failed** — across 5 of the ~10 files that define it
+  (`desktopEssentials.sh`, `gamingSetup.sh`, `hardwareSupport.sh`,
+  `usefulApps.sh`, `vscodiumDevSetup.sh`). The function's last line was
+  `apt-get install || warn "..."`, and since `warn` (an `echo`) always
+  succeeds, the function's return value was always 0 — so anywhere that
+  checked `if install_pkgs "Ristretto" ristretto; then set_default ...`
+  (there are three such call sites) would run the follow-up step and
+  report success even if the package genuinely failed to install.
+  `bluetoothSetup.sh` already had this written correctly — that version
+  is now what all five match.
+- **A compositor fallback that left you with *no* compositor at all.**
+  `catppuccinTheme.sh` always disables xfwm4's built-in compositor before
+  trying to install picom (so the two don't fight). If picom's install
+  then failed, the script warned about it — but never turned xfwm4's
+  compositor back on, so a failed picom install silently meant zero
+  compositing, not "back to the default." It now re-enables xfwm4 in
+  that fallback.
+- **A self-inflicted bug from an earlier edit in this same project**,
+  caught while re-reading: a `str_replace` that added the Dunst step to
+  `xfceDebloat.sh` had accidentally clobbered that step's own header,
+  leaving the script's "all done" cleanup block running *before* the
+  Dunst step instead of after it. Re-verified against a clean syntax
+  pass and step-by-step trace after fixing.
+
+**And the actual ask: the system beep.** `xfceDebloat.sh` gained a 6th
+step that addresses all four *independent* sources of "the beep" — which
+is exactly why so many "I turned it off but it's still beeping" forum
+threads exist, each fix only ever touched one:
+1. **PC speaker** (`pcspkr`/`snd_pcsp` kernel modules) — blacklisted and
+   unloaded live.
+2. **X11 bell** (GTK widgets ring this on backspace-at-start, failed
+   tab-complete in a dialog, etc.) — `xset b off`, made to survive reboot
+   via an autostart entry instead of just running once.
+3. **XFCE's own event-sound bell** — a separate layer from #2, its own
+   `xsettings` properties (`EnableEventSounds`, `EnableInputFeedbackSounds`).
+4. **readline's bell** — bash's own tab-complete-fail beep, independent
+   of X11 entirely (`set bell-style none` in `/etc/inputrc`, system-wide).
+
+## Two more default-app swaps in xfceDebloat.sh
+
+Same pattern as the existing Mousepad→Geany and Parole→VLC swaps —
+replacing a stock XFCE component with something clearly better
+maintained, not just different:
+
+- **xfce4-screenshooter → [Flameshot](https://github.com/flameshot-org/flameshot).**
+  One region-select overlay with annotate/blur/pin-to-screen/upload
+  built in, instead of xfce4-screenshooter's multi-dialog flow. Print
+  Screen gets rebound via `xfconf-query` (`/commands/custom/<Print>` in
+  the `xfce4-keyboard-shortcuts` channel) to `flameshot gui`. If you had
+  the screenshooter panel plugin on your panel, it'll show broken after
+  this — that's a manual right-click-remove, not something safe to
+  automate blindly.
+- **xfce4-notifyd → [Dunst](https://github.com/dunst-project/dunst)**
+  *(optional, defaults to skip)*. Lighter and far more configurable —
+  do-not-disturb rules, per-urgency styling, better multi-monitor
+  behavior. Ships with a Catppuccin Red-accented `dunstrc` out of the
+  box. Dunst registers itself as the notification D-Bus service on
+  install and starts on the first notification — no autostart entry
+  needed, and no conflict once xfce4-notifyd's own is purged.
+
 ## Closing the "is this actually enough" gaps
 
 Four things that "the desktop looks great" was papering over:
@@ -100,7 +175,7 @@ devuan-xfce-setup/
 ├── butterbash/                   # bundled ButterBash, used offline
 ├── scripts/
 │   ├── addUserToGroups.sh        # input/video/render groups
-│   ├── xfceDebloat.sh            # Mousepad→Geany, Parole→VLC, optional Xfburn removal
+│   ├── xfceDebloat.sh            # Mousepad→Geany, Parole→VLC, screenshooter→Flameshot, optional Xfburn/notifyd→Dunst
 │   ├── catppuccinTheme.sh        # Catppuccin Red/Black GTK/xfwm4/cursors/icons/panel + picom + Alacritty
 │   ├── bootThemeSetup.sh         # Plymouth splash + GRUB theme + LightDM greeter (boot → login)
 │   ├── touchpadTrackpointFix.sh  # usbhid mousepoll fix + optional libinput tuning

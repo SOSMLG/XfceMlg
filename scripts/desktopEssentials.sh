@@ -44,7 +44,12 @@ install_pkgs() {
         return 0
     fi
     info "$label: installing ${to_install[*]}"
-    sudo apt-get install -y "${to_install[@]}" || warn "$label: some packages failed to install (continuing)."
+    if sudo apt-get install -y "${to_install[@]}"; then
+        return 0
+    else
+        warn "$label: some packages failed to install (continuing)."
+        return 1
+    fi
 }
 
 start_service() {
@@ -214,11 +219,11 @@ fi
 CHECKEOF
     chmod +x "$HOME/.local/bin/check-apt-updates.sh"
 
-    BEFORE_IDS=$(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -oE '/plugins/plugin-[0-9]+' | sort -u)
+    BEFORE_IDS=$(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -oE '/plugins/plugin-[0-9]+' | sort -u || true)
     if xfce4-panel --add=genmon 2>/dev/null; then
         sleep 1
-        AFTER_IDS=$(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -oE '/plugins/plugin-[0-9]+' | sort -u)
-        NEW_ID=$(comm -13 <(echo "$BEFORE_IDS") <(echo "$AFTER_IDS") | head -1)
+        AFTER_IDS=$(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -oE '/plugins/plugin-[0-9]+' | sort -u || true)
+        NEW_ID=$(comm -13 <(echo "$BEFORE_IDS") <(echo "$AFTER_IDS") | head -1 || true)
         if [[ -n "$NEW_ID" ]]; then
             xfconf-query -c xfce4-panel -p "${NEW_ID}/command" -n -t string -s "$HOME/.local/bin/check-apt-updates.sh" 2>/dev/null || true
             xfconf-query -c xfce4-panel -p "${NEW_ID}/period" -n -t int -s 3600 2>/dev/null || true

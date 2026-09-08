@@ -32,9 +32,8 @@ fi
 
 SCRIPTS=(
     "addUserToGroups.sh|Add your user to input/video/render groups|Y"
-    "xfceDebloat.sh|Swap Mousepad/Parole for Geany/VLC, trim unused optical-disc tooling|Y"
+    "xfceDebloat.sh|Swap Mousepad/Parole for Geany/VLC, xfce4-screenshooter for Flameshot, trim optical-disc tooling, optional Dunst, and kill the system beep (all 4 sources)|Y"
     "catppuccinTheme.sh|Catppuccin (Red/Black) GTK/xfwm4 theme, icons, cursors, panel CSS, picom, and Alacritty as the terminal — mostly automatic, just a couple of optional extras at the end|Y"
-    "usefulApps.sh|Install base tools, Python/data-science stack, Geany, VLC, plus Mint-style everyday apps (Ristretto, Atril, GNOME Disks)|Y"
     "bootThemeSetup.sh|Carry the Catppuccin theme to Plymouth (boot splash), GRUB, and the LightDM login screen — the part before you reach the desktop|Y"
     "touchpadTrackpointFix.sh|Apply touchpad/trackpoint polling + libinput fixes|Y"
     "hardwareSupport.sh|Install WiFi/Bluetooth firmware, CPU microcode, fwupd, and TLP (ThinkPad battery thresholds)|Y"
@@ -44,6 +43,7 @@ SCRIPTS=(
     "installFonts.sh|Install Noto, Font Awesome, and JetBrainsMono Nerd Font|Y"
     "terminalButterbash.sh|Install ButterBash + XFCE-specific shell additions|Y"
     "fastfetchConfig.sh|Install fastfetch + your curated presets, plus optional Catppuccin-themed btop|Y"
+    "usefulApps.sh|Install base tools, Python/data-science stack, Geany, VLC, plus Mint-style everyday apps (Ristretto, Atril, GNOME Disks)|Y"
     "desktopEssentials.sh|Flatpak, printing, GParted, ufw+GUFW, gvfs/Thunar essentials, Clipman, Redshift, and an update-notifier panel icon|Y"
     "timeshiftSetup.sh|Install Timeshift for system snapshots/restore|Y"
     "installPhotogimp.sh|(optional) Install GIMP + PhotoGIMP's Photoshop-like layout/theme|N"

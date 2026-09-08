@@ -42,7 +42,12 @@ install_pkgs() {
         return 0
     fi
     info "$label: installing ${to_install[*]}"
-    sudo apt-get install -y "${to_install[@]}" || warn "$label: some packages failed to install (continuing)."
+    if sudo apt-get install -y "${to_install[@]}"; then
+        return 0
+    else
+        warn "$label: some packages failed to install (continuing)."
+        return 1
+    fi
 }
 
 set_default() {

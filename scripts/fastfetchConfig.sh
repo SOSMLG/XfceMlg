@@ -77,7 +77,7 @@ step "3/3  btop (system monitor) — Catppuccin theming"
 if ask "Install btop and theme it with Catppuccin (Mocha, matches the Red/Black GTK theme)?" "N"; then
     sudo apt-get install -y btop || err "btop failed to install."
     if is_installed btop; then
-        BTOP_VERSION=$(btop --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        BTOP_VERSION=$(btop --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
         mkdir -p "$HOME/.config/btop/themes"
         BASE_URL="https://raw.githubusercontent.com/catppuccin/btop/main/themes"
         FETCHED=0

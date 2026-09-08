@@ -39,7 +39,12 @@ install_pkgs() {
     done
     if [[ ${#to_install[@]} -eq 0 ]]; then ok "$label already installed."; return 0; fi
     info "$label: installing ${to_install[*]}"
-    sudo apt-get install -y "${to_install[@]}" || warn "$label: some packages failed (continuing)."
+    if sudo apt-get install -y "${to_install[@]}"; then
+        return 0
+    else
+        warn "$label: some packages failed (continuing)."
+        return 1
+    fi
 }
 
 echo -e "\n${B}${W}══════ Gaming Setup ══════${Z}"

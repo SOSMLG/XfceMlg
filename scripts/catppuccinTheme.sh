@@ -484,7 +484,8 @@ EOF
     ("$COMPOSITOR_BIN" --config "$PICOM_CONF" &>/dev/null & disown) || true
     ok "picom running (fades only, unredirects fullscreen for battery)."
 else
-    warn "Couldn't install picom/compton — xfwm4 compositor left off. Re-enable it via Window Manager Tweaks if you want any compositing at all."
+    warn "Couldn't install picom/compton — re-enabling xfwm4's built-in compositor instead of leaving you with none at all."
+    xfconf-query -c xfwm4 -p /general/use_compositing -s true 2>/dev/null || true
 fi
 
 if ask "Install Whisker Menu (Mint-style application menu, added alongside your current menu)?" "N"; then
