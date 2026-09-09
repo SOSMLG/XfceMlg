@@ -247,6 +247,32 @@ EOF
             sed -i 's/^Inherits=.*/Inherits=Adwaita,hicolor/' "$LOCAL_ICON_DIR/index.theme"
             sed -i "s/^Name=.*/Name=Catppuccin-SE-Local/" "$LOCAL_ICON_DIR/index.theme"
         fi
+
+        # Catppuccin-SE ships its folders/sidebar-symbolic icons with a
+        # FIXED Lavender/Blue accent baked directly into the SVGs — not
+        # user-selectable, and not Red. That's why "places" being copied
+        # above doesn't actually make Thunar look themed: the folder
+        # icons exist, they're just the wrong color. Verified by
+        # downloading the real release and grep'ing every SVG for hex
+        # codes rather than guessing: Lavender #b4befe dominates the
+        # generic/undifferentiated folder icons (258 hits in one release),
+        # a stray #89b4fa Blue shows up on plain folder.svg, and symbolic
+        # icons (Thunar's sidebar/bookmarks) are almost entirely #80aaff/
+        # #4285f4. Recolor just those four to Red — deliberately leaving
+        # Pink/Green/Mauve/Yellow alone, since those are intentionally
+        # used to differentiate specific folder types (Pictures, Git
+        # repos, etc.) and flattening them to all-Red would be a
+        # regression, not an improvement.
+        info "Recoloring the pack's default Lavender/Blue accent to Red (folders + symbolic icons)..."
+        RECOLOR_COUNT=0
+        while IFS= read -r -d '' svg; do
+            if grep -qE '#(b4befe|89b4fa|80aaff|4285f4)' "$svg" 2>/dev/null; then
+                sed -i -E 's/#[bB]4[bB][eE][fF][eE]/#f38ba8/g; s/#89[bB]4[fF][aA]/#f38ba8/g; s/#80[aA][aA][fF][fF]/#f38ba8/g; s/#4285[fF]4/#f38ba8/g' "$svg"
+                RECOLOR_COUNT=$((RECOLOR_COUNT + 1))
+            fi
+        done < <(find "$LOCAL_ICON_DIR" -iname "*.svg" -print0 2>/dev/null)
+        ok "Recolored $RECOLOR_COUNT icon files (folders, sidebar/status icons) to Red."
+
         command -v gtk-update-icon-cache &>/dev/null && gtk-update-icon-cache -f -t "$LOCAL_ICON_DIR" 2>/dev/null
 
         ok "Catppuccin-SE-Local built: $APPS_COPIED matched app icons."
@@ -434,19 +460,41 @@ else
 fi
 
 # ══════════════════════════════════════════════════════════════
-step "Extras: picom, Whisker Menu, NumLock"
+step "Extras: picom (with animations), Whisker Menu, NumLock, Conky, Plank, panel graphs"
 # ══════════════════════════════════════════════════════════════
 # picom replaces xfwm4's built-in compositor — running both at once
 # is the classic cause of flicker/tearing and doubles GPU wake-ups.
 xfconf-query -c xfwm4 -p /general/use_compositing -s false 2>/dev/null || true
+
+# Honesty check up front: Debian's packaged `picom` is almost always
+# mainline yshui/picom, which historically has NO animation support at
+# all (open/close/workspace-switch transitions like Hyprland/omarchy) —
+# that only exists in forks, or very recent mainline builds (merged to
+# the "next" branch, not yet what apt ships). Writing animation config
+# keys is harmless either way (an old picom just ignores keys it
+# doesn't recognize), but claiming it'll definitely animate would be
+# overpromising, so this checks for real support after installing
+# rather than assuming.
+PICOM_HAS_ANIMATIONS=0
 if sudo apt-get install -y picom 2>/dev/null || sudo apt-get install -y compton 2>/dev/null; then
     COMPOSITOR_BIN="picom"; command -v picom &>/dev/null || COMPOSITOR_BIN="compton"
+
+    if "$COMPOSITOR_BIN" --help 2>&1 | grep -qi "animation"; then
+        PICOM_HAS_ANIMATIONS=1
+        ok "This picom build supports animations natively."
+    else
+        warn "This picom build (Debian's packaged mainline) has no animation support —"
+        warn "the config below includes animation keys anyway; they're just inert until"
+        warn "you're running a build that understands them (see the optional step below)."
+    fi
+
     PICOM_CONF="$HOME/.config/picom.conf"
     [[ -f "$PICOM_CONF" ]] && cp "$PICOM_CONF" "${PICOM_CONF}.bak.$(date +%Y%m%d%H%M%S)"
     cat > "$PICOM_CONF" << 'EOF'
-# Deliberately minimal: fades only. No shadows/blur (that's what
-# actually costs battery on a compositor, not fades).
-backend = "xrender";
+# Fades + (fork-dependent) open/close and workspace-switch animations,
+# no shadows/blur (that's what actually costs battery on a compositor,
+# not fades/animations).
+backend = "glx";
 vsync = true;
 fading = true;
 fade-in-step = 0.05;
@@ -456,11 +504,27 @@ no-fading-openclose = false;
 no-fading-destroyed-argb = true;
 shadow = false;
 blur-method = "none";
-corner-radius = 0;
+corner-radius = 8;
+round-borders = 1;
 unredir-if-possible = true;
 detect-transient = true;
 detect-client-opacity = true;
 use-damage = true;
+
+# --- Animation keys (fork-only — see PICOM_HAS_ANIMATIONS check above) ---
+# Hyprland/omarchy-style: windows zoom in on open, slide out on close,
+# and the whole screen slides when you switch workspaces.
+animations = true;
+animation-stiffness = 300;
+animation-dampening = 26;
+animation-clamping = true;
+animation-mass = 1;
+animation-for-open-window = "zoom";
+animation-for-unmap-window = "zoom";
+animation-for-transient-window = "slide-down";
+animation-for-workspace-switch-in = "slide-right";
+animation-for-workspace-switch-out = "slide-left";
+
 wintypes:
 {
   tooltip = { fade = true; shadow = false; };
@@ -475,14 +539,47 @@ EOF
 [Desktop Entry]
 Type=Application
 Name=Picom Compositor
-Comment=Lightweight compositor — fades only, unredirects fullscreen windows to save battery
+Comment=Compositor with fades (+ animations on supporting builds), unredirects fullscreen windows to save battery
 Exec=${COMPOSITOR_BIN} --config $PICOM_CONF
 X-GNOME-Autostart-enabled=true
 NoDisplay=true
 EOF
     pkill -x "$COMPOSITOR_BIN" 2>/dev/null; sleep 0.3
     ("$COMPOSITOR_BIN" --config "$PICOM_CONF" &>/dev/null & disown) || true
-    ok "picom running (fades only, unredirects fullscreen for battery)."
+    ok "picom running."
+
+    if [[ $PICOM_HAS_ANIMATIONS -eq 0 ]] && ask "Build a picom fork WITH real animation support from source (takes a few minutes)?" "N"; then
+        info "Installing build dependencies (this is the slow part)..."
+        sudo apt-get install -y meson ninja-build git cmake \
+            libconfig-dev libdbus-1-dev libegl-dev libev-dev libgl-dev libepoxy-dev \
+            libpcre2-dev libpixman-1-dev libx11-xcb-dev libxcb1-dev libxcb-composite0-dev \
+            libxcb-damage0-dev libxcb-glx0-dev libxcb-image0-dev libxcb-present-dev \
+            libxcb-randr0-dev libxcb-render0-dev libxcb-render-util0-dev libxcb-shape0-dev \
+            libxcb-util-dev libxcb-xfixes0-dev libxext-dev uthash-dev \
+            || warn "Some build deps failed — the build below may fail too, that's expected if so."
+
+        PICOM_BUILD_DIR="$WORK_DIR/picom-animations"
+        if git clone --depth=1 --recursive https://github.com/ornfelt/picom-animations.git "$PICOM_BUILD_DIR" 2>/tmp/picom-fork-clone.log; then
+            (
+                cd "$PICOM_BUILD_DIR" \
+                    && meson setup --buildtype=release build \
+                    && ninja -C build
+            ) > /tmp/picom-fork-build.log 2>&1
+            if [[ -f "$PICOM_BUILD_DIR/build/src/picom" ]]; then
+                sudo install -Dm755 "$PICOM_BUILD_DIR/build/src/picom" /usr/local/bin/picom
+                pkill -x picom 2>/dev/null; pkill -x compton 2>/dev/null; sleep 0.3
+                COMPOSITOR_BIN="/usr/local/bin/picom"
+                sed -i "s|Exec=.*|Exec=${COMPOSITOR_BIN} --config $PICOM_CONF|" "$HOME/.config/autostart/picom.desktop"
+                ("$COMPOSITOR_BIN" --config "$PICOM_CONF" &>/dev/null & disown) || true
+                ok "Animated picom built and running (/usr/local/bin/picom — apt's plain picom is untouched,"
+                ok "this just takes priority via PATH order / the autostart entry pointing at it directly)."
+            else
+                err "Build failed — check /tmp/picom-fork-build.log. Falling back to the plain picom already running above."
+            fi
+        else
+            err "Clone failed — check your network/DNS. Log: /tmp/picom-fork-clone.log. Falling back to plain picom."
+        fi
+    fi
 else
     warn "Couldn't install picom/compton — re-enabling xfwm4's built-in compositor instead of leaving you with none at all."
     xfconf-query -c xfwm4 -p /general/use_compositing -s true 2>/dev/null || true
@@ -505,6 +602,93 @@ NoDisplay=true
 X-GNOME-Autostart-enabled=true
 EOF
     ok "NumLock-on-login enabled."
+fi
+
+# --- Community-favorite additions (r/unixporn / r/xfce staples) ---
+if ask "Install Conky (Catppuccin Red-themed system-info widget on the desktop)?" "N"; then
+    sudo apt-get install -y conky-all || warn "Conky failed to install."
+    if is_installed conky-all || command -v conky &>/dev/null; then
+        mkdir -p "$HOME/.config/conky"
+        CONKY_CONF="$HOME/.config/conky/conky.conf"
+        [[ -f "$CONKY_CONF" ]] && cp "$CONKY_CONF" "${CONKY_CONF}.bak.$(date +%Y%m%d%H%M%S)"
+        cat > "$CONKY_CONF" << 'EOF'
+conky.config = {
+    alignment = 'top_right',
+    background = false,
+    border_width = 0,
+    cpu_avg_samples = 2,
+    net_avg_samples = 2,
+    default_color = 'cdd6f4',
+    use_xft = true,
+    font = 'JetBrainsMono Nerd Font Mono:size=10',
+    gap_x = 24,
+    gap_y = 48,
+    minimum_width = 230,
+    no_buffers = true,
+    own_window = true,
+    own_window_type = 'desktop',
+    own_window_transparent = true,
+    own_window_argb_visual = true,
+    own_window_argb_value = 170,
+    own_window_hints = 'undecorated,below,sticky,skip_taskbar,skip_pager',
+    update_interval = 2.0,
+    double_buffer = true,
+};
+
+conky.text = [[
+${color f38ba8}${font JetBrainsMono Nerd Font Mono:bold:size=12}${nodename}${font}${color}
+${color bac2de}${hr 1}${color}
+${color bac2de}Uptime:${color} $uptime
+${color bac2de}Kernel:${color} $kernel
+${color bac2de}${hr 1}${color}
+${color f38ba8}CPU${color} ${cpu cpu0}% ${cpubar cpu0 8,140}
+${color f38ba8}RAM${color} $mem / $memmax ${membar 8,140}
+${color f38ba8}Disk /${color} ${fs_used /} / ${fs_size /} ${fs_bar 8,140 /}
+${color bac2de}${hr 1}${color}
+${color bac2de}Down:${color} ${downspeed} ${color bac2de}Up:${color} ${upspeed}
+]];
+EOF
+        mkdir -p "$HOME/.config/autostart"
+        cat > "$HOME/.config/autostart/conky.desktop" << EOF
+[Desktop Entry]
+Type=Application
+Name=Conky
+Exec=conky -c $CONKY_CONF
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+EOF
+        pkill -x conky 2>/dev/null; sleep 0.3
+        (conky -c "$CONKY_CONF" &>/dev/null & disown) || true
+        ok "Conky running (Catppuccin Red). Config: $CONKY_CONF — edit and re-run 'conky -c' to tweak it live."
+    fi
+fi
+
+if ask "Install Plank (elegant macOS-style dock, a common pairing with a slimmer panel)?" "N"; then
+    sudo apt-get install -y plank || warn "Plank failed to install."
+    if command -v plank &>/dev/null; then
+        mkdir -p "$HOME/.config/autostart"
+        cat > "$HOME/.config/autostart/plank.desktop" << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Plank
+Exec=plank
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+EOF
+        pkill -x plank 2>/dev/null; sleep 0.3
+        (plank &>/dev/null & disown) || true
+        ok "Plank running with its defaults — right-click it, or run 'plank --preferences', to theme/resize it."
+        warn "Plank and the panel's own taskbar will both show running apps unless you trim one — that's"
+        warn "a matter of taste, so nothing here removes the panel taskbar for you."
+    fi
+fi
+
+if ask "Add CPU + network graph plugins to the panel (cpugraph, netload)?" "N"; then
+    sudo apt-get install -y xfce4-cpugraph-plugin xfce4-netload-plugin \
+        && xfce4-panel --add=cpugraph 2>/dev/null \
+        && xfce4-panel --add=netload 2>/dev/null \
+        && ok "cpugraph + netload added to the panel — right-click either to reposition or restyle." \
+        || warn "Couldn't add them automatically — install succeeded, add via Panel → Add New Items."
 fi
 
 # ══════════════════════════════════════════════════════════════

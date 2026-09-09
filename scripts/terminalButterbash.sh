@@ -33,8 +33,8 @@ step "1/3  Supporting packages"
 info "Refreshing package lists..."
 sudo apt-get update -qq
 
-info "Installing bat, duf, eza, fzf, htop, ncdu, ripgrep, tree, zoxide, unar..."
-sudo apt-get install -y bat duf eza fzf htop ncdu ripgrep tree zoxide unar \
+info "Installing bat, duf, eza, fzf, btop, ncdu, ripgrep, tree, zoxide, unar..."
+sudo apt-get install -y bat duf eza fzf btop ncdu ripgrep tree zoxide unar \
     || warn "Some packages failed to install (continuing)."
 ok "Supporting packages installed"
 

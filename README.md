@@ -16,6 +16,26 @@ to extend with the same process (ordered `run.sh` + flat `scripts/` dir,
 granular y/N prompts, backups before anything destructive), while adopting
 real improvements found along the way (see "What changed" below).
 
+## Community-favorite extras (r/unixporn / r/xfce staples)
+
+Went looking at what the XFCE community actually reaches for repeatedly —
+three genuinely popular, well-loved additions, all opt-in/off-by-default
+in `catppuccinTheme.sh`'s Extras section since they're aesthetic
+preferences, not fixes:
+
+- **Conky**, Catppuccin Red-themed — a desktop system-info widget
+  (CPU/RAM/disk/network/uptime), the single most recurring XFCE
+  "unixporn" staple across every source checked.
+- **Plank** — an elegant macOS-style dock. Installed with its own
+  defaults rather than guessed-at theming: Plank's config lives in
+  GSettings under per-dock UUIDs that aren't reliably scriptable without
+  a live system to verify against, so this intentionally leaves
+  `plank --preferences` to you rather than writing config keys that
+  might silently not apply.
+- **cpugraph + netload panel plugins** — small glanceable graphs,
+  same "add it, don't touch your existing layout" pattern as Whisker
+  Menu/Clipman/the update-notifier genmon.
+
 ## An actual bug-hunt pass, not just new features
 
 Asked to do "intense rethinking" of the whole toolkit — so this pass
