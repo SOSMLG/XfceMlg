@@ -1,420 +1,214 @@
 # devuan-xfce-setup
 
-Post-install polish for a Devuan (or Debian) box where **XFCE is already
-installed** by the distro's own installer. This does *not* install XFCE —
-it swaps a couple of defaults (Geany over Mousepad, VLC over Parole — XFCE's
-own task install is already fairly lean, unlike KDE's `kde-standard`), then
-fills in the rest: a full Catppuccin (Red/Black) theme from boot splash to
-login screen to desktop, Bluetooth, TLP battery tuning, codecs, WiFi/BT
-firmware, fonts, ButterBash for a proper terminal, and the gvfs/Thunar
-plumbing, Flatpak, printing, GUFW, Timeshift, and update-notifier that make
-it feel like a finished laptop distro instead of a bare XFCE session.
+A post-install toolkit that turns a fresh **Devuan 6 (Excalibur)** install
+(binary-compatible with **Debian 13 (Trixie)**) into a lean, finished
+**XFCE** desktop — Catppuccin **Red/Black** themed from boot splash to login
+screen to terminal, Firefox ESR hardened, TLP battery-capped, Thunar fully
+plugged in, and installable with **one command, fully unattended**.
 
-Built from your `myxfce` and `Butterbian-XFCE` repos the same way the
-KDE-side version of this toolkit was built from `DebianSway` — as the seed
-to extend with the same process (ordered `run.sh` + flat `scripts/` dir,
-granular y/N prompts, backups before anything destructive), while adopting
-real improvements found along the way (see "What changed" below).
+Works from two starting points: a distro installer where **XFCE is already
+present**, or a **minimal netinst** with no desktop at all (the toolkit
+installs its own lean set and never touches tasksel — so the hated SLiM
+login never enters the picture).
 
-## Community-favorite extras (r/unixporn / r/xfce staples)
+```
+./install.sh        # everything, unattended, verified — that's it
+./run.sh --list     # see every step in order, defaults and all
+./run.sh            # pick-and-choose interactively
+```
 
-Went looking at what the XFCE community actually reaches for repeatedly —
-three genuinely popular, well-loved additions, all opt-in/off-by-default
-in `catppuccinTheme.sh`'s Extras section since they're aesthetic
-preferences, not fixes:
+You run it as your **normal user** (never `doas bash install.sh`); each script
+escalates itself (`priv()` helper: doas first, sudo fallback) for the parts
+that need it.
 
-- **Conky**, Catppuccin Red-themed — a desktop system-info widget
-  (CPU/RAM/disk/network/uptime), the single most recurring XFCE
-  "unixporn" staple across every source checked.
-- **Plank** — an elegant macOS-style dock. Installed with its own
-  defaults rather than guessed-at theming: Plank's config lives in
-  GSettings under per-dock UUIDs that aren't reliably scriptable without
-  a live system to verify against, so this intentionally leaves
-  `plank --preferences` to you rather than writing config keys that
-  might silently not apply.
-- **cpugraph + netload panel plugins** — small glanceable graphs,
-  same "add it, don't touch your existing layout" pattern as Whisker
-  Menu/Clipman/the update-notifier genmon.
+---
 
-## An actual bug-hunt pass, not just new features
+## Quick start
 
-Asked to do "intense rethinking" of the whole toolkit — so this pass
-went back through every script looking for real bugs, not just gaps to
-fill. Found and fixed:
+On a fresh Devuan 6 (Excalibur) / Debian 13 (Trixie) install, with network up:
 
-- **A real `set -e` bug in the update-notifier step** (`desktopEssentials.sh`).
-  `BEFORE_IDS=$(xfconf-query ... | grep ... | sort -u)` — if that pipeline
-  came up empty (a real possibility: a fresh panel with no `/plugins`
-  property indexed yet), `grep` returns non-zero, `pipefail` propagates
-  that to the whole pipeline, and a *plain variable assignment* failing
-  under `set -e` kills the script right there — silently, mid-step, no
-  error message pointing at why. Same latent bug existed in `fastfetchConfig.sh`'s
-  btop version check. Both now end their pipelines with `|| true`.
-- **`install_pkgs()` always returned success, even when the install
-  genuinely failed** — across 5 of the ~10 files that define it
-  (`desktopEssentials.sh`, `gamingSetup.sh`, `hardwareSupport.sh`,
-  `usefulApps.sh`, `vscodiumDevSetup.sh`). The function's last line was
-  `apt-get install || warn "..."`, and since `warn` (an `echo`) always
-  succeeds, the function's return value was always 0 — so anywhere that
-  checked `if install_pkgs "Ristretto" ristretto; then set_default ...`
-  (there are three such call sites) would run the follow-up step and
-  report success even if the package genuinely failed to install.
-  `bluetoothSetup.sh` already had this written correctly — that version
-  is now what all five match.
-- **A compositor fallback that left you with *no* compositor at all.**
-  `catppuccinTheme.sh` always disables xfwm4's built-in compositor before
-  trying to install picom (so the two don't fight). If picom's install
-  then failed, the script warned about it — but never turned xfwm4's
-  compositor back on, so a failed picom install silently meant zero
-  compositing, not "back to the default." It now re-enables xfwm4 in
-  that fallback.
-- **A self-inflicted bug from an earlier edit in this same project**,
-  caught while re-reading: a `str_replace` that added the Dunst step to
-  `xfceDebloat.sh` had accidentally clobbered that step's own header,
-  leaving the script's "all done" cleanup block running *before* the
-  Dunst step instead of after it. Re-verified against a clean syntax
-  pass and step-by-step trace after fixing.
+```bash
+# 1. Clone + run
+git clone <this-repo> && cd devuan-xfce-setup
+./install.sh
+# ~everything, then a verification report; reboot when it finishes
 
-**And the actual ask: the system beep.** `xfceDebloat.sh` gained a 6th
-step that addresses all four *independent* sources of "the beep" — which
-is exactly why so many "I turned it off but it's still beeping" forum
-threads exist, each fix only ever touched one:
-1. **PC speaker** (`pcspkr`/`snd_pcsp` kernel modules) — blacklisted and
-   unloaded live.
-2. **X11 bell** (GTK widgets ring this on backspace-at-start, failed
-   tab-complete in a dialog, etc.) — `xset b off`, made to survive reboot
-   via an autostart entry instead of just running once.
-3. **XFCE's own event-sound bell** — a separate layer from #2, its own
-   `xsettings` properties (`EnableEventSounds`, `EnableInputFeedbackSounds`).
-4. **readline's bell** — bash's own tab-complete-fail beep, independent
-   of X11 entirely (`set bell-style none` in `/etc/inputrc`, system-wide).
+# 2. Reboot — LightDM gives you a themed login screen, pick "Xfce Session"
+```
 
-## Two more default-app swaps in xfceDebloat.sh
+`install.sh` = `run.sh --full --verify`: every step answers **yes**, including
+the optional groups (VSCodium, gaming, chat, PhotoGIMP, dev tools, neovim).
+Variants:
 
-Same pattern as the existing Mousepad→Geany and Parole→VLC swaps —
-replacing a stock XFCE component with something clearly better
-maintained, not just different:
-
-- **xfce4-screenshooter → [Flameshot](https://github.com/flameshot-org/flameshot).**
-  One region-select overlay with annotate/blur/pin-to-screen/upload
-  built in, instead of xfce4-screenshooter's multi-dialog flow. Print
-  Screen gets rebound via `xfconf-query` (`/commands/custom/<Print>` in
-  the `xfce4-keyboard-shortcuts` channel) to `flameshot gui`. If you had
-  the screenshooter panel plugin on your panel, it'll show broken after
-  this — that's a manual right-click-remove, not something safe to
-  automate blindly.
-- **xfce4-notifyd → [Dunst](https://github.com/dunst-project/dunst)**
-  *(optional, defaults to skip)*. Lighter and far more configurable —
-  do-not-disturb rules, per-urgency styling, better multi-monitor
-  behavior. Ships with a Catppuccin Red-accented `dunstrc` out of the
-  box. Dunst registers itself as the notification D-Bus service on
-  install and starts on the first notification — no autostart entry
-  needed, and no conflict once xfce4-notifyd's own is purged.
-
-## Closing the "is this actually enough" gaps
-
-Four things that "the desktop looks great" was papering over:
-
-- **Boot → login didn't match the desktop.** New `bootThemeSetup.sh`:
-  Catppuccin Plymouth splash ([catppuccin/plymouth](https://github.com/catppuccin/plymouth)),
-  GRUB theme ([catppuccin/grub](https://github.com/catppuccin/grub)), and
-  the LightDM login screen. The greeter runs as its own system user with
-  no access to your `$HOME`, so this step copies your already-installed
-  GTK/icon/cursor theme folders from `~/.themes` and `~/.local/share/icons`
-  into `/usr/share/` rather than re-downloading anything — run
-  `catppuccinTheme.sh` first so there's something to copy. This is the
-  most invasive script in the toolkit (edits `/etc/default/grub`, rebuilds
-  the initramfs) — every edit is backed up first, and it checks for GRUB
-  and LightDM before touching either rather than assuming they're there.
-
-- **No laptop power management, despite the ThinkPad-specific focus
-  everywhere else.** `hardwareSupport.sh` now installs TLP, removes
-  `power-profiles-daemon` first (the two fight over the same knobs if
-  both run), and — only on hardware that actually exposes it — offers to
-  cap charging at 80% via `/etc/tlp.d/60-battery-threshold.conf`.
-
-- **The stuff that makes a fresh XFCE session not feel broken was
-  missing.** `desktopEssentials.sh` gained: the `gvfs`/`thunar-volman`/
-  `tumbler` stack (without this, Thunar's Trash silently does nothing
-  and USB drives don't auto-mount — the single most common "XFCE feels
-  broken" complaint), `thunar-archive-plugin` + `xarchiver`, and
-  `xfce4-clipman` for clipboard history.
-
-- **Eye comfort and update visibility.** Also in `desktopEssentials.sh`:
-  Redshift (geoclue-located, gentle 6500K→4500K) and a real update
-  path — Devuan has no Mint-style Update Manager, so this configures
-  `unattended-upgrades` for periodic list refresh (auto-installing
-  security updates stays opt-in) plus an `xfce4-genmon-plugin` panel
-  icon that shows the pending-update count and opens an upgrade on click.
-
-## Consolidated: 24 scripts → 19, Alacritty replaces xfce4-terminal
-
-*(One file came back after this — `bootThemeSetup.sh`, added above. It
-touches `/etc/default/grub` and rebuilds the initramfs, a genuinely
-different risk profile from anything else here, so it stays separate
-rather than getting folded into `catppuccinTheme.sh`'s purely-userspace
-changes. Current count: 20.)*
-
-Five scripts were folded into the ones they were really extending, not
-removed — same functionality, fewer files to keep track of:
-
-| Was | Now lives in |
+| Command | What it does |
 |---|---|
-| `terminalRedTheme.sh` | `catppuccinTheme.sh` (final step) |
-| `picomSetup.sh` | `catppuccinTheme.sh` ("Extras" step) |
-| `firewallSetup.sh` | `desktopEssentials.sh` (step 4) |
-| `mintStyleApps.sh` | `usefulApps.sh` (steps 5–7) |
-| `btopSetup.sh` | `fastfetchConfig.sh` (step 3) |
+| `./install.sh --core` | Core XFCE desktop only, skips optional groups |
+| `./run.sh --yes` | Everything, but only the default-Y steps (no optional groups) |
+| `./run.sh --phase core,desktop` | Only the core + desktop phases |
+| `./run.sh --only firefox,useful-apps` | Just those steps (short names work) |
+| `./run.sh --no-update` | Skip the runner's single `apt-get update` |
 
-The firewall merge also fixed a real contradiction: `desktopEssentials.sh`
-used to install GUFW while explicitly saying "not enabled," but
-`firewallSetup.sh` ran later in `run.sh` and enabled ufw anyway — so the
-message was already wrong by the time you'd see it. It's one step now,
-with the SSH-safe enable logic actually attached to the install.
+Install with `bash -x ./install.sh` to watch every step, if you're curious or
+something looks off.
 
-**`catppuccinTheme.sh` also stopped asking permission for its own point.**
-Choosing to run it already means "yes, do the theme" — so the GTK/xfwm4
-theme, cursors, icons, panel CSS, picom, and Alacritty setup now just run,
-instead of a `Y/n` before each of 8 sub-steps. The only prompts left in it
-are genuinely optional extras: Whisker Menu and NumLock-on-login.
+### Minimal netinst notes
 
-**xfce4-terminal is gone, not kept as a fallback.** `catppuccinTheme.sh`'s
-last step installs Alacritty with a Catppuccin Red config, sets it as the
-default terminal everywhere XFCE looks (`x-terminal-emulator`, `exo`'s
-`helpers.rc` — covers Thunar's "Open Terminal Here", Whisker Menu, and any
-shortcut that spawns a terminal), then `apt purge`s xfce4-terminal. Kitty
-support (previously an option alongside Alacritty) was dropped too —
-one well-configured terminal beats a three-way menu nobody needed.
-`terminalButterbash.sh`'s `term` alias was updated to launch Alacritty.
+Two things a bare netinst often lacks — the toolkit handles both, but order
+matters:
 
-## Structure
+* **Privilege for your user.** Either leave the root password **empty** during
+  install (Debian then puts your user in `sudo`), or afterwards as root:
+  ```bash
+  apt install -y sudo opendoas && usermod -aG sudo <you>
+  printf 'permit persist <you> as root\n' > /etc/doas.conf
+  ```
+  then **relogin**. The toolkit refuses to run as root and warns early if
+  escalation can't work — `12-user-groups.sh` sets up the doas persist rule
+  so the rest of the run asks for your password once.
+* **No desktop at all.** That's fine — `10-xfce-core.sh` installs a lean
+  `--no-install-recommends` XFCE set (session, xfwm4, panel, xfce4-terminal,
+  Thunar base, LightDM + gtk-greeter, polkit, gvfs) directly, deliberately
+  bypassing `task-xfce-desktop`: tasksel prefers **SLiM** as its DM and
+  bundles Parole/QuodLibet/Mousepad that would only be purged again. If SLiM
+  is found anyway, it gets purged and LightDM takes the console.
 
-```
-devuan-xfce-setup/
-├── run.sh                        # main entry — run this
-├── butterbash/                   # bundled ButterBash, used offline
-├── scripts/
-│   ├── addUserToGroups.sh        # input/video/render groups
-│   ├── xfceDebloat.sh            # Mousepad→Geany, Parole→VLC, screenshooter→Flameshot, optional Xfburn/notifyd→Dunst
-│   ├── catppuccinTheme.sh        # Catppuccin Red/Black GTK/xfwm4/cursors/icons/panel + picom + Alacritty
-│   ├── bootThemeSetup.sh         # Plymouth splash + GRUB theme + LightDM greeter (boot → login)
-│   ├── touchpadTrackpointFix.sh  # usbhid mousepoll fix + optional libinput tuning
-│   ├── hardwareSupport.sh        # WiFi/BT firmware, CPU microcode, fwupd, TLP + ThinkPad battery thresholds
-│   ├── bluetoothSetup.sh         # bluez + Blueman GUI + audio bridge (Pulse/PipeWire) + codec negotiation
-│   ├── multimediaCodecs.sh       # ffmpeg/GStreamer codecs, DVD playback, Audacity/Shotcut
-│   ├── firefoxHarden.sh          # Firefox ESR + Betterfox, system-wide defaults (see below)
-│   ├── policies.json             # firefox enterprise policy used by the above
-│   ├── installFonts.sh           # Noto, Font Awesome, JetBrainsMono Nerd Font
-│   ├── terminalButterbash.sh     # ButterBash + XFCE-specific shell additions
-│   ├── fastfetchConfig.sh        # fastfetch + curated presets, plus optional Catppuccin-themed btop
-│   ├── usefulApps.sh             # base tools, Python/data-science stack, Geany, VLC, Ristretto/Atril/GNOME Disks
-│   ├── desktopEssentials.sh      # Flatpak, printing, GParted, ufw+GUFW, gvfs/Thunar essentials, Clipman, Redshift, update notifier
-│   ├── timeshiftSetup.sh         # Timeshift system snapshot/restore
-│   ├── installPhotogimp.sh       # (optional) GIMP + PhotoGIMP layout/theme, fetched live from GitHub
-│   ├── installVscodium.sh        # (optional) VSCodium via official APT repo
-│   ├── vscodiumDevSetup.sh       # (optional) VSCodium C++/Python dev environment
-│   ├── gamingSetup.sh            # (optional) Steam / Heroic Games Launcher / Wine
-│   └── vesktopTelegram.sh        # (optional) Vesktop (Discord client) / Telegram
-└── README.md
-```
+---
 
-## Usage
+## What you get
+
+| Layer | Choice |
+|---|---|
+| Desktop | **XFCE 4.20 on X11** (floating, traditional panel) via **LightDM + gtk-greeter** login, themed to match |
+| Theme | Catppuccin **Mocha/Black + Red** (ThinkPad chassis + TrackPoint nub): GTK2/3/4 + xfwm4, mocha-red cursors, `Catppuccin-SE-Local` lean icons, panel CSS, matching Plymouth + GRUB + LightDM |
+| Terminal | **xfce4-terminal** (X11-native; foot is Wayland-only, Alacritty removed) themed Catppuccin Red, wired as THE terminal via `x-terminal-emulator` + exo `helpers.rc` |
+| Shortcuts | Super-based set (terminal, files, appfinder, screenshots, clipman, tiling, workspaces) + `Ctrl+Alt+L` lock via **light-locker** |
+| First login | Welcome wizard (update + Timeshift check, once) + wallpaper seeder (new monitors only, never overwrites) |
+| Files | **Thunar, full set**: volman automount, archive-plugin + xarchiver, media-tags, vcs, gtkhash, font-manager, `gvfs-backends` (Trash/MTP), tumbler thumbnails, custom actions (Terminal Here, Open as Root) |
+| Media/docs | **VLC** (Parole removed), **Ristretto** images, **Atril** PDFs, GNOME Disks for USB writes |
+| Editor | **VSCodium** (primary GUI editor; Mousepad/Geany removed — no TUI-editor detour) |
+| Browser | **Firefox ESR** hardened with Betterfox-derived system defaults + locked `policies.json` |
+| Shell | **ButterBash**: saner bash (aliases, `eza`/`bat`, fzf/zoxide, starship) + XFCE additions block |
+| Compositor | **picom** (fades only, unredirects fullscreen; xfwm4 compositing stays off) |
+| Notifications | **xfce4-notifyd** stock (Dunst stays opt-in) |
+| Capture | **xfce4-screenshooter** on `Print` (Flameshot stays opt-in) |
+| Clipboard | **xfce4-clipman** panel plugin |
+| Night light | **Redshift** (geoclue-located, 6500K→4500K) |
+| Battery | **TLP** + 80% charge cap on supporting ThinkPads |
+| Bluetooth | **Blueman** applet (A2DP bridge auto-detected for Pulse/PipeWire) |
+| Updates | genmon panel indicator (hourly check, click to upgrade in a terminal) |
+| Snapshots | **Timeshift** |
+
+### Scripts — phases in run order (`./run.sh --list` is authoritative)
+
+| Phase | Script | Default |
+|---|---|---|
+| core | `10-xfce-core.sh` — lean XFCE + LightDM, SLiM purge, no tasksel | Y |
+| core | `11-backports.sh` — backports + apt pinning (priority 100) | Y |
+| core | `12-user-groups.sh` — `input`/`video`/`render`/`plugdev` + doas persist | Y |
+| core | `13-hardware.sh` — WiFi/BT/AMD firmware, microcode, fwupd, TLP | Y |
+| core | `14-bluetooth.sh` — Bluetooth stack + Blueman | Y |
+| core | `15-codecs.sh` — audio/video codecs + DVD | Y |
+| core | `16-firefox.sh` — Firefox ESR + Betterfox hardening | Y |
+| core | `17-fonts.sh` — Noto, Font Awesome, JetBrainsMono Nerd Font | Y |
+| core | `18-butterbash.sh` — ButterBash + XFCE shell additions | Y |
+| core | `19-fastfetch.sh` — fastfetch presets + optional btop theme | Y |
+| desktop | `20-xfce-debloat.sh` — trim task apps, keep XFCE-native, silence beep | Y |
+| desktop | `21-theme-catppuccin.sh` — Catppuccin Red/Black + picom + terminal theme | Y |
+| desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
+| desktop | `23-input-fix.sh` — input fixes + light-locker + Super shortcuts | Y |
+| apps | `30-desktop-essentials.sh` — Flatpak, CUPS, firewall, Thunar full, Clipman, Redshift | Y |
+| apps | `31-timeshift.sh` — Timeshift snapshots | Y |
+| apps | `32-time-sync.sh` — chrony NTP time sync | N |
+| apps | `33-useful-apps.sh` — base tools, Python stack, Ristretto, Atril, Disks | Y |
+| apps | `34-opencode-agent.sh` — OpenCode AI agent + Super+A hotkey + skill file | Y |
+| apps | `35-first-run.sh` — welcome wizard + wallpaper seeder (autostart) | Y |
+| optional | `40-vscodium.sh` — VSCodium (primary editor) | Y |
+| optional | `41-dev-essentials.sh` — C/C++ + Python toolchains | Y |
+| optional | `43-photogimp.sh` — GIMP + PhotoGIMP layout | N |
+| optional | `44-gaming.sh` — Heroic/Steam/Wine | N |
+| optional | `45-chat.sh` — Vesktop (Discord) / Telegram | N |
+| optional | `46-neovim.sh` — Neovim (Debian apt 0.10) + LazyVim v14 pinned config | N |
+| utils | `50-maintenance.sh` — apt cleanup + dead symlink tidy | N |
+| utils | `51-backup.sh` — timestamped HOME config backup/restore | N |
+| utils | `52-skel-export.sh` — per-user defaults into `/etc/skel` | N |
+
+---
+
+## Verification
 
 ```bash
-cd devuan-xfce-setup
-chmod +x run.sh scripts/*.sh
-./run.sh
+./run.sh --verify        # after an install.sh run
+bash scripts/verifySetup.sh   # anytime
 ```
 
-Run it as your **normal user**, not as root. Every script calls `sudo`
-itself for the parts that need it. `run.sh` walks through each step in
-order asking `Y/n` (or `y/N`), same pattern as the KDE-side version. Run
-any script standalone too:
+Prints PASS/FAIL/WARN for groups, lean-core packages, Thunar plugins,
+fonts, Firefox policy, Catppuccin markers (GTK/icons/terminalrc), the
+LightDM greeter conf, SLiM absence, and services (LightDM, TLP,
+Bluetooth, CUPS, chrony…). Exits non-zero on any FAIL — so it can gate CI.
 
-```bash
-bash scripts/touchpadTrackpointFix.sh
+After a run there's a full log at
+`~/.local/state/devuan-xfce-setup/last-run.log`, and `scripts/51-backup.sh`
+snapshots your config into a timestamped tarball before major operations.
+
+---
+
+## Maintenance & troubleshooting
+
+* **Two login screens / DM fight?** Exactly **one** display manager may own
+  the console. This toolkit enables `lightdm` and purges `slim`; if you
+  also enabled `greetd`/`sddm`, disable the spare
+  (`doas rc-update del greetd default`) and keep LightDM.
+* **Thunar Trash does nothing / USB won't mount?** That's the missing
+  gvfs/volman stack — re-run `30-desktop-essentials.sh` step 5, then
+  `thunar -q` to reload.
+* **No network/volume/password dialogs on minimal?** `10-xfce-core.sh`
+  covers `network-manager-gnome` (opt-in), `xfce-polkit` and `dbus-x11` —
+  re-run it if you skipped it the first time.
+* **Beep still there?** Four independent sources are all silenced by
+  `20-xfce-debloat.sh` (pcspkr module, X11 bell, XFCE event sounds,
+  readline). Anything left is per-app (e.g. the terminal's own bell toggle).
+* **Backports**: `doas apt install -t excalibur-backports <pkg>` — the pin
+  (priority 100) never auto-upgrades.
+* **Firefox locked policy**: `scripts/policies.json` is placed system-wide
+  (`/usr/lib/firefox-esr/distribution/`), Betterfox-derived defaults go to
+  `/etc/firefox-esr/devuan-xfce-setup.js`. Both idempotent.
+* **AI skill**: `34-opencode-agent.sh` drops
+  `scripts/skills/xfce-setup-SKILL.md` to `~/.config/opencode/AGENTS.md`
+  (and `~/AGENTS.md`) so coding agents know this box.
+
+---
+
+## Layout
+
+```
+VERSION / RELEASE.md   toolkit version + changelog (tag: git tag -a "v$(cat VERSION)")
+run.sh           ordered runner (phases: core/desktop/apps/optional/utils)
+install.sh       one-command unattended wrapper
+scripts/
+  lib/common.sh  shared helpers (DEBSWAY_* envs, ask, pkgs, priv helper)
+  10-*.sh … 52-*.sh  one step each, numbered = run order; runnable standalone
+  verifySetup.sh end-state audit (run.sh --verify)
+  policies.json  Firefox enterprise policy (used by 16-firefox.sh)
+  skills/xfce-setup-SKILL.md   system context for AI agents
+configs/         versioned static config (Thunar/uca.xml — deployed by 30-*)
+butterbash/      bundled ButterBash, used offline
 ```
 
-- **New `mintStyleApps.sh`** *(since merged into `usefulApps.sh` — see the consolidation table above)*. Covers the everyday Mint conveniences
-  without the compatibility risk: Mint's own equivalents (xviewer,
-  xreader, mintstick) are XApps distributed via Mint's own APT repo,
-  built against Ubuntu package versions — confirmed by checking
-  upstream's own docs, which state outright they're "not in the
-  official Ubuntu or Debian repositories." Installing those `.deb`s
-  on Devuan/Debian risks dependency conflicts; building from source
-  pulls in a meson/gtk-doc/libwebkit2gtk toolchain for what's meant
-  to stay a thin `apt install` toolkit. So this script gets the same
-  job done with packages Debian/Devuan actually carry: **Ristretto**
-  (image viewer) set as the default handler for common image types,
-  **Atril** (MATE's evince fork — same PDF-viewing job, lighter
-  dependency chain than pulling in evince itself) set as the default
-  for PDFs, and **GNOME Disks**, whose dedicated "Disk Image Writer"
-  launcher is the direct equivalent of Mint's USB Image Writer
-  (mintstick) — write an ISO/IMG to a USB stick from a GUI. All three
-  package names, their exact `.desktop` file names, and the
-  `xdg-mime default` calls were verified by actually installing them
-  and checking `dpkg -L` — Ristretto's turned out to be
-  `org.xfce.ristretto.desktop`, not the `ristretto.desktop` an
-  assumption would've produced.
-
-- **Checked dougburks/ohmydebn in full (all ~150 `bin/` scripts, `config/`,
-  `install/config/`).** Most of it doesn't transfer: it's a full Cinnamon/
-  Mutter desktop-ricing framework (gTile tiling, its own keybinding system,
-  Cinnamon-specific theming) — none of that runs on xfwm4, porting it would
-  mean rewriting the tiling/gesture logic against a different window
-  manager, not "adding" it. Its `bat`/`eza`/`zoxide`/`starship`/`fzf` setup
-  is already covered by `terminalButterbash.sh`. Two pieces were genuinely
-  portable, in-scope, and missing, so those got added:
-  - **New `btopSetup.sh`** *(since merged into `fastfetchConfig.sh`)*. Installs btop and themes it with Catppuccin —
-    sourced directly from catppuccin/btop's own repo (verified by actually
-    downloading all four flavor files) rather than reverse-engineered from
-    ohmydebn's theme-carousel template. Also carries over a real fix from
-    ohmydebn's `theme-set-btop`: btop's SIGUSR2 hot-reload only exists on
-    btop ≥ 1.3.1 (confirmed against the installed version, 1.3.0, in
-    testing) — on anything older, sending that signal has no handler and
-    falls back to SIGUSR2's default action, which terminates the process.
-    The script checks the version before ever sending the signal.
-  - **New `firewallSetup.sh`** *(since merged into `desktopEssentials.sh`)*. Same ufw deny-incoming/allow-outgoing
-    baseline as ohmydebn's `ufw.sh`, tested end-to-end (`ufw allow ssh`,
-    `default deny incoming`, `default allow outgoing`, `--force enable` all
-    run and verified via `ufw status verbose`), plus a safety check
-    ohmydebn doesn't need but this toolkit does: ohmydebn only ever runs on
-    a machine you're physically at, so a bare deny-incoming is safe there.
-    This toolkit might run over SSH on a headless box, where the same
-    command would drop your own session — so it detects an active SSH
-    session or listening sshd and allows SSH through first.
-
-## Latest fixes & additions
-
-- **`catppuccinTheme.sh`'s theme step is fixed.** Fausto-Korpsvart/Catppuccin-GTK-Theme
-  restructured twice upstream: `install.sh` moved from the repo root into
-  `themes/install.sh`, and its CLI flags changed from `-t <accent> -c <color>`
-  to `-a <accent> -m <light|dark> --tweaks <black|border|macos|...>`. The
-  script now **finds** `install.sh` wherever it actually lives instead of
-  assuming a path, tries the current CLI first, falls back to the old CLI,
-  then falls back to a full default build — and runs the installer with
-  `BATCH_MODE=true` and a `timeout`, because its newest version ends with
-  an interactive "Do you want to apply Vague?" arrow-key menu that hangs
-  forever with no TTY attached (which is exactly why the run in the
-  screenshot got stuck). Verified end-to-end with the installer's own
-  `--dry-run` against upstream's current `main` — it now resolves to
-  `Catppuccin-Red-Dark-Compact-BK` and exits `0`.
-- **New `bluetoothSetup.sh`.** Bluetooth firmware alone (what
-  `hardwareSupport.sh` installs) isn't enough to make earbuds work — the
-  most common real-world failure is that a device *pairs* but never shows
-  up as an audio output, because the PulseAudio/PipeWire ↔ BlueZ bridge
-  package was never installed. This script installs the core stack (bluez,
-  rfkill), auto-detects whether PulseAudio or PipeWire actually owns audio
-  on the box and installs the matching bridge package
-  (`pulseaudio-module-bluetooth` or `libspa-0.2-bluetooth` + `wireplumber`),
-  adds the GStreamer plugins apps like Rhythmbox/Parole route audio
-  through, optionally turns on BlueZ's `Experimental` flag so AAC/aptX/LDAC
-  get negotiated instead of falling back to low-quality SBC, and installs
-  **Blueman** (XFCE ships no Bluetooth GUI of its own) autostarted in the
-  panel tray.
-- **Alacritty's config is version-aware** *(this logic now lives in `catppuccinTheme.sh`'s terminal step)*.
-  Alacritty changed its config syntax at 0.14 (`[terminal].shell` +
-  `[general].import` are unrecognized before that). Debian/Devuan point
-  releases ship different Alacritty versions, so the script now checks the
-  installed version and rewrites the two syntax-sensitive keys to their
-  pre-0.14 form when needed, the same compatibility trick
-  [dougburks/ohmydebn](https://github.com/dougburks/ohmydebn) uses for the
-  same problem — one config, both syntaxes, instead of two configs to keep
-  in sync.
-
-- **New `picomSetup.sh`** *(since merged into `catppuccinTheme.sh`'s "Extras" step)*. Adds "a little bit of animation" the way that
-  doesn't cost battery: picom with fades only (window open/close + menus),
-  explicitly no shadows and no blur (those, not fades, are what actually
-  keep a GPU from idling), the `xrender` backend so it works on old/
-  integrated hardware without holding a GLX context open, and
-  `unredir-if-possible` — the real battery win, since it makes picom fully
-  step aside (zero compositing overhead) whenever a fullscreen window
-  (video, a game, a presentation) has focus. It also turns off xfwm4's
-  own built-in compositor first, since running two compositors against
-  the same display at once causes flicker and doubles the GPU work for
-  no benefit. Config syntax verified by installing picom and running it
-  against the generated config directly (fails only at "Can't open
-  display", i.e. it parses cleanly with no display to attach to).
-
-## What changed — Chicago95 retired for a modern, ThinkPad-red theme
-
-**`chicagofier.sh` (Chicago95 / Windows 95 theme) is gone.** In its place,
-`catppuccinTheme.sh` installs a modern look built around the
-[Catppuccin](https://github.com/catppuccin) palette — the **Black**
-variant with a **Red** accent, so the panel/window chrome echoes a
-black ThinkPad chassis with its red TrackPoint nub, without the harsh
-contrast a pure-white/red combo would put on your eyes:
-
-- GTK2/3 + xfwm4 theme from
-  [Fausto-Korpsvart/Catppuccin-GTK-Theme](https://github.com/Fausto-Korpsvart/Catppuccin-GTK-Theme)
-- Cursors from [catppuccin/cursors](https://github.com/catppuccin/cursors)
-  (`mocha`/`red`)
-- Icons from [ljmill/catppuccin-icons](https://github.com/ljmill/catppuccin-icons)
-  (the `Catppuccin-SE` release) — the script also builds a
-  **`Catppuccin-SE-Local`** variant afterward: it keeps the small
-  "chrome" icon categories (places/status/actions/devices/mimetypes)
-  in full, but only copies *app* icons for software you actually have
-  installed, then trims that variant's `index.theme` `Inherits=` down
-  to `Adwaita,hicolor`. That's the same trick as trimming a bloated
-  icon theme's inheritance chain so XFCE isn't indexing the entire
-  upstream set at login — full `Catppuccin-SE` stays on disk untouched
-  as a fallback, `Catppuccin-SE-Local` is what's actually active.
-  Re-run the script after installing new apps to refresh it.
-- A red/maroon-accented `~/.config/gtk-3.0/gtk.css` panel override
-  (rounded corners, active-window/power-button in Red, battery/volume/
-  tray keep their own accent colors for at-a-glance status)
-- Optional Whisker Menu, compositor (shadows/transparency), and
-  NumLock-on-login — small Mint-XFCE-style laptop touches, all opt-in
-
-**Terminal theming was `terminalRedTheme.sh`; it's now the last step of
-`catppuccinTheme.sh`, and it's Alacritty-only** — xfce4-terminal and Kitty
-were both dropped in the consolidation above, see that section for why.
-
-## What changed from the first version of this toolkit
-
-**Back to `sudo`.** The first pass adopted `doas` from your reference
-files' style. You asked for `sudo` throughout instead — done, mechanically,
-across all 18 scripts, including removing the `doasBootstrap.sh` step
-entirely (no longer needed) and the fallback-detection logic in every
-other script.
-
-**ButterBash is now the main shell config**, not a standalone `.bashrc`.
-`terminalButterbash.sh` installs it the same way the KDE-side toolkit
-does (its own `install.sh` backs up and replaces `~/.bashrc`), then
-appends an "XFCE additions" block on top — the genuinely XFCE-specific
-pieces from your reference `.bashrc` that ButterBash doesn't already
-provide (it already ships its own `extract()`, git aliases, and
-system-info aliases, so those aren't duplicated): panel restart,
-screenshot, `xfce4-terminal`/Thunar helpers, brightness/touchpad toggles,
-and your `cd`-via-`zoxide` navigation habit. One small bug fixed while
-merging: your original `.bashrc` had two conflicting `alias thunar=`
-definitions (one for daemon mode, one for "open here") that silently
-shadowed each other — split into `thunar-daemon` and `here` instead.
-
-**Firefox hardening now uses a system-wide defaults file, not a
-per-profile one.** Your `Butterbian-XFCE` ISO config's own
-`/etc/firefox-esr/butterbian.js` approach is genuinely better than what
-this toolkit had: Debian's firefox-esr reads every `.js` file in
-`/etc/firefox-esr/` and applies it as *default* prefs for every profile
-on the system, so it covers new profiles automatically and doesn't need
-a launcher-wrapper trick to stay current. `firefoxHarden.sh` was rewritten
-around this — Betterfox is still fetched **live** from upstream at
-install time (never bundled), then converted from `user_pref()` to
-`pref()` syntax and written to `/etc/firefox-esr/devuan-xfce-setup.js`,
-sitting alongside the package's own defaults file without touching it.
-
-**Added `fastfetchConfig.sh`** — pulls the curated fastfetch presets from
-your own `butterscripts` repo, the same source your ISO's own hook uses,
-just targeting your actual `$HOME` instead of `/etc/skel` (this runs
-against an existing account, not a new-user template).
+---
 
 ## Notes
 
 - Every apt action checks what's *actually installed* first — nothing is
   blindly force-installed or force-purged, so re-running any script is
-  safe.
-- Nothing in this toolkit auto-enables a firewall deny rule. Install and
-  get out of the way, don't silently change behavior you didn't ask for.
+  safe. Destructive writes (grub, initramfs, greeter confs) are backed up
+  first (`*.bak.<timestamp>`).
+- Env vars honored: `DEBSWAY_ASSUME_YES=1` (unattended),
+  `DEBSWAY_SKIP_APT_UPDATE=1`, `DEBSWAY_PRIV=doas|sudo`, plus upstream
+  pins `XFCE_GTK_REF=`, `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`,
+  `BETTERFOX_TAG=150.0`. Resolved theme SHAs land in
+  `~/.local/state/devuan-xfce-setup/`.
+- Nothing auto-enables a firewall deny rule without the SSH-safe guard in
+  `30-desktop-essentials.sh`. Install and get out of the way.
 - Reboot (or at least log out/in) after a full run — group membership,
   the mousepoll fix, newly installed firmware/microcode, and theme
   changes all benefit from a fresh session.
