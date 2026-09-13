@@ -41,8 +41,8 @@ PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 # Path configuration
 export PATH="$HOME/scripts:$HOME/.local/bin:/usr/local/go/bin:$HOME/.cargo/bin:$PATH"
 
-# Default editors
-export EDITOR=$(command -v nvim || command -v vim || command -v micro || echo nano)
+# Default editors (VSCodium-first — neovim removed from the toolkit)
+export EDITOR=$(command -v codium || command -v vim || command -v micro || echo nano)
 export VISUAL="$EDITOR"
 
 # Better less defaults

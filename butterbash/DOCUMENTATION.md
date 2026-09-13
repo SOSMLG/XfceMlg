@@ -118,8 +118,8 @@
 - `gclone` - git clone
 
 #### Editors
-- `v` - nvim
-- `vv` - nvim current directory
+- `v` - codium (VSCodium)
+- `vv` - codium current directory
 - `e` - micro editor
 - `n` - nano
 
@@ -128,7 +128,7 @@
 - `reload` - Reload .bashrc
 - `zshrc` - Edit .zshrc
 - `vimrc` - Edit .vimrc
-- `nvimrc` - Edit nvim config
+- `nvimrc` - Edit VSCodium settings
 - `tmuxconf` - Edit tmux config
 
 #### Directory Shortcuts
@@ -216,7 +216,7 @@ The configuration enables:
 ## Environment Variables
 
 - `PATH` - Includes ~/scripts, ~/.local/bin, Go, Cargo
-- `EDITOR` - Smart detection (nvim > vim > micro > nano)
+- `EDITOR` - Smart detection (codium > vim > micro > nano)
 - `LESS` - Better defaults with color support
 - `LANG/LC_ALL` - UTF-8 encoding
 

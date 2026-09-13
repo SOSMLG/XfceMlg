@@ -36,8 +36,9 @@ git clone <this-repo> && cd devuan-xfce-setup
 # 2. Reboot — LightDM gives you a themed login screen, pick "Xfce Session"
 ```
 
-`install.sh` = `run.sh --full --verify`: every step answers **yes**, including
-the optional groups (VSCodium, gaming, chat, PhotoGIMP, dev tools, neovim).
+`install.sh` = `run.sh --full --verify`: every step answers **yes** automatically
+(including the optional groups: VSCodium, gaming, chat, PhotoGIMP, dev tools).
+Neovim was retired — VSCodium is the editor, and `40-vscodium.sh` purges it.
 Variants:
 
 | Command | What it does |
@@ -88,7 +89,7 @@ matters:
 | Editor | **VSCodium** (primary GUI editor; Mousepad/Geany removed — no TUI-editor detour) |
 | Browser | **Firefox ESR** hardened with Betterfox-derived system defaults + locked `policies.json` |
 | Shell | **ButterBash**: saner bash (aliases, `eza`/`bat`, fzf/zoxide, starship) + XFCE additions block |
-| Compositor | **picom** (fades only, unredirects fullscreen; xfwm4 compositing stays off) |
+| Compositor | **picom** (square fades + fork animations, inactive dim, no shadows/blur, unredirects fullscreen; xfwm4 compositing stays off) |
 | Notifications | **xfce4-notifyd** stock (Dunst stays opt-in) |
 | Capture | **xfce4-screenshooter** on `Print` (Flameshot stays opt-in) |
 | Clipboard | **xfce4-clipman** panel plugin |
@@ -111,9 +112,9 @@ matters:
 | core | `16-firefox.sh` — Firefox ESR + Betterfox hardening | Y |
 | core | `17-fonts.sh` — Noto, Font Awesome, JetBrainsMono Nerd Font | Y |
 | core | `18-butterbash.sh` — ButterBash + XFCE shell additions | Y |
-| core | `19-fastfetch.sh` — fastfetch presets + optional btop theme | Y |
+| core | `19-fastfetch.sh` — minimal fancy fastfetch config + Mocha btop | Y |
 | desktop | `20-xfce-debloat.sh` — trim task apps, keep XFCE-native, silence beep | Y |
-| desktop | `21-theme-catppuccin.sh` — Catppuccin Red/Black + picom + terminal theme | Y |
+| desktop | `21-theme-catppuccin.sh` — Catppuccin Red/Black + square picom + square panel + terminal theme | Y |
 | desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
 | desktop | `23-input-fix.sh` — input fixes + light-locker + Super shortcuts | Y |
 | apps | `30-desktop-essentials.sh` — Flatpak, CUPS, firewall, Thunar full, Clipman, Redshift | Y |
@@ -122,12 +123,11 @@ matters:
 | apps | `33-useful-apps.sh` — base tools, Python stack, Ristretto, Atril, Disks | Y |
 | apps | `34-opencode-agent.sh` — OpenCode AI agent + Super+A hotkey + skill file | Y |
 | apps | `35-first-run.sh` — welcome wizard + wallpaper seeder (autostart) | Y |
-| optional | `40-vscodium.sh` — VSCodium (primary editor) | Y |
+| optional | `40-vscodium.sh` — VSCodium (primary editor) + Neovim purge | Y |
 | optional | `41-dev-essentials.sh` — C/C++ + Python toolchains | Y |
 | optional | `43-photogimp.sh` — GIMP + PhotoGIMP layout | N |
 | optional | `44-gaming.sh` — Heroic/Steam/Wine | N |
 | optional | `45-chat.sh` — Vesktop (Discord) / Telegram | N |
-| optional | `46-neovim.sh` — Neovim (Debian apt 0.10) + LazyVim v14 pinned config | N |
 | utils | `50-maintenance.sh` — apt cleanup + dead symlink tidy | N |
 | utils | `51-backup.sh` — timestamped HOME config backup/restore | N |
 | utils | `52-skel-export.sh` — per-user defaults into `/etc/skel` | N |
@@ -164,6 +164,11 @@ snapshots your config into a timestamped tarball before major operations.
 * **No network/volume/password dialogs on minimal?** `10-xfce-core.sh`
   covers `network-manager-gnome` (opt-in), `xfce-polkit` and `dbus-x11` —
   re-run it if you skipped it the first time.
+* **Wi-Fi says "device not managed"?** Minimal installs leave the
+  installer claiming interfaces in `/etc/network/interfaces` plus
+  Debian's `[ifupdown] managed=false` default — re-run
+  `bash scripts/10-xfce-core.sh` (§5 trims interfaces to loopback-only,
+  sets `managed=true`, bounces NM), then pick your network in the applet.
 * **Beep still there?** Four independent sources are all silenced by
   `20-xfce-debloat.sh` (pcspkr module, X11 bell, XFCE event sounds,
   readline). Anything left is per-app (e.g. the terminal's own bell toggle).
@@ -202,11 +207,15 @@ butterbash/      bundled ButterBash, used offline
   blindly force-installed or force-purged, so re-running any script is
   safe. Destructive writes (grub, initramfs, greeter confs) are backed up
   first (`*.bak.<timestamp>`).
-- Env vars honored: `DEBSWAY_ASSUME_YES=1` (unattended),
-  `DEBSWAY_SKIP_APT_UPDATE=1`, `DEBSWAY_PRIV=doas|sudo`, plus upstream
-  pins `XFCE_GTK_REF=`, `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`,
-  `BETTERFOX_TAG=150.0`. Resolved theme SHAs land in
-  `~/.local/state/devuan-xfce-setup/`.
+- Env vars honored: `DEBSWAY_ASSUME_YES=1` (unattended, take each default),
+  `DEBSWAY_FULL=1` (full run — every `ask()` answers Yes automatically;
+  set by `run.sh --full` / `install.sh`), `DEBSWAY_SKIP_APT_UPDATE=1`,
+  `DEBSWAY_PRIV=doas|sudo`, plus upstream pins `XFCE_GTK_REF=`,
+  `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`, `BETTERFOX_TAG=150.0`.
+  Resolved theme SHAs land in `~/.local/state/devuan-xfce-setup/`.
+  Safety prompts (`apt full-upgrade`, backup restore, battery cap,
+  PhotoGIMP version mismatch, Conky/Plank/graphs) use `ask_no_full()` and
+  never auto-fire, even on `--full`.
 - Nothing auto-enables a firewall deny rule without the SSH-safe guard in
   `30-desktop-essentials.sh`. Install and get out of the way.
 - Reboot (or at least log out/in) after a full run — group membership,

@@ -44,5 +44,46 @@ is XFS on OpenRC):
 - Lean minimal-install core (`10-xfce-core.sh`, no tasksel/SLiM) + backports
 - XFCE-native: xfce4-terminal replaces Alacritty, VSCodium-only editor,
   stock shooter/notifyd, full Thunar plugin set, LightDM look
-- Utils: time-sync, OpenCode agent, Neovim pin, maintenance, backup,
+- Utils: time-sync, OpenCode agent, maintenance, backup,
   skel-export, `verifySetup.sh`, AI skill file, `configs/` sources
+
+## Unreleased — square panel/picom, VSCodium-only, fully automatic --full
+
+- Picom: square (`corner-radius 0`), snappier fades, inactive-window dim
+  (0.95) + terminal opacity rule, fullscreen opacity/unredir excludes,
+  animated fork auto-built on `--full` (skipped when already present),
+  autostart re-resolves `picom` vs `/usr/local/bin/picom` on re-runs
+- Panel: single curated layout (whiskermenu part of it), square `gtk.css`
+  (no `opacity:` text-fade — transparency via xfconf `background-alpha`),
+  30px / full-width / locked geometry + flat labeled tasklist, all
+  `--add` calls idempotent (clipman/genmon/whiskermenu/cpugraph/netload
+  never duplicate on re-run)
+- Neovim retired: `46-neovim.sh` deleted, `40-vscodium.sh` purges the
+  package + script-managed shims and moves `~/.config/nvim` aside;
+  `v`/`vv`/`EDITOR` retargeted to `codium`
+- Automatic: `ask()` answers Yes under `DEBSWAY_FULL=1` (`install.sh`
+  never stops); `ask_no_full()` shields `apt full-upgrade`, backup
+  restore, battery cap, PhotoGIMP mismatch, Conky/Plank/graphs
+
+## Unreleased — crash fixes + minimal fancy fastfetch
+
+- Fixed `SCRIPT_DIR: unbound variable` fatal in `16-firefox.sh`,
+  `18-butterbash.sh`, `41-dev-essentials.sh` (sourced `lib/common.sh`
+  before defining `SCRIPT_DIR` under `set -u`); audited all 29 scripts —
+  no other instances. `16` now also ensures `curl` before the Betterfox
+  fetch instead of dying on minimal systems
+- `19-fastfetch.sh` rewritten minimal: one locally-written fancy
+  `config.jsonc` (small logo, red keys, essentials only, JSON-validated),
+  Mocha-only btop theme, zero hard exits (fetch failures warn and continue)
+
+## Unreleased — doas keeps asking? fixed
+
+- `ensure_doas_persist()` now NORMALIZES `/etc/doas.conf` instead of
+  blindly appending: any stale persist-less `permit <user>` line shadowing
+  the cached rule (doas is last-match-wins) is replaced by the single
+  canonical `permit persist <user> as root`; deliberate `nopass` rules,
+  comments, deny lines and other users are preserved; rejected rewrites
+  roll back from backup. Also fixed a real `doas -C` syntax rejection on
+  files without a trailing newline
+- `require_not_root()` no longer cries wolf when privilege is already
+  proven (warm `doas -n`/`sudo -n` timestamp short-circuits the heuristic)

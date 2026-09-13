@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+<action>
+<icon>utilities-terminal</icon>
+<name>Open Terminal Here</name>
+<unique-id>open-terminal-here</unique-id>
+<command>exo-open --working-directory %f --launch TerminalEmulator</command>
+<description>Open the default terminal in this folder</description>
+<patterns>*</patterns>
+<directories/>
+</action>
+<action>
+<icon>utilities-terminal</icon>
+<name>Open as Root</name>
+<unique-id>open-as-root</unique-id>
+<command>pkexec thunar %f</command>
+<description>Open this folder with elevated privileges</description>
+<patterns>*</patterns>
+<directories/>
+</action>
+</actions>

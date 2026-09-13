@@ -94,8 +94,8 @@ alias gclone='git clone'
 # ============================================================================
 # EDITORS AND CONFIG
 # ============================================================================
-alias v='nvim'
-alias vv='nvim .'
+alias v='codium'
+alias vv='codium .'
 alias e='micro'
 alias n='nano'
 
@@ -104,7 +104,7 @@ alias bashrc='${EDITOR} ~/.bashrc'
 alias reload='source ~/.bashrc && echo "Reloaded .bashrc"'
 alias zshrc='${EDITOR} ~/.zshrc'
 alias vimrc='${EDITOR} ~/.vimrc'
-alias nvimrc='${EDITOR} ~/.config/nvim/init.vim'
+alias nvimrc='${EDITOR} ~/.config/Code/User/settings.json'
 alias tmuxconf='${EDITOR} ~/.tmux.conf'
 
 # ============================================================================
