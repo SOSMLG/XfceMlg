@@ -48,9 +48,11 @@ done
 
 # Unattended: every ask() takes its default.
 export DEBSWAY_ASSUME_YES=1
-# Everything on by default EXCEPT when --core trims the optional groups.
+# Everything on by default EXCEPT when --core trims the optional + utils
+# groups (a plain --yes would still pull the default-Y optional steps
+# 40-vscodium.sh / 41-dev-essentials.sh into a "core" run).
 if [ "$CORE" -eq 1 ]; then
-    PASSTHRU+=(--yes)
+    PASSTHRU+=(--yes --phase core,desktop,apps)
 else
     PASSTHRU+=(--full)
 fi

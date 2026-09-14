@@ -2,9 +2,10 @@
 
 A post-install toolkit that turns a fresh **Devuan 6 (Excalibur)** install
 (binary-compatible with **Debian 13 (Trixie)**) into a lean, finished
-**XFCE** desktop — Catppuccin **Red/Black** themed from boot splash to login
-screen to terminal, Firefox ESR hardened, TLP battery-capped, Thunar fully
-plugged in, and installable with **one command, fully unattended**.
+**XFCE** desktop — **Tokyo Night** themed (dark `#1a1b26`, accent `#bf616a`)
+from boot splash to login screen to terminal, **Alacritty** as the default
+terminal, Firefox ESR hardened, TLP battery-capped, Thunar fully plugged in,
+and installable with **one command, fully unattended**.
 
 Works from two starting points: a distro installer where **XFCE is already
 present**, or a **minimal netinst** with no desktop at all (the toolkit
@@ -37,7 +38,8 @@ git clone <this-repo> && cd devuan-xfce-setup
 ```
 
 `install.sh` = `run.sh --full --verify`: every step answers **yes** automatically
-(including the optional groups: VSCodium, gaming, chat, PhotoGIMP, dev tools).
+(including the optional groups: VSCodium, dev tools, heavy opt-ins, gaming,
+chat, PhotoGIMP).
 Neovim was retired — VSCodium is the editor, and `40-vscodium.sh` purges it.
 Variants:
 
@@ -67,7 +69,9 @@ matters:
   escalation can't work — `12-user-groups.sh` sets up the doas persist rule
   so the rest of the run asks for your password once.
 * **No desktop at all.** That's fine — `10-xfce-core.sh` installs a lean
-  `--no-install-recommends` XFCE set (session, xfwm4, panel, xfce4-terminal,
+  `--no-install-recommends` XFCE set (session, xfwm4, panel, xfce4-terminal
+  as the base fallback terminal — Alacritty takes over as the default in
+  `21-theme-tokyonight.sh`,
   Thunar base, LightDM + gtk-greeter, polkit, gvfs) directly, deliberately
   bypassing `task-xfce-desktop`: tasksel prefers **SLiM** as its DM and
   bundles Parole/QuodLibet/Mousepad that would only be purged again. If SLiM
@@ -79,9 +83,9 @@ matters:
 
 | Layer | Choice |
 |---|---|
-| Desktop | **XFCE 4.20 on X11** (floating, traditional panel) via **LightDM + gtk-greeter** login, themed to match |
-| Theme | Catppuccin **Mocha/Black + Red** (ThinkPad chassis + TrackPoint nub): GTK2/3/4 + xfwm4, mocha-red cursors, `Catppuccin-SE-Local` lean icons, panel CSS, matching Plymouth + GRUB + LightDM |
-| Terminal | **xfce4-terminal** (X11-native; foot is Wayland-only, Alacritty removed) themed Catppuccin Red, wired as THE terminal via `x-terminal-emulator` + exo `helpers.rc` |
+| Desktop | **XFCE 4.20 on X11** (floating, single panel) via **LightDM + gtk-greeter** login, themed to match |
+| Theme | **Tokyo Night** (dark `#1a1b26`, accent `#bf616a`): GTK + xfwm4 ("Tokyo Night - Bordered"), rounded single bottom panel + genmon widgets, matching Plymouth + GRUB + LightDM, bundled wallpapers |
+| Terminal | **Alacritty** (GPU terminal) themed Tokyo Night, wired as THE terminal via `x-terminal-emulator` + exo `helpers.rc` |
 | Shortcuts | Super-based set (terminal, files, appfinder, screenshots, clipman, tiling, workspaces) + `Ctrl+Alt+L` lock via **light-locker** |
 | First login | Welcome wizard (update + Timeshift check, once) + wallpaper seeder (new monitors only, never overwrites) |
 | Files | **Thunar, full set**: volman automount, archive-plugin + xarchiver, media-tags, vcs, gtkhash, font-manager, `gvfs-backends` (Trash/MTP), tumbler thumbnails, custom actions (Terminal Here, Open as Root) |
@@ -112,12 +116,12 @@ matters:
 | core | `16-firefox.sh` — Firefox ESR + Betterfox hardening | Y |
 | core | `17-fonts.sh` — Noto, Font Awesome, JetBrainsMono Nerd Font | Y |
 | core | `18-butterbash.sh` — ButterBash + XFCE shell additions | Y |
-| core | `19-fastfetch.sh` — minimal fancy fastfetch config + Mocha btop | Y |
+| core | `19-fastfetch.sh` — minimal fancy fastfetch config (anime ascii art) + btop | Y |
 | desktop | `20-xfce-debloat.sh` — trim task apps, keep XFCE-native, silence beep | Y |
-| desktop | `21-theme-catppuccin.sh` — Catppuccin Red/Black + square picom + square panel + terminal theme | Y |
+| desktop | `21-theme-tokyonight.sh` — Tokyo Night rice: GTK/xfwm4 + rounded panel + Alacritty theme | Y |
 | desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
 | desktop | `23-input-fix.sh` — input fixes + light-locker + Super shortcuts | Y |
-| apps | `30-desktop-essentials.sh` — Flatpak, CUPS, firewall, Thunar full, Clipman, Redshift | Y |
+| apps | `30-desktop-essentials.sh` — Flatpak, portal, geoclue, CUPS, firewall, Thunar full, Clipman, Redshift | Y |
 | apps | `31-timeshift.sh` — Timeshift snapshots | Y |
 | apps | `32-time-sync.sh` — chrony NTP time sync | N |
 | apps | `33-useful-apps.sh` — base tools, Python stack, Ristretto, Atril, Disks | Y |
@@ -128,6 +132,7 @@ matters:
 | optional | `43-photogimp.sh` — GIMP + PhotoGIMP layout | N |
 | optional | `44-gaming.sh` — Heroic/Steam/Wine | N |
 | optional | `45-chat.sh` — Vesktop (Discord) / Telegram | N |
+| optional | `46-heavy-optins.sh` — Thunderbird / LibreOffice / OBS Studio (default-N opt-ins) | N |
 | utils | `50-maintenance.sh` — apt cleanup + dead symlink tidy | N |
 | utils | `51-backup.sh` — timestamped HOME config backup/restore | N |
 | utils | `52-skel-export.sh` — per-user defaults into `/etc/skel` | N |
@@ -142,7 +147,7 @@ bash scripts/verifySetup.sh   # anytime
 ```
 
 Prints PASS/FAIL/WARN for groups, lean-core packages, Thunar plugins,
-fonts, Firefox policy, Catppuccin markers (GTK/icons/terminalrc), the
+fonts, Firefox policy, Tokyo Night markers (GTK/icons/Alacritty), the
 LightDM greeter conf, SLiM absence, and services (LightDM, TLP,
 Bluetooth, CUPS, chrony…). Exits non-zero on any FAIL — so it can gate CI.
 
@@ -214,7 +219,7 @@ butterbash/      bundled ButterBash, used offline
   `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`, `BETTERFOX_TAG=150.0`.
   Resolved theme SHAs land in `~/.local/state/devuan-xfce-setup/`.
   Safety prompts (`apt full-upgrade`, backup restore, battery cap,
-  PhotoGIMP version mismatch, Conky/Plank/graphs) use `ask_no_full()` and
+  PhotoGIMP version mismatch) use `ask_no_full()` and
   never auto-fire, even on `--full`.
 - Nothing auto-enables a firewall deny rule without the SSH-safe guard in
   `30-desktop-essentials.sh`. Install and get out of the way.

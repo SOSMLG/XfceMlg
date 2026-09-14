@@ -2,6 +2,38 @@
 
 Tag a release with: `git tag -a "v$(cat VERSION)" -m "v$(cat VERSION)" && git push --tags`
 
+## 0.3.0 — Tokyo Night rice
+
+Whole-project re-theme from the old Catppuccin/KDE borrowings to a Tokyo Night
+XFCE rice (dark `#1a1b26`, accent `#bf616a`), plus a packing/robustness batch.
+
+### What's New
+- **Tokyo Night theme end-to-end**: `21-theme-catppuccin.sh` renamed to
+  `21-theme-tokyonight.sh`; GTK/xfwm4 relabeled ("Tokyo Night - Bordered"),
+  Plymouth + GRUB + LightDM greeter all re-themed, bundled wallpapers +
+  genmon wiring, rounded single bottom panel rice, Alacritty becomes the
+  default terminal (`helpers.rc` `TerminalEmulator=alacritty`), fastfetch
+  draws bundled anime ascii art
+- New optional heavy script `46-heavy-optins.sh` (default N): Thunderbird,
+  LibreOffice (GTK3-themed with a pre-seeded quiet first-run profile), OBS
+  Studio
+- Portal + geoclue packaging in `30-desktop-essentials.sh`: installs
+  `xdg-desktop-portal-gtk` so Flatpak apps get file dialogs, and writes a
+  `[whitelist]` into `/etc/geoclue-2.0/geoclue.conf` so location-aware
+  XFCE/GTK apps (Maps, Weather, Firefox, Thunderbird, Zen, Java apps) work
+  without a GNOME Location agent
+- Debloat additions in `20-xfce-debloat.sh`: orphaned `.desktop` cleanup,
+  Xfburn set as the default disc burner
+
+### Fixes
+- Dead-code removal (unused helpers/variables stripped)
+- `--core` phase now only pulls the core section (previously dragged desktop)
+- `/etc/skel` writes now go through `priv()` in `52-skel-export.sh`
+- GIMP 2.10 detection now also checks the Flatpak install path in
+  `43-photogimp.sh`
+- Hardcoded `doas` replaced by the shared `priv()` (doas-first, sudo
+  fallback) everywhere it leaked
+
 ## 0.2.0 — Butterbian borrowings
 
 Improvements and notes taken from Butterbian-XFCE (live-ISO builder, studied

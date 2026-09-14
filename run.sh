@@ -153,7 +153,7 @@ declare -A RENAMED=(
     [bluetoothSetup]=14-bluetooth.sh [multimediaCodecs]=15-codecs.sh
     [firefoxHarden]=16-firefox.sh [installFonts]=17-fonts.sh
     [terminalButterbash]=18-butterbash.sh [fastfetchConfig]=19-fastfetch.sh
-    [xfceDebloat]=20-xfce-debloat.sh [catppuccinTheme]=21-theme-catppuccin.sh
+    [xfceDebloat]=20-xfce-debloat.sh     [tokyonightTheme]=21-theme-tokyonight.sh
     [bootThemeSetup]=22-theme-boot.sh [touchpadTrackpointFix]=23-input-fix.sh
     [desktopEssentials]=30-desktop-essentials.sh [timeshiftSetup]=31-timeshift.sh
     [usefulApps]=33-useful-apps.sh [installVscodium]=40-vscodium.sh
@@ -322,7 +322,7 @@ if [ "$SKIP_APT_UPDATE" -eq 0 ]; then
 fi
 
 # --- Summary log -----------------------------------------------------------
-STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/deb-sway-thinkpad"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/devuan-xfce-setup"
 mkdir -p "$STATE_DIR"
 LOG_FILE="$STATE_DIR/last-run.log"
 record_run() { printf '%(%F %T)T  %s\n' -1 "$1" >> "$LOG_FILE"; }
