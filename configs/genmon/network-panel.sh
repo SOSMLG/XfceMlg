@@ -1,74 +1,65 @@
 #!/usr/bin/env bash
+# Dependencies: bash>=3.2, coreutils, file, gawk, iproute2
 
 readonly DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Icon path
 readonly ICON="${DIR}/icons/network/globe.svg"
 
-# Displays network interface dengan ipv4 (local)
-readonly TOOLTIP=$(ship --ipv4)
+# Default routing interface (auto-detected — no hardcoded wlp3s0)
+readonly INTERFACE="$(ip route show default 2>/dev/null | awk '{print $5; exit}')"
 
-# Offline
-ip route | grep ^default &>/dev/null || \
-  echo -ne "<txt> Offline</txt>" || \
-    echo -ne "<tool> Offline</tool>" || \
-      exit
+# Offline — show a muted state and bail out cleanly
+if [[ -z "$INTERFACE" ]] || [[ ! -d "/sys/class/net/${INTERFACE}" ]]; then
+  echo -ne "<txt> Offline</txt><tool>No default route — offline</tool>"
+  exit 0
+fi
 
-# Interface unknown
-test -d "/sys/class/net/wlp3s0" || \
-  echo -ne "<txt>Invalid</txt>" || \
-    echo -ne "<tool>Interface tidak ditemukan</tool>" || \
-      exit
-# PRX=$(awk '{print $0}' "/sys/class/net/${INTERFACE}/statistics/rx_bytes")
-PTX=$(awk '{print $0}' "/sys/class/net/wlp3s0/statistics/tx_bytes")
+# Local IPv4 addresses for the tooltip
+readonly TOOLTIP="$(ip -4 addr show dev "$INTERFACE" 2>/dev/null | awk '/inet /{print $2}' | paste -sd ' ')"
+
+INTF_DIR="/sys/class/net/${INTERFACE}"
+
+PTX=$(awk '{print $1}' "${INTF_DIR}/statistics/tx_bytes")
+PRX=$(awk '{print $1}' "${INTF_DIR}/statistics/rx_bytes")
 sleep 1
-# CRX=$(awk '{print $0}' "/sys/class/net/${INTERFACE}/statistics/rx_bytes")
-CTX=$(awk '{print $0}' "/sys/class/net/wlp3s0/statistics/tx_bytes")
+CTX=$(awk '{print $1}' "${INTF_DIR}/statistics/tx_bytes")
+CRX=$(awk '{print $1}' "${INTF_DIR}/statistics/rx_bytes")
 
-# BRX=$(( CRX - PRX ))
 BTX=$(( CTX - PTX ))
+BRX=$(( CRX - PRX ))
 
-function hasil_untuk_panel () {
-  
-  local BANDWIDTH="${1}"
-  local P=1
-  
-  while [[ $(echo "${BANDWIDTH}" '>' 1024 | bc -l) -eq 1 ]]; do
-    BANDWIDTH=$(awk '{$1 = $1 / 1024; printf "%.2f", $1}' <<< "${BANDWIDTH}")
-    P=$(( P + 1 ))
-  done
-  
-  case "${P}" in
-    0) BANDWIDTH="${BANDWIDTH} B/s" ;;
-    1) BANDWIDTH="${BANDWIDTH} KB/s" ;;
-    2) BANDWIDTH="${BANDWIDTH} MB/s" ;;
-    3) BANDWIDTH="${BANDWIDTH} GB/s" ;;
-  esac
-  
-  echo -e "${BANDWIDTH}"
-  
-  return 1
+fmt_rate() {
+  awk -v b="$1" 'BEGIN {
+    n = b; p = 0;
+    while (n > 1024) { n = n / 1024; p++ }
+    u = (p==0) ? "B/s" : ((p==1) ? "KB/s" : ((p==2) ? "MB/s" : "GB/s"));
+    printf "%.2f %s", n, u
+  }'
 }
 
-# RX=$(hasil_untuk_panel ${BRX})
-TX=$(hasil_untuk_panel ${BTX})
+RX=$(fmt_rate "${BRX}")
+TX=$(fmt_rate "${BTX}")
 
 # Panel
 if [[ $(file -b "${ICON}") =~ PNG|SVG ]]; then
   INFO="<img>${ICON}</img>"
-  if hash xfce4-taskmanager &> /dev/null; then
+  if command -v xfce4-taskmanager &> /dev/null; then
     INFO+="<click>xfce4-taskmanager</click>"
   fi
   INFO+="<txt>"
 else
   INFO="<txt>"
 fi
-INFO+=" ${TX}"
+INFO+=" ▼${RX} ▲${TX}"
 INFO+="</txt>"
 
 # Tooltip
 MORE_INFO="<tool>"
-MORE_INFO+="${TOOLTIP}"
+MORE_INFO+="Interface: ${INTERFACE}\n"
+MORE_INFO+="IPv4: ${TOOLTIP:-none}\n"
+MORE_INFO+="Download: ${RX}\n"
+MORE_INFO+="Upload: ${TX}"
 MORE_INFO+="</tool>"
 
 # Panel Print
