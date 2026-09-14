@@ -69,9 +69,8 @@ matters:
   escalation can't work — `12-user-groups.sh` sets up the doas persist rule
   so the rest of the run asks for your password once.
 * **No desktop at all.** That's fine — `10-xfce-core.sh` installs a lean
-  `--no-install-recommends` XFCE set (session, xfwm4, panel, xfce4-terminal
-  as the base fallback terminal — Alacritty takes over as the default in
-  `21-theme-tokyonight.sh`,
+  `--no-install-recommends` XFCE set (session, xfwm4, panel, alacritty as
+  the default terminal,
   Thunar base, LightDM + gtk-greeter, polkit, gvfs) directly, deliberately
   bypassing `task-xfce-desktop`: tasksel prefers **SLiM** as its DM and
   bundles Parole/QuodLibet/Mousepad that would only be purged again. If SLiM
@@ -95,7 +94,7 @@ matters:
 | Shell | **ButterBash**: saner bash (aliases, `eza`/`bat`, fzf/zoxide, starship) + XFCE additions block |
 | Compositor | **picom** (square fades + fork animations, inactive dim, no shadows/blur, unredirects fullscreen; xfwm4 compositing stays off) |
 | Notifications | **xfce4-notifyd** stock (Dunst stays opt-in) |
-| Capture | **xfce4-screenshooter** on `Print` (Flameshot stays opt-in) |
+| Capture | **Flameshot** on `Print` (region-select with annotate/blur; xfce4-screenshooter stays opt-in) |
 | Clipboard | **xfce4-clipman** panel plugin |
 | Night light | **Redshift** (geoclue-located, 6500K→4500K) |
 | Battery | **TLP** + 80% charge cap on supporting ThinkPads |
