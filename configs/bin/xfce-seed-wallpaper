@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# xfce-seed-wallpaper — set a default backdrop only where none exists.
+# Deployed by scripts/35-first-run.sh as an autostart entry (runs each login
+# so newly connected monitors get seeded too).
+#
+# The cardinal rule, learned from Butterbian's 0.4.1 bugfix: NEVER overwrite
+# a backdrop the user already chose. Monitors with a last-image property are
+# skipped unconditionally — first login and new displays get the default,
+# everything else is left alone.
+#
+# The image is the first one found under the usual user picture locations
+# (the toolkit ships no bundled art; 22-* stages the login background from
+# these same dirs). No image found → exit silently.
+
+# Wait for xfdesktop to be ready
+sleep 2
+command -v xfconf-query &>/dev/null || exit 0
+command -v xrandr &>/dev/null || exit 0
+
+WALLPAPER=""
+for dir in "$HOME/Pictures" "$HOME/.local/share/backgrounds" "$HOME/.config/xfce4/backdrops"; do
+    found=$(find "$dir" -maxdepth 2 -type f \( -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" \) 2>/dev/null | head -1)
+    if [[ -n "$found" ]]; then WALLPAPER="$found"; break; fi
+done
+[[ -z "$WALLPAPER" ]] && exit 0
+
+changed=0
+while IFS= read -r output; do
+    base="/backdrop/screen0/monitor${output}/workspace0"
+    # Respect the user's choice: only seed monitors with no backdrop yet
+    xfconf-query -c xfce4-desktop -p "${base}/last-image" >/dev/null 2>&1 && continue
+    xfconf-query -c xfce4-desktop -p "${base}/last-image" \
+        --create -t string -s "$WALLPAPER" 2>/dev/null || true
+    xfconf-query -c xfce4-desktop -p "${base}/image-style" \
+        --create -t int -s 5 2>/dev/null || true  # 5 = zoom/fill
+    changed=1
+done < <(xrandr --query 2>/dev/null | awk '/ connected/ {print $1}')
+
+if [ "$changed" -eq 1 ]; then
+    xfdesktop --reload 2>/dev/null || true
+fi
