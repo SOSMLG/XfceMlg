@@ -42,30 +42,11 @@ require_not_root
 
 
 
-enable_service() {
-    local svc="$1"
-    if command -v systemctl &>/dev/null && [[ -d /run/systemd/system ]]; then
-        priv systemctl enable --now "$svc" &>/dev/null || log_warn "Couldn't enable/start $svc via systemctl."
-    else
-        priv service "$svc" start &>/dev/null || log_warn "Couldn't start $svc via service(8)."
-        priv update-rc.d "$svc" defaults &>/dev/null || true
-    fi
-}
-
-restart_service() {
-    local svc="$1"
-    if command -v systemctl &>/dev/null && [[ -d /run/systemd/system ]]; then
-        priv systemctl restart "$svc" &>/dev/null || true
-    else
-        priv service "$svc" restart &>/dev/null || true
-    fi
-}
-
 apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
 log_head "1/5  Core Bluetooth stack"
 install_pkgs "Bluetooth core" bluez bluez-tools rfkill
-enable_service bluetooth
+start_service bluetooth
 
 if command -v rfkill &>/dev/null; then
     if rfkill list bluetooth 2>/dev/null | grep -qi "blocked: yes"; then
@@ -134,7 +115,7 @@ if ask "Enable BlueZ's experimental features (better codec negotiation for earbu
         else
             printf '[General]\nExperimental = true\n' | priv tee -a "$MAIN_CONF" >/dev/null
         fi
-        restart_service bluetooth
+        start_service bluetooth
         log_ok "Experimental mode enabled in $MAIN_CONF and bluetoothd restarted."
     else
         log_warn "$MAIN_CONF not found — bluez packaging may have changed. Skipping."
@@ -182,7 +163,7 @@ case "$AUDIO_SERVER" in
         (pulseaudio --start &>/dev/null &) || true
         ;;
 esac
-restart_service bluetooth
+start_service bluetooth
 
 echo
 log_ok "Bluetooth stack ready: $AUDIO_SERVER is the detected/installed audio backend."

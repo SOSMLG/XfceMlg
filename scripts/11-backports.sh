@@ -5,7 +5,7 @@
 # Backports — enable <suite>-backports + apt pinning
 # -------------------------------------------------------
 # Backports let you pull newer versions of stable packages
-# (e.g. a newer sway, mesa, linux-image) without upgrading
+# (e.g. a newer mesa, linux-image, xfce4-panel) without upgrading
 # the whole distro. They're installed at priority 100 here,
 # so you only get them when you explicitly ask for a
 # -t <suite>-backports install, or when something depends
@@ -114,7 +114,7 @@ if priv apt-get update; then
         || priv apt-cache policy 2>/dev/null | grep -qi "$BACKPORTS_SUITE"; then
         log_ok "$BACKPORTS_SUITE is live. Install from it with:"
         log_ok "    doas apt install -t ${BACKPORTS_SUITE} <package>"
-        log_ok "e.g. newer sway: doas apt install -t ${BACKPORTS_SUITE} sway"
+        log_ok "e.g. newer mesa: doas apt install -t ${BACKPORTS_SUITE} mesa"
     else
         log_warn "$BACKPORTS_SUITE didn't visibly show up in apt-cache policy yet —"
         log_warn "double-check $SRCS_FILE contents, then 'doas apt-get update'."

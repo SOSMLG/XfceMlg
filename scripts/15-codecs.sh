@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: Audio/video codecs, DVD playback, Audacity/Shotcut
+# DEBSWAY_DESC: Audio/video codecs, DVD playback
 # DEBSWAY_DEFAULT: Y
 # =======================================================
 # Multimedia Codecs
@@ -27,7 +27,7 @@ require_not_root
 log_head "Multimedia Codecs"
 
 
-apt_update || { log_err "apt-get update failed, aborting."; exit 1; }
+apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
 # ---------------------------------------------------------------------------
 # 1. Core codec packages

@@ -78,11 +78,15 @@ Section "InputClass"
     MatchProduct "TrackPoint|trackpoint|Trackpoint|DualPoint Stick"
     Driver "libinput"
     Option "AccelSpeed" "0.3"
+    Option "ScrollMethod" "button"
+    Option "ScrollButton" "2"
 EndSection
 EOF
     log_ok "Wrote $XORG_CONF_FILE"
     log_warn "XFCE's own Settings > Mouse and Touchpad panel (libinput-based) covers the same ground"
     log_warn "graphically if you'd rather use that instead."
+    log_info "Middle-button + trackpoint = scroll (Windows-style). TrackPoint tap = middle-click"
+    log_info "(paste in most apps). Fn+Esc toggles the BIOS FnLock for F1-F12 media keys."
 fi
 
 log_head "3/3  Screen locker + Super shortcuts (Butterbian set, adapted)"
@@ -116,9 +120,9 @@ if command -v xfconf-query &>/dev/null && ask "Install the Super-based shortcut 
     bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>Return" "exo-open --launch TerminalEmulator"
     bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>f" "thunar"
     bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>space" "xfce4-appfinder"
-    bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>s" "xfce4-screenshooter"
-    bind_key xfce4-keyboard-shortcuts "/commands/custom/<Shift><Super>s" "xfce4-screenshooter -r"
-    bind_key xfce4-keyboard-shortcuts "/commands/custom/<Alt><Super>s" "xfce4-screenshooter -w"
+    bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>s" "flameshot gui"
+    bind_key xfce4-keyboard-shortcuts "/commands/custom/<Shift><Super>s" "flameshot full"
+    bind_key xfce4-keyboard-shortcuts "/commands/custom/<Alt><Super>s" "flameshot screen"
     bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>v" "xfce4-popup-clipman"
     # -- window actions (xfwm4 channel) --
     bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>q" "close_window_key"

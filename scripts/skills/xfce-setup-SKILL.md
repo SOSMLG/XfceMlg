@@ -49,7 +49,8 @@ system:
     `font-manager`) plus `gvfs-backends` (Trash/MTP) and `tumbler`
     thumbnails. Custom actions live in `~/.config/Thunar/uca.xml`.
   - Notifications are **xfce4-notifyd** (stock), screenshots are
-    **xfce4-screenshooter** (`Print` key), clipboard history is
+    **Flameshot** (`Print` = `flameshot gui`, `Super+S` shortcuts via
+    `23-input-fix.sh`), clipboard history is
     **xfce4-clipman**, night-light is **Redshift**, compositor is **picom**
     (fades only; xfwm4's built-in compositing stays off so the two don't
     fight).

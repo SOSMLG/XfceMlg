@@ -3,8 +3,8 @@
 # DEBSWAY_DEFAULT: Y
 #  20-xfce-debloat.sh — trim the default task-xfce-desktop app set.
 #  Stays XFCE-native: VSCodium (40-*) replaces Mousepad, VLC replaces
-#  Parole, while xfce4-screenshooter and xfce4-notifyd are KEPT
-#  (Flameshot/Dunst stay opt-in below), and
+#  Parole, while flameshot and xfce4-notifyd are the defaults
+#  (xfce4-screenshooter and Dunst stay opt-in below), and
 #  kill the system beep for good — that's genuinely four unrelated
 #  sources (PC speaker, X11 bell, XFCE's own event-sound bell, and
 #  bash's readline bell), which is why so many "I turned it off but
@@ -58,26 +58,35 @@ if ask "Remove Xfburn (CD/DVD burner — skip if you actually use an optical dri
     purge_if_installed "Xfburn" xfburn
 fi
 
-log_head "4/7  Screenshots: stock xfce4-screenshooter (Flameshot opt-in)"
-if ask "Replace xfce4-screenshooter with Flameshot (region select with built-in annotate/blur/pin/upload)?" "N"; then
-    priv apt-get install -y flameshot || log_warn "Flameshot failed to install — leaving xfce4-screenshooter in place."
-    if is_installed flameshot; then
-        purge_if_installed "xfce4-screenshooter" xfce4-screenshooter
+log_head "4/7  Screenshots: flameshot default (xfce4-screenshooter opt-in)"
+if ask "Replace flameshot with stock xfce4-screenshooter (simpler, no annotate/blur)?" "N"; then
+    priv apt-get install -y xfce4-screenshooter || log_warn "xfce4-screenshooter failed to install — keeping flameshot."
+    if is_installed xfce4-screenshooter; then
+        purge_if_installed "flameshot" flameshot
 
         # Print Screen is bound via xfconf, not a config file — check
         # whether the property already exists (it does by default, bound
-        # to xfce4-screenshooter) before deciding create-new vs update.
+        # to flameshot) before deciding create-new vs update.
+        if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" &>/dev/null; then
+            xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -s "xfce4-screenshooter -r"
+        else
+            xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -n -t string -s "xfce4-screenshooter -r"
+        fi
+        log_ok "Print Screen now opens xfce4-screenshooter's region-select dialog."
+    fi
+else
+    log_warn "Skipped — keeping flameshot."
+    # Default path: flameshot is installed by 10-xfce-core.sh, but XFCE's
+    # stock Print binding still points at xfce4-screenshooter (now absent).
+    # Rebind Print to flameshot so the key doesn't silently do nothing.
+    if is_installed flameshot; then
         if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" &>/dev/null; then
             xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -s "flameshot gui"
         else
             xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -n -t string -s "flameshot gui"
         fi
-        log_ok "Print Screen now opens Flameshot's region-select overlay."
-        log_warn "If xfce4-screenshooter-plugin was on your panel, it'll show as broken now — right-click"
-        log_warn "it → Remove, then add a Launcher pointing at 'flameshot gui' if you want a panel button."
+        log_ok "Print Screen opens flameshot's region-select overlay."
     fi
-else
-    log_warn "Skipped — keeping xfce4-screenshooter."
 fi
 
 log_head "5/7  xfce4-notifyd → Dunst"

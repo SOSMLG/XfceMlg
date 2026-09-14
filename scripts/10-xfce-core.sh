@@ -26,9 +26,10 @@ log_head "XFCE core (lean, no tasksel)"
 LEAN_PKGS=(
     xorg
     xfce4-session xfwm4 xfce4-panel xfce4-settings xfce4-appfinder
-    xfce4-terminal
+    alacritty
+    xfce4-whiskermenu-plugin
     thunar thunar-volman tumbler
-    xfce4-power-manager xfce4-notifyd xfce4-screenshooter
+    xfce4-power-manager xfce4-notifyd flameshot
     xfce4-pulseaudio-plugin xfce4-taskmanager
     light-locker
     xfce-polkit dbus-x11

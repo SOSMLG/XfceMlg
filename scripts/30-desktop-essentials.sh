@@ -150,7 +150,7 @@ if ask "Install the full Thunar plugin set + configure auto-mount, thumbnails an
         gvfs gvfs-backends gvfs-fuse thunar-volman \
         tumbler ffmpegthumbnailer libgsf-bin \
         thunar-archive-plugin thunar-media-tags-plugin \
-        thunar-vcs-plugin thunar-gtkhash thunar-font-manager \
+        thunar-vcs-plugin thunar-gtkhash \
         smbclient cifs-utils xarchiver
     # volman: auto-mount + auto-open removable media (the "USB does nothing" fix)
     if command -v xfconf-query &>/dev/null; then

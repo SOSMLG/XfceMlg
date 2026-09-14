@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: First-run welcome + wallpaper seeder (autostart entries)
+# DEBSWAY_DESC: First-run welcome + wallpaper seeder + Firefox bookmarks
 # DEBSWAY_DEFAULT: Y
 # =======================================================
 # First run — welcome wizard + wallpaper seeder
@@ -66,6 +66,20 @@ fi
 if ask "Deploy the wallpaper seeder (fills only monitors with no backdrop yet)?"; then
     deploy "xfce-seed-wallpaper" "xfce-seed-wallpaper.desktop" \
         "Seed Default Wallpaper" "Default backdrop for new monitors only — never overwrites yours." || true
+fi
+
+# Curated bookmark set (Devuan, XFCE, ThinkPad, tools) — deployed as an
+# importable HTML, not injected into a live places.sqlite (writing to a
+# running Firefox profile DB is fragile and version-sensitive).
+if ask "Deploy the curated Firefox bookmarks file (~/bookmarks.html, import in one click)?"; then
+    BK_SRC="$SCRIPT_DIR/../configs/firefox/bookmarks.html"
+    if [[ -f "$BK_SRC" ]]; then
+        cp "$BK_SRC" "$HOME/bookmarks.html"
+        log_ok "Bookmarks deployed to ~/bookmarks.html."
+        log_info "Import with: firefox -import-bookmarks-from-html ~/bookmarks.html"
+    else
+        log_warn "Bookmarks source missing at $BK_SRC — skipping."
+    fi
 fi
 
 # ~/.local/bin must be on PATH for the autostart Exec lines to resolve

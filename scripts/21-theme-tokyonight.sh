@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: Tokyo Night GTK/xfwm4/icons + alacritty + panel rice
+# DEBSWAY_DESC: Tokyo Night GTK/xfwm4/icons + alacritty + picom + panel rice
 # DEBSWAY_DEFAULT: Y
 #  21-theme-tokyonight.sh — the whole Tokyo Night look, in one pass.
 #
@@ -27,17 +27,17 @@ require_not_root
 
 apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
-log_head "1/9  Dependencies"
+log_head "1/10  Dependencies"
 priv apt-get install -y \
     gtk2-engines-murrine gnome-themes-extra adwaita-icon-theme \
-    git curl tar alacritty numlockx \
+    git curl tar alacritty numlockx flameshot picom \
     xfce4-whiskermenu-plugin xfce4-docklike-plugin xfce4-genmon-plugin \
     xfce4-pager xfce4-datetime-plugin \
     acpi lm-sensors gawk \
     || log_warn "Some packages failed to install (continuing — the theme may partially apply)."
 log_ok "Dependencies installed."
 
-log_head "2/9  Deploy bundled themes to system roots"
+log_head "2/10  Deploy bundled themes to system roots"
 REPO_THEMES="$SCRIPT_DIR/../configs/themes"
 if [[ -d "$REPO_THEMES" ]]; then
     DEPLOYED=0
@@ -57,7 +57,7 @@ else
     log_warn "No bundled themes found at $REPO_THEMES — theme may be partially applied."
 fi
 
-log_head "3/9  Set active GTK + xfwm4 themes"
+log_head "3/10  Set active GTK + xfwm4 themes"
 GTK_THEME_NAME="Tokyonight-Dark-BL"
 XFWM_THEME_NAME="Tokyo Night - Bordered"
 xfconf-query -c xsettings -p /Net/ThemeName -s "$GTK_THEME_NAME" 2>/dev/null || true
@@ -65,7 +65,7 @@ xfconf-query -c xfwm4 -p /general/theme -s "$XFWM_THEME_NAME" 2>/dev/null || tru
 gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME_NAME" 2>/dev/null || true
 log_ok "GTK theme: $GTK_THEME_NAME, xfwm4 theme: $XFWM_THEME_NAME"
 
-log_head "4/9  Icons + cursors"
+log_head "4/10  Icons + cursors"
 ICONS_DIR="$HOME/.local/share/icons"
 mkdir -p "$ICONS_DIR" "$HOME/.icons"
 
@@ -120,14 +120,14 @@ if [[ -n "$CURSOR_NAME" && -d "$HOME/.icons/$CURSOR_NAME" ]]; then
     log_ok "Cursor theme: $CURSOR_NAME"
 fi
 
-log_head "5/9  Session GTK CSS (subtle dark panel, rounded corners)"
+log_head "5/10  Session GTK CSS (subtle dark panel, rounded corners)"
 GTK3_CSS="$HOME/.config/gtk-3.0/gtk.css"
 mkdir -p "$HOME/.config/gtk-3.0"
 [[ -f "$GTK3_CSS" ]] && { cp "$GTK3_CSS" "${GTK3_CSS}.bak.$(date +%Y%m%d%H%M%S)"; log_info "Backed up existing gtk.css."; }
 cp "$SCRIPT_DIR/../configs/gtk-session.css" "$GTK3_CSS"
 log_ok "Session GTK CSS deployed to $GTK3_CSS"
 
-log_head "6/9  Terminal — Alacritty"
+log_head "6/10  Terminal — Alacritty"
 ALACRITTY_DIR="$HOME/.config/alacritty"
 mkdir -p "$ALACRITTY_DIR"
 ALACRITTY_CONF="$ALACRITTY_DIR/alacritty.yml"
@@ -155,7 +155,69 @@ if [[ -n "$ALACRITTY_BIN" ]] && command -v update-alternatives &>/dev/null; then
     log_ok "update-alternatives: x-terminal-emulator = alacritty"
 fi
 
-log_head "7/9  Genmon + icons deployment"
+log_head "7/10  Compositor — picom (fades only, no shadows)"
+PICOM_CONF="$HOME/.config/picom/picom.conf"
+mkdir -p "$HOME/.config/picom"
+if [[ -f "$PICOM_CONF" ]]; then
+    cp "$PICOM_CONF" "${PICOM_CONF}.bak.$(date +%Y%m%d%H%M%S)"
+fi
+cat > "$PICOM_CONF" << 'PICOMEOF'
+# picom config — written by 21-theme-tokyonight.sh
+# Fades only, no shadows — keeps the panel translucent look clean.
+
+backend = "glx";
+vsync = true;
+glx-no-stencil = true;
+
+# Fading
+fading = true;
+fade-in-step = 0.03;
+fade-out-step = 0.03;
+fade-delta = 5;
+
+# No shadows — the panel's own CSS handles the depth
+shadow = false;
+
+# Transparency for the panel
+inactive-opacity = 0.95;
+active-opacity = 1.0;
+frame-opacity = 1.0;
+opacity-rule = [
+    "100:class_g = 'xfce4-panel'",
+    "100:class_g = 'Thunar'",
+    "100:class_g = 'Alacritty'",
+    "100:_NET_WM_STATE@:32a *= '_NET_WM_STATE_FULLSCREEN'"
+];
+
+# Rounded corners (if picom supports it)
+corner-radius = 8;
+PICOMEOF
+log_ok "Picom config deployed (fades only, no shadows, panel transparency)."
+
+# Autostart picom
+PICOM_AUTOSTART="$HOME/.config/autostart/picom.desktop"
+if [[ ! -f "$PICOM_AUTOSTART" ]]; then
+    cat > "$PICOM_AUTOSTART" << 'PICOMDESKEOF'
+[Desktop Entry]
+Type=Application
+Name=Picom
+Comment=Compositor for translucent panels and smooth fading
+Exec=picom --config ~/.config/picom/picom.conf
+NoDisplay=true
+X-GNOME-Autostart-enabled=true
+PICOMDESKEOF
+    log_ok "Picom autostart entry created."
+fi
+# Start picom now if in a graphical session
+if [[ -n "${DISPLAY:-}" ]]; then
+    pkill -x picom 2>/dev/null || true
+    (picom --config "$PICOM_CONF" &>/dev/null & disown) || true
+    log_ok "Picom started."
+else
+    log_info "No graphical session — picom will start on next login."
+fi
+
+log_head "8/10  Genmon + icons deployment"
 GENMON_DEST="$HOME/.config/xfce4/genmon"
 mkdir -p "$GENMON_DEST/icons"
 cp "$SCRIPT_DIR/../configs/genmon/"*.sh "$GENMON_DEST/"
@@ -163,7 +225,7 @@ chmod 700 "$GENMON_DEST/"*.sh
 cp -r "$SCRIPT_DIR/../configs/genmon/icons/"* "$GENMON_DEST/icons/" 2>/dev/null || true
 log_ok "Genmon scripts + icons deployed to $GENMON_DEST"
 
-log_head "8/9  Panel seed (single bottom panel, dark translucent)"
+log_head "9/10  Panel seed (single bottom panel, dark translucent)"
 PANEL_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml"
 mkdir -p "$(dirname "$PANEL_XML")"
 if [[ -f "$PANEL_XML" ]]; then
@@ -265,7 +327,7 @@ else
     log_warn "No graphical session detected — panel will apply on next login."
 fi
 
-log_head "9/9  Wallpapers"
+log_head "10/10  Wallpapers"
 WALLPAPER_DEST="/usr/share/backgrounds/xfce/devuan-tokyonight"
 priv mkdir -p "$WALLPAPER_DEST"
 WALLPAPER_COUNT=0
@@ -296,6 +358,6 @@ else
 fi
 
 echo
-log_ok "Tokyo Night theme applied — GTK/WM, cursors, icons, panel, alacritty, wallpapers."
+log_ok "Tokyo Night theme applied — GTK/WM, cursors, icons, picom, panel, alacritty, wallpapers."
 echo -e "If anything looks half-applied, a full logout/login always settles it."
 echo -e "Re-run this script any time to refresh icons after installing new apps."

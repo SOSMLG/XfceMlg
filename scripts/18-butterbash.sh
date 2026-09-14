@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: ButterBash + XFCE shell additions + xfce4-terminal default
+# DEBSWAY_DESC: ButterBash + XFCE shell additions + alacritty default
 # DEBSWAY_DEFAULT: Y
 #  18-butterbash.sh — ButterBash + XFCE-specific additions
 #  ButterBash is the main bash config (aliases, prompt, fzf/
@@ -13,7 +13,6 @@
 set -uo pipefail
 # NOTE: no -e — one failed package must degrade gracefully, not abort
 # everything after it (lib install_pkgs returns 1 on partial failure).
-set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
@@ -91,10 +90,10 @@ fi
 alias restart-panel='xfce4-panel -r && echo "XFCE4 panel restarted"'
 
 # Screenshot
-alias screenshot='xfce4-screenshooter -f'
+alias screenshot='flameshot gui'
 
 # Terminal / file manager helpers
-alias term='xfce4-terminal --working-directory="$(pwd)"'
+alias term='alacritty --working-directory="$(pwd)"'
 alias thunar-daemon='thunar --daemon'
 alias here='thunar "$(pwd)"'
 

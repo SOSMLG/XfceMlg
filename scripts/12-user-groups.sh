@@ -6,6 +6,7 @@
 #   video   -> GPU/brightness access
 #   render  -> GPU compute/accel access (DRI render nodes)
 #   plugdev -> USB sticks, MTP/Android, cameras, iOS (udev rules use plugdev)
+#   power   -> powertop, thinkfan, brightnessctl battery management
 # Plus: ensure one working privilege path exists (doas preferred, sudo
 # fallback) by adding a doas rule when escalation currently looks broken.
 set -uo pipefail
@@ -25,7 +26,7 @@ fi
 echo -e "Adding ${YELLOW}${ACTUAL_USER}${NC} to input, video, render, plugdev groups..."
 
 status=0
-for grp in input video render plugdev; do
+for grp in input video render plugdev power; do
     if ! getent group "$grp" >/dev/null 2>&1; then
         echo -e "${YELLOW}  Group '$grp' does not exist on this system, skipping.${NC}"
         continue

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: WiFi/BT firmware, CPU microcode, fwupd, TLP + battery cap
+# DEBSWAY_DESC: WiFi/BT firmware, CPU microcode, fwupd, TLP, ThinkPad extras
 # DEBSWAY_DEFAULT: Y
 #  13-hardware.sh — firmware, microcode, firmware updates
 #  Covers "why doesn't my WiFi/Bluetooth work" — almost always a
@@ -45,11 +45,7 @@ log_head "3/4  fwupd (BIOS/UEFI + peripheral firmware updates)"
 if ask "Install fwupd?"; then
     install_pkgs "fwupd" fwupd
 
-    if command -v systemctl &>/dev/null && [[ -d /run/systemd/system ]]; then
-        priv systemctl enable --now fwupd &>/dev/null || true
-    else
-        priv service fwupd start &>/dev/null || true
-    fi
+    start_service fwupd
     log_ok "fwupd installed. Check for updates with: fwupdmgr get-updates"
 fi
 
@@ -60,17 +56,13 @@ if ask "Install TLP for battery/power tuning?"; then
     # is a well-known source of "my settings keep reverting" reports.
     if is_installed power-profiles-daemon; then
         log_info "power-profiles-daemon conflicts with TLP — removing it first."
-        priv systemctl disable --now power-profiles-daemon &>/dev/null || true
+        start_service power-profiles-daemon 2>/dev/null || true
         priv apt-get purge -y power-profiles-daemon &>/dev/null || log_warn "Couldn't remove power-profiles-daemon — TLP may fight it for control."
     fi
 
     install_pkgs "TLP" tlp tlp-rdw
 
-    if command -v systemctl &>/dev/null && [[ -d /run/systemd/system ]]; then
-        priv systemctl enable --now tlp &>/dev/null || true
-    else
-        priv service tlp start &>/dev/null || true
-    fi
+    start_service tlp
 
     if is_installed tlp; then
         log_ok "TLP installed and running. Check status any time with: doas tlp-stat -s"
@@ -101,5 +93,61 @@ EOF
     fi
 fi
 
-log_ok "Hardware support log_head complete."
+log_ok "Hardware support complete."
 log_warn "A reboot is recommended so newly installed firmware/microcode is loaded."
+
+# ---------------------------------------------------------------------------
+# ThinkPad-specific extras (auto-detected, only offered on matching hardware)
+# ---------------------------------------------------------------------------
+IS_THINKPAD=0
+if [[ -d /sys/devices/platform/thinkpad_acpi ]] \
+    || grep -qi "thinkpad" /sys/class/dmi/id/product_name 2>/dev/null \
+    || grep -qi "thinkpad" /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+    IS_THINKPAD=1
+fi
+
+if [[ "$IS_THINKPAD" -eq 1 ]]; then
+    echo
+    log_head "ThinkPad extras (auto-detected)"
+
+    if ask_no_full "Install thinkfan (thermal management for ThinkPads)?" "N"; then
+        install_pkgs "ThinkFan" thinkfan
+        start_service thinkfan
+        log_ok "thinkfan installed. Edit /etc/thinkfan.conf to tune fan curves."
+        log_info "Default: conservative — edit thresholds or run: doas thinkfan -n"
+    fi
+
+    if ask_no_full "Install powertop with auto-tune on boot (power savings)?" "N"; then
+        install_pkgs "PowerTOP" powertop
+        # Create a oneshot service/RC script for powertop --auto-tune
+        POWERTOP_SERVICE="/etc/init.d/powertop-autotune"
+        if [[ ! -f "$POWERTOP_SERVICE" ]]; then
+            priv tee "$POWERTOP_SERVICE" > /dev/null << 'POWEOF'
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          powertop-autotune
+# Required-Start:    $local_fs
+# Required-Stop:
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: PowerTOP auto-tune
+# Description:       Applies PowerTOP recommendations at boot
+### END INIT INFO
+case "$1" in
+  start)
+    /usr/sbin/powertop --auto-tune >/dev/null 2>&1 &
+    ;;
+  stop)
+    ;;
+  *)
+    echo "Usage: $0 {start|stop}"
+    exit 1
+esac
+exit 0
+POWEOF
+            priv chmod 755 "$POWERTOP_SERVICE"
+            priv /usr/sbin/update-rc.d powertop-autotune defaults 2>/dev/null || true
+            log_ok "powertop auto-tune service created and enabled."
+        fi
+    fi
+fi

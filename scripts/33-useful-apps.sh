@@ -37,7 +37,7 @@ log_head "1/6  Base tools"
 if ask "Install base tools (git, curl, wget, rsync, xdg-user-dirs, zram-tools)?"; then
     install_pkgs "Base tools" \
         bash-completion ca-certificates curl galculator gnupg lsb-release \
-        mate-disk-usage-analyzer rsync wget xdg-user-dirs zram-tools
+        mate-disk-usage-analyzer rsync wget xdg-user-dirs zram-tools brightnessctl
 fi
 
 log_head "2/6  Python & dev tools"

@@ -118,7 +118,6 @@ pkg xfce4-session
 pkg xfwm4
 pkg xfce4-panel
 pkg xfce4-settings
-pkg xfce4-terminal
 pkg lightdm
 pkg lightdm-gtk-greeter
 pkg dbus-x11
@@ -137,6 +136,7 @@ pkg thunar-archive-plugin
 pkg thunar-media-tags-plugin
 pkg thunar-vcs-plugin
 pkg thunar-gtkhash
+pkg font-manager optional
 pkg xarchiver
 pkg tumbler
 pkg gvfs-backends
@@ -146,7 +146,7 @@ cfg "Thunar custom actions" "$HOME/.config/Thunar/uca.xml" optional
 # --- 4. Desktop apps & essentials ----------------------------------------
 pkg xfce4-power-manager
 pkg xfce4-notifyd
-pkg xfce4-screenshooter
+pkg flameshot
 pkg xfce4-pulseaudio-plugin
 pkg xfce4-taskmanager
 pkg light-locker
@@ -184,6 +184,10 @@ pkg xfce4-genmon-plugin
 pkg xfce4-pager
 pkg xfce4-datetime-plugin
 pkg alacritty
+pkg picom optional
+pkg brightnessctl optional
+pkg gufw optional
+pkg gnome-software optional
 
 # --- 5. Fonts -------------------------------------------------------------
 if [ -n "$(fc-list 2>/dev/null | grep -i "JetBrainsMono Nerd Font")" ]; then
@@ -292,6 +296,15 @@ if [ -d "$HOME/.config/xfce4/genmon/icons" ]; then
 else
     report "genmon icons dir" warn "missing (re-run 21-theme-tokyonight.sh)"
 fi
+# Update indicator script (30-desktop-essentials.sh)
+if [ -x "$HOME/.local/bin/check-apt-updates.sh" ]; then
+    report "update indicator script" ok
+else
+    report "update indicator script" warn "missing (re-run 30-desktop-essentials.sh)"
+fi
+# Picom config + autostart
+cfg "picom config" "$HOME/.config/picom/picom.conf" optional
+cfg "picom autostart" "$HOME/.config/autostart/picom.desktop" optional
 
 # Wallpapers
 if [ -d "/usr/share/backgrounds/xfce/devuan-tokyonight" ]; then
@@ -328,6 +341,26 @@ service_state bluetooth bluetoothd optional
 service_state tlp tlp optional
 service_state cups cupsd optional
 service_state chrony chronyd optional
+service_state picom picom optional
+if command -v ufw >/dev/null 2>&1; then
+    if ufw status 2>/dev/null | grep -qi "Status: active"; then
+        report "ufw firewall" ok "active"
+    else
+        report "ufw firewall" warn "installed but not active (re-run 30-desktop-essentials.sh)"
+    fi
+else
+    report "ufw firewall" warn "ufw not installed"
+fi
+if [ -f "$HOME/.config/redshift.conf" ]; then
+    report "redshift config" ok
+else
+    report "redshift config" warn "missing (re-run 30-desktop-essentials.sh)"
+fi
+if [ -d "$HOME/.config/autostart" ] && ls "$HOME/.config/autostart/"*.desktop >/dev/null 2>&1; then
+    report "user autostart entries" ok "$(ls "$HOME/.config/autostart/"*.desktop 2>/dev/null | wc -l) entries"
+else
+    report "user autostart entries" warn "none found"
+fi
 if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
     service_state NetworkManager NetworkManager optional
 else

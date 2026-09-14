@@ -86,7 +86,7 @@ for CANDIDATE in "$HOME/.opencode/bin" "$HOME/bin"; do
 done
 
 # ---------------------------------------------------------------------------
-# Hotkey: Super+A -> open OpenCode in xfce4-terminal.
+# Hotkey: Super+A -> open OpenCode in alacritty.
 #
 # On XFCE, keyboard shortcuts are xfconf properties
 # (/commands/custom/<keysym> in the xfce4-keyboard-shortcuts channel),
@@ -95,7 +95,7 @@ done
 # ---------------------------------------------------------------------------
 if command -v xfconf-query &>/dev/null && ask "Bind Super+A to launch OpenCode in a terminal?"; then
     HOTKEY_PROP="/commands/custom/<Super>a"
-    HOTKEY_CMD="xfce4-terminal -e opencode"
+    HOTKEY_CMD="alacritty -e opencode"
     current="$(xfconf-query -c xfce4-keyboard-shortcuts -p "$HOTKEY_PROP" 2>/dev/null || true)"
     if [ "$current" = "$HOTKEY_CMD" ]; then
         log_ok "Super+A binding already present ($HOTKEY_CMD)."
@@ -112,7 +112,7 @@ if command -v xfconf-query &>/dev/null && ask "Bind Super+A to launch OpenCode i
     fi
 else
     log_info "Skipped the hotkey — add it manually in Settings → Keyboard → Application Shortcuts:"
-    log_info "  xfce4-terminal -e opencode  on  Super+A"
+    log_info "  alacritty -e opencode  on  Super+A"
 fi
 
 # ---------------------------------------------------------------------------
