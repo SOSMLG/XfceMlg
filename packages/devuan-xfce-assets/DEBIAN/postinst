@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+
+[ "${1:-}" = configure ] || exit 0
+
+# Data-only package. Nothing needs starting/stopping; keep the shared asset
+# dir obvious so apt users know where the bundle lives.
+exit 0

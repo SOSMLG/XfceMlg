@@ -1,0 +1,6 @@
+devuan-xfce-assets (@VERSION@) unstable; urgency=low
+
+  * Data-only release of the devuan-xfce-setup versioned asset bundle.
+  * Themes, power-user bins, Fastfetch/GNOME-generics, policies.json.
+
+ -- devuan-xfce-setup <devuan-xfce-setup@users.noreply.github.com>  Wed, 16 Sep 2026 00:00:00 +0000
