@@ -1,0 +1,33 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    "logo": {
+        "source": "~/.config/fastfetch/ascii_art_anime.txt",
+        "type": "file",
+        "padding": { "top": 1 }
+    },
+    "display": {
+        "color": { "keys": "@FASTFETCH_COLOR@", "title": "@FASTFETCH_COLOR@" },
+        "separator": "  "
+    },
+    "general": {
+        "showElapsed": false,
+        "statSeparatorType": "hidden"
+    },
+    "modules": [
+        "title",
+        "separator",
+        "os",
+        "kernel",
+        "uptime",
+        "shell",
+        "display",
+        "de",
+        "terminal",
+        "cpu",
+        "gpu",
+        "memory",
+        "disk",
+        "separator",
+        "colors"
+    ]
+}
