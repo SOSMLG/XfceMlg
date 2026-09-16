@@ -2,6 +2,78 @@
 
 Tag a release with: `git tag -a "v$(cat VERSION)" -m "v$(cat VERSION)" && git push --tags`
 
+## 0.6.0 — Darkmatter rice (engine removed), VSCodium key fix, leaner desktop
+
+The theme layer was replaced wholesale. The palette-driven engine is gone:
+Darkmatter ships **bundled** (offline, version-pinned) with a red accent, a
+matching Zafiro icon theme and a curated dark/red wallpaper set. This release
+also hardens the VSCodium repo key path, removes xfce4-terminal /
+xfce4-screenshooter / genmon, and flips the "optional" groups and utils to
+default-Y so `install.sh` really does give you everything.
+
+### What's New
+- **Darkmatter GTK + xfwm4 theme, bundled** in `configs/themes/` (plain,
+  hdpi and xhdpi variants; `gtk-3.0`, `gtk-4.0`, `xfwm4`, `assets`,
+  `index.theme`), deployed to `/usr/share/themes/` by the new
+  `scripts/21-theme.sh`. The old Tokyo Night themes are purged on re-run.
+- **Red accent** — the upstream orange `#e78a53` is remapped to `#e75353`
+  across every bundled CSS/PNG asset (1548 CSS swaps + 143 429 pixels over
+  366 images) and is the accent used by the theme, Dunst, rofi, the greeter
+  shim and the widgets.
+- **Zafiro icons bundled** — `configs/icons/Zafiro-icons-Dark` (PNG variant,
+  17 directories; the SVG `apps/scalable` subtree is trimmed), deployed to
+  `/usr/share/icons/` and set as the active icon theme.
+- **Curated wallpapers** — `configs/wallpapers/darkmatter/` (5 dark/red
+  images) replaces the old numbered set, deployed to
+  `/usr/share/backgrounds/xfce/devuan-darkmatter/`; the greeter and GRUB
+  backgrounds now come from this same directory.
+- **`21-theme.sh`** (renamed from `21-theme-tokyonight.sh`): deploys the
+  themes/icons, writes a native **`~/.config/alacritty/alacritty.toml`**
+  (0.13+ TOML, no more YAML), seeds the rounded panel + picom, deploys the
+  wallpapers, writes the static `picker.colors`, and removes the old engine
+  leftovers (`~/.config/devuan-xfce-setup/lib|themes|current`,
+  `xfce-theme-set/list`, per-user `~/.config/gtk-3.0/gtk.css`,
+  `alacritty.yml`).
+- **`22-theme-boot.sh`** recolors the Plymouth spinner theme to the red
+  accent, points GRUB/LightDM at `devuan-darkmatter`, and writes a
+  Darkmatter greeter CSS (`#121113` / `#e75353`).
+- **Defaults are now Y across the board**: `32`, `43`, `44`, `45`, `46`,
+  `50`, `51`, `52` (and the network-manager, libinput, gaming and heavy
+  opt-in sub-prompts) — a plain `run.sh --yes` installs the full stack.
+- **VSCodium repo key fix** — `40-vscodium.sh` fetches the signing key from
+  GitLab (with `repo.vscodium.dev` fallback), validates it with
+  `gpg --dearmor` + `gpg --batch --show-keys` (2256 B rsa4096), overwrites
+  any stale empty keyring, and refuses to add the repo unless Debian's
+  common trusted keyring is already present.
+
+### Removals
+- The whole theme engine: `scripts/lib/theme-apply.sh`, the `themes/`
+  palette library + `_base/tpl/` templates, and the `configs/bin/xfce-theme-set`
+  / `xfce-theme-list` switchers. `21/22` and all docs are engine-free.
+- **genmon**: no `xfce4-genmon-plugin`, no `configs/genmon/`, no panel
+  widget. `check-apt-updates.sh` stays as a plain reporting helper;
+  updates are covered by the power-user checks + cron notifier.
+- **Xfce Terminal** and **xfce4-screenshooter** are purged in
+  `20-xfce-debloat.sh`; Alacritty is THE terminal and Flameshot owns `Print`
+  (with flameshot Super-shortcuts in `23-input-fix.sh`).
+
+### Fixes
+- `23-input-fix.sh` reclaims `Print`/`Ctrl+Print`/`Alt+Print` bindings from
+  the purged screenshooter and applies the libinput defaults by default.
+- `Makefile`: the content deb no longer stages the deleted `themes/` tree
+  (the payload now travels inside `configs/`).
+- `xfce-menu` dropped its now-dead "Theme List" entry and both widgets'
+  fallback palettes are Darkmatter (even without `picker.colors`).
+
+### Docs & tests
+- Test suite reworked for the engine-free world: `tests/unit/test-darkmatter.sh`
+  replaces `test-theme-apply.sh`; consistency tier guards the Darkmatter
+  bundle/icon/remap and the absence of engine references instead of palette
+  tokens.
+- README, AGENTS.md, `configs/README.md`, `docs/BUILDING.md`,
+  `scripts/skills/xfce-setup-SKILL.md` and `verifySetup.sh` all describe the
+  Darkmatter end state.
+
 ## 0.5.0 — Theme engine + power-user commands + test suite + Makefile + content deb
 
 The full 0.5.0 feature batch: a palette-driven theme engine with three

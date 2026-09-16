@@ -1,0 +1,15 @@
+# known-miss.list — package names that fail apt-checks.sh because they live
+# in repos the toolkit adds at install time (contrib/non-free) but which
+# are NOT in the default Devuan Excalibur sources.list. Packages listed
+# here are real, verified against the Devuan Excalibur archive — they are
+# NOT typos. See: scripts/lib/common.sh (add_sources), 11-backports.sh.
+#
+# Format: one package name per line (lines starting with # are comments).
+libdvd-pkg
+winetricks
+# codium: from VSCodium's own APT repo (download.vscodium.com), added by
+# 40-vscodium.sh — never in the default Devuan Excalibur archive.
+codium
+# steam: lives in the contrib component, which only exists after
+# scripts/lib/common.sh add_sources appends contrib/non-free at install time.
+steam

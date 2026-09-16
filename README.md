@@ -2,7 +2,7 @@
 
 A post-install toolkit that turns a fresh **Devuan 6 (Excalibur)** install
 (binary-compatible with **Debian 13 (Trixie)**) into a lean, finished
-**XFCE** desktop — **Tokyo Night** themed (dark `#1a1b26`, accent `#bf616a`)
+**XFCE** desktop — **Darkmatter** themed (dark `#121113`, red accent `#e75353`)
 from boot splash to login screen to terminal, **Alacritty** as the default
 terminal, Firefox ESR hardened, TLP battery-capped, Thunar fully plugged in,
 and installable with **one command, fully unattended**.
@@ -83,8 +83,8 @@ matters:
 | Layer | Choice |
 |---|---|
 | Desktop | **XFCE 4.20 on X11** (floating, single panel) via **LightDM + gtk-greeter** login, themed to match |
-| Theme | **Tokyo Night** (dark `#1a1b26`, accent `#bf616a`): GTK + xfwm4 ("Tokyo Night - Bordered"), rounded single bottom panel + genmon widgets, matching Plymouth + GRUB + LightDM, bundled wallpapers |
-| Terminal | **Alacritty** (GPU terminal) themed Tokyo Night, wired as THE terminal via `x-terminal-emulator` + exo `helpers.rc` |
+| Theme | **Darkmatter** (dark `#121113`, red accent `#e75353`): bundled GTK + xfwm4 (engine-free, all three variants), **Zafiro** dark icons, single bottom panel seed (items + JetBrainsMono Nerd Font clock/WM title fonts), matching Plymouth + GRUB + LightDM, curated dark/red wallpapers |
+| Terminal | **Alacritty** (GPU terminal) themed Darkmatter (TOML config), wired as THE terminal via `x-terminal-emulator` + exo `helpers.rc` |
 | Shortcuts | Super-based set (terminal, files, appfinder, screenshots, clipman, tiling, workspaces) + `Ctrl+Alt+L` lock via **light-locker** |
 | First login | Welcome wizard (update + Timeshift check, once) + wallpaper seeder (new monitors only, never overwrites) |
 | Files | **Thunar, full set**: volman automount, archive-plugin + xarchiver, media-tags, vcs, gtkhash, font-manager, `gvfs-backends` (Trash/MTP), tumbler thumbnails, custom actions (Terminal Here, Open as Root) |
@@ -93,13 +93,13 @@ matters:
 | Browser | **Firefox ESR** hardened with Betterfox-derived system defaults + locked `policies.json` |
 | Shell | **ButterBash**: saner bash (aliases, `eza`/`bat`, fzf/zoxide, starship) + XFCE additions block |
 | Compositor | **picom** (square fades + fork animations, inactive dim, no shadows/blur, unredirects fullscreen; xfwm4 compositing stays off) |
-| Notifications | **xfce4-notifyd** stock (Dunst stays opt-in) |
-| Capture | **Flameshot** on `Print` (region-select with annotate/blur; xfce4-screenshooter stays opt-in) |
+| Notifications | **xfce4-notifyd** stock (Dunst stays opt-in, matches the theme) |
+| Capture | **Flameshot** on `Print` (region-select with annotate/blur; xfce4-screenshooter removed) |
 | Clipboard | **xfce4-clipman** panel plugin |
 | Night light | **Redshift** (geoclue-located, 6500K→4500K) |
 | Battery | **TLP** + 80% charge cap on supporting ThinkPads |
 | Bluetooth | **Blueman** applet (A2DP bridge auto-detected for Pulse/PipeWire) |
-| Updates | genmon panel indicator (hourly check, click to upgrade in a terminal) |
+| Updates | apt lists refresh periodically; the power-user set (24-*) runs update checks + a notifier (no panel widget) |
 | Snapshots | **Timeshift** |
 
 ### Scripts — phases in run order (`./run.sh --list` is authoritative)
@@ -116,26 +116,26 @@ matters:
 | core | `17-fonts.sh` — Noto, Font Awesome, JetBrainsMono Nerd Font | Y |
 | core | `18-butterbash.sh` — ButterBash + XFCE shell additions | Y |
 | core | `19-fastfetch.sh` — minimal fancy fastfetch config (anime ascii art) + btop | Y |
-| desktop | `20-xfce-debloat.sh` — trim task apps, keep XFCE-native, silence beep | Y |
-| desktop | `21-theme-tokyonight.sh` — theme engine (tokyonight/catppuccin-mocha/nord) + icons + picom + panel rice | Y |
+| desktop | `20-xfce-debloat.sh` — trim task apps (Xfce Terminal, screenshooter), keep XFCE-native, silence beep | Y |
+| desktop | `21-theme.sh` — Darkmatter GTK/xfwm4 + Zafiro icons + picom + panel/WM seed (items + fonts) + wallpapers | Y |
 | desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
 | desktop | `23-input-fix.sh` — input fixes + light-locker + Super shortcuts | Y |
 | desktop | `24-power-user.sh` — power-user commands (menu, update-check/gui, lock, suspend) + cron | Y |
 | apps | `30-desktop-essentials.sh` — Flatpak, portal, geoclue, CUPS, firewall, Thunar full, Clipman, Redshift | Y |
 | apps | `31-timeshift.sh` — Timeshift snapshots | Y |
-| apps | `32-time-sync.sh` — chrony NTP time sync | N |
+| apps | `32-time-sync.sh` — chrony NTP time sync | Y |
 | apps | `33-useful-apps.sh` — base tools, Python stack, Ristretto, Atril, Disks | Y |
 | apps | `34-opencode-agent.sh` — OpenCode AI agent + Super+A hotkey + skill file | Y |
 | apps | `35-first-run.sh` — welcome wizard + wallpaper seeder (autostart) | Y |
 | optional | `40-vscodium.sh` — VSCodium (primary editor) + Neovim purge | Y |
 | optional | `41-dev-essentials.sh` — C/C++ + Python toolchains | Y |
-| optional | `43-photogimp.sh` — GIMP + PhotoGIMP layout | N |
-| optional | `44-gaming.sh` — Heroic/Steam/Wine | N |
-| optional | `45-chat.sh` — Vesktop (Discord) / Telegram | N |
-| optional | `46-heavy-optins.sh` — Thunderbird / LibreOffice / OBS Studio (default-N opt-ins) | N |
-| utils | `50-maintenance.sh` — apt cleanup + dead symlink tidy | N |
-| utils | `51-backup.sh` — timestamped HOME config backup/restore | N |
-| utils | `52-skel-export.sh` — per-user defaults into `/etc/skel` | N |
+| optional | `43-photogimp.sh` — GIMP + PhotoGIMP layout | Y |
+| optional | `44-gaming.sh` — Heroic/Steam/Wine | Y |
+| optional | `45-chat.sh` — Vesktop (Discord) / Telegram | Y |
+| optional | `46-heavy-optins.sh` — Thunderbird / LibreOffice / OBS Studio | Y |
+| utils | `50-maintenance.sh` — apt cleanup + dead symlink tidy | Y |
+| utils | `51-backup.sh` — timestamped HOME config backup/restore | Y |
+| utils | `52-skel-export.sh` — per-user defaults into `/etc/skel` | Y |
 
 ---
 
@@ -147,7 +147,7 @@ bash scripts/verifySetup.sh   # anytime
 ```
 
 Prints PASS/FAIL/WARN for groups, lean-core packages, Thunar plugins,
-fonts, Firefox policy, Tokyo Night markers (GTK/icons/Alacritty), the
+fonts, Firefox policy, Darkmatter markers (GTK/icons/Alacritty/picker), the
 LightDM greeter conf, SLiM absence, and services (LightDM, TLP,
 Bluetooth, CUPS, chrony…). Exits non-zero on any FAIL — so it can gate CI.
 
@@ -158,8 +158,8 @@ Three read-only tiers (ohmydebn-style harness) live in `tests/`:
 | Tier | What it checks |
 |------|----------------|
 | 1 `lint` | `bash -n` on every script/bin/overlay, shellcheck if installed, `py_compile` on the Python widgets |
-| 2 `unit` | sandboxed unit tests — theme engine (seed → render all 3 palettes → no leftover `@TOKEN@`, `picker.colors` hex parse) and `common.sh` `priv()` routing with fake doas/sudo |
-| 3 `consistency` | VERSION ↔ latest RELEASE.md heading, palette vars/hex valid, template tokens ↔ `_t_render`, step-script `DEBSWAY_DESC/DEFAULT` headers, README step parity, `.gitignore` coverage, blend-overlay theme wiring |
+| 2 `unit` | sandboxed unit tests — Darkmatter bundle integrity (theme variants, Zafiro icons, wallpapers, accent remap) + engine-free 21/22/verifySetup markers + `common.sh` `priv()` routing with fake doas/sudo |
+| 3 `consistency` | VERSION ↔ latest RELEASE.md heading, Darkmatter bundle/icon/remap guards, step-script `DEBSWAY_DESC/DEFAULT` headers, README step parity, `.gitignore` coverage, no theme-engine leftovers |
 | 3 `apt-checks` | every package name in `scripts/*.sh` verified against the local apt cache (one bulk `apt-cache dumpavail`); contrib-only packages (`libdvd-pkg`, `winetricks`) live in `tests/lib/known-miss.list` |
 
 ```bash
@@ -172,13 +172,14 @@ make release-preflight  # lint + unit + consistency + VERSION/RELEASE.md gate
 ### Asset bundle (content deb)
 
 `make pkg-deb` builds a single data-only package with all versioned static
-assets (configs, palette library + templates, power-user bins, agent skill)
+assets (configs — Darkmatter themes, Zafiro icons, wallpapers, power-user
+bins, agent skill)
 as `build/devuan-xfce-assets_$(cat VERSION)_all.deb`; when installed it
 lands under `/usr/share/devuan-xfce-assets/`. `make check-deb` inspects it
 (`dpkg-deb --info` / `--contents`) and runs lintian — zero errors expected.
 Metadata lives in `packages/devuan-xfce-assets/`; the content tree is
 staged from the repo at build time (not duplicated in git), so changes to
-`configs/`/`themes/` flow into the deb automatically.
+`configs/` flow into the deb automatically.
 
 After a run there's a full log at
 `~/.local/state/devuan-xfce-setup/last-run.log`, and `scripts/51-backup.sh`
@@ -235,7 +236,12 @@ scripts/
   policies.json  Firefox enterprise policy (used by 16-firefox.sh)
   skills/xfce-setup-SKILL.md   system context for AI agents
 configs/         versioned static config (Thunar/uca.xml — deployed by 30-*)
-themes/          palette library + templates for the theme engine
+  xfce4/         panel + window-manager seed (items, decorations, fonts) — 21-*
+  themes/        bundled Darkmatter GTK/xfwm4 (hdpi/xhdpi variants)
+  icons/         bundled Zafiro-icons-Dark
+  wallpapers/    curated dark/red set (deployed to devuan-darkmatter/)
+  dunst/ · rofi/ opt-in matching configs (optional)
+  share/         power-user widgets (xfce-menu, xfce-update-gui)
 butterbash/      bundled ButterBash, used offline
 ```
 
@@ -252,7 +258,6 @@ butterbash/      bundled ButterBash, used offline
   set by `run.sh --full` / `install.sh`), `DEBSWAY_SKIP_APT_UPDATE=1`,
   `DEBSWAY_PRIV=doas|sudo`, plus upstream pins `XFCE_GTK_REF=`,
   `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`, `BETTERFOX_TAG=150.0`.
-  Resolved theme SHAs land in `~/.local/state/devuan-xfce-setup/`.
   Safety prompts (`apt full-upgrade`, backup restore, battery cap,
   PhotoGIMP version mismatch) use `ask_no_full()` and
   never auto-fire, even on `--full`.

@@ -8,9 +8,9 @@ Follow these conventions when extending, debugging, or reviewing this repo.
 
 Ten-ish numbered, independently runnable shell scripts (`scripts/01?.sh`
 …) that turn a bare Devuan Excalibur XFCE install into a themed, powered-up
-desktop: theme engine + palette layer, ThinkPad extras, Power-user commands
-(menu/update GUI), update notifier, CLI stack, Firefox ESR hardening,
-first-run wizard, dev toolchains, AI agents + VSCodium.
+desktop: Darkmatter theme (bundled, engine-free), ThinkPad extras, Power-user
+commands (menu/update GUI), update notifier, CLI stack, Firefox ESR
+hardening, first-run wizard, dev toolchains, AI agents + VSCodium.
 
 `run.sh` is the ordered runner (discovers `scripts/??-*.sh`, groups into
 phases by leading digit, reads per-script `# DEBSWAY_DESC:` / `#
@@ -48,22 +48,28 @@ Every step is idempotent and re-runnable.
   `11-backports.sh`) — so a bare sources.list may legitimately miss
   `libdvd-pkg`, `winetricks`, etc. See `tests/lib/known-miss.list`.
 
-## Theme engine (the palette system)
+## Theme (Darkmatter — bundled, engine-free, fixed)
 
-- `scripts/lib/theme-apply.sh` — self-contained engine, sourced by
-  `scripts/21-theme-tokyonight.sh`, deployed bins and blend overlay.
-- Palettes: `themes/<id>/palette.sh` (hex WITHOUT `#`, lowercase; keys:
-  `THEME_*`, `FASTFETCH_COLOR`, `GTK_THEME_NAME`, `XFWM_THEME_NAME`,
-  `ALACRITTY_*`). Templates: `themes/_base/tpl/*` use `@TOKEN@`
-  placeholders that `theme_set` substitutes via sed.
-- Rendering writes alacritty.yml, gtk-3.0/gtk.css (panel accent),
-  fastfetch config + `picker.colors` (bg0/bg1/bg3/fg0, `F2` alpha suffix).
-  Live xfconf only when a session is present; `DEVX_SKIP_XFCONF=1` for
-  headless/ISO.
-- Env overrides: `DEVX_CONFIG`, `DEVX_THEMES`, `DEVX_OUT`, `DEVX_HOME`,
-  `DEVX_SKIP_XFCONF`, `DEVX_THEME`.
-- **Adding a palette** = add `themes/<id>/palette.sh` + mention it in the
-  README — the test suite (consistency) enforces both.
+- The look is **fixed**, not swappable. There is **no palette engine** and no
+  `themes/<id>/palette.sh` / `theme-apply.sh` / `xfce-theme-set|list`
+  anything — those were removed in 0.6.0. Do not reintroduce them.
+- `configs/themes/{Darkmatter,Darkmatter-hdpi,Darkmatter-xhdpi}` is the
+  bundled GTK3/GTK4 + xfwm4 theme (`gtk-3.0`, `gtk-4.0`, `xfwm4`, `assets`,
+  `index.theme`); `scripts/21-theme.sh` deploys it to `/usr/share/themes/`,
+  purges the old Tokyo Night themes, writes the native
+  `~/.config/alacritty/alacritty.toml`, seeds the panel + picom, deploys
+  `configs/wallpapers/darkmatter/` to
+  `/usr/share/backgrounds/xfce/devuan-darkmatter/`, and writes the static
+  `~/.config/devuan-xfce-setup/picker.colors` (bg0/bg1/bg3/fg0).
+- Palette: near-black `#121113` (`bg`/`dark`), `#1c1b1d` base, red accent
+  `#e75353` (upstream orange `#e78a53` was remapped across all CSS + PNGs),
+  teal `#5f8787`, cream `#fbcb97`, fg `#ffffff`.
+- Icons: bundled **Zafiro-icons-Dark** in `configs/icons/` (PNG variant only
+  — the SVG `apps/scalable` tree is intentionally trimmed). `22-theme-boot.sh`
+  and `verifySetup.sh` assume the `Darkmatter` / `Zafiro-icons-Dark` /
+  `devuan-darkmatter` names — keep them in sync if you rename anything.
+- `scripts/22-theme-boot.sh` themes Plymouth/GRUB/LightDM to match
+  (near-black + red; see `configs/lightdm/gtk.css`).
 
 ## Power-user commands
 
@@ -76,7 +82,7 @@ notifier). Python widgets (GTK/VTE) live in
 
 - `make check` — three read-only tiers (see `tests/README`-ish comments in
   `tests/run.sh`): **lint** (bash -n + shellcheck-if-present +
-  py_compile), **unit** (sandboxed theme-apply + common.sh tests), and
+  py_compile), **unit** (sandboxed Darkmatter-bundle + common.sh tests), and
   **consistency + apt-checks** (cross-file guards; package-existence vs the
   local apt cache via one bulk `apt-cache dumpavail`).
 - `make release-preflight` — the version gate (lint + unit + consistency +
@@ -101,7 +107,8 @@ notifier). Python widgets (GTK/VTE) live in
   runs `dpkg-deb --info/--contents` and lintian (no errors expected).
 - The package tree lives in `packages/devuan-xfce-assets/` — only the
   DEBIAN metadata (control/postinst) and `usr/share/doc/` copyright +
-  changelog are committed there; the 13 MB `configs/` is staged with
+  changelog are committed there; the full `configs/` payload (~36 MB, incl.
+  the Darkmatter theme, Zafiro icons and wallpapers) is staged with
   `cp -a` at build time, never duplicated in git. `@VERSION@` in the
   control/copyright/changelog templates is substituted from `VERSION`.
 - content deb = assets under `/usr/share/devuan-xfce-assets/` when
@@ -112,6 +119,7 @@ notifier). Python widgets (GTK/VTE) live in
 ## Blend / ISO
 
 - `blend/devuan-xfce-thinkpad/sync-overlay.sh` regenerates the overlay
-  (and its own HOME rendering) via the theme engine
-  (`DEVX_SKIP_XFCONF=1 DEVX_OUT=<overlay home>`). The overlay tree is
+  (and its own HOME rendering) by copying the bundled `configs/` assets
+  (Darkmatter theme/icons/wallpapers, alacritty.toml and panel seed as
+  written by `21-theme.sh`, with `DEVX_SKIP_XFCONF=1`). The overlay tree is
   derived — never hand-edit it.

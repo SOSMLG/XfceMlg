@@ -44,7 +44,6 @@ pkg-deb: ## Stage repo tree into $(DEB_FILE) (data-only, all arch)
 	cp packages/$(DEB_NAME)/DEBIAN/postinst "$(DEB_STAGE)/DEBIAN/postinst"
 	sed "s/@VERSION@/$(DEB_VER)/" packages/$(DEB_NAME)/usr/share/doc/$(DEB_NAME)/copyright > "$(DEB_STAGE)/usr/share/doc/$(DEB_NAME)/copyright"
 	sed "s/@VERSION@/$(DEB_VER)/" packages/$(DEB_NAME)/usr/share/doc/$(DEB_NAME)/changelog > "$(DEB_STAGE)/usr/share/doc/$(DEB_NAME)/changelog"
-	cp -a themes "$(DEB_STAGE)/usr/share/$(DEB_NAME)/themes"
 	cp -a configs "$(DEB_STAGE)/usr/share/$(DEB_NAME)/configs"
 	cp scripts/skills/xfce-setup-SKILL.md "$(DEB_STAGE)/usr/share/$(DEB_NAME)/skills/"
 	chmod 0644 "$(DEB_STAGE)/usr/share/doc/$(DEB_NAME)/copyright"
