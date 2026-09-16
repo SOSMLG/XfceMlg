@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# xfce-menu wrapper — launches the themed power-user menu from the toolkit.
+set -euo pipefail
+exec python3 "$HOME/.local/share/devuan-xfce-setup/xfce-menu.py" "$@"
