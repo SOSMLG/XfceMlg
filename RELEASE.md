@@ -2,6 +2,104 @@
 
 Tag a release with: `git tag -a "v$(cat VERSION)" -m "v$(cat VERSION)" && git push --tags`
 
+## 0.5.0 — Theme engine + power-user commands + test suite + Makefile + content deb
+
+The full 0.5.0 feature batch: a palette-driven theme engine with three
+seeded themes, a set of power-user launcher/update/lock/suspend commands,
+an ohmydebn-style read-only test suite with CI-style gates, and a data-only
+asset deb so the toolkit's configs/themes ship as a trackable package.
+
+### What's New
+- **Theme engine** (`scripts/lib/theme-apply.sh`): palette-driven renderer
+  with three commands (`theme_seed`, `theme_set`, `theme_list`,
+  `theme_current`) invoked by every palette-applying script. Templates
+  under `themes/_base/tpl/` carry `@TOKEN@` placeholders; the renderer
+  writes `~/.cache/devuan-xfce-assets/picker.colors` (bg0/bg1/bg3/fg0)
+  so the update GUI and menu stay palette-aware. Env overrides
+  (`DEVX_SKIP_XFCONF`, `DEVX_THEME`, `DEVX_CONFIG`, etc.) make headless
+  and ISO builds possible.
+- **Three themes seeded**: `tokyonight` (default), `catppuccin-mocha`,
+  `nord`; each palette declared in `themes/<id>/palette.sh` and rendered
+  through the shared `_base/tpl/` templates. Test suite enforces palette
+  completeness and hex validity.
+- **Power-user commands** (`24-power-user.sh`): `xfce-menu` (GTK menu
+  launcher), `xfce-update-check` / `xfce-update-gui` (VTE upgrade
+  window), `xfce-lock`, `xfce-suspend`; a root-level cron job launches the
+  update checker at 09:00/18:00. All read `picker.colors` for theming.
+- **Test suite** (`tests/` + `Makefile`): three read-only tiers —
+  **lint** (bash -n + shellcheck-if-present + py_compile across scripts,
+  configs/bin, blend, package postinsts), **unit** (sandboxed theme-apply
+  end-to-end with no X/root/network, and common.sh `priv()` routing via
+  fake doas/sudo stubs), **consistency** (cross-file guards including
+  palette hex/template mapping, version/RELEASE.md agreement, README step
+  parity, .gitignore coverage, 24-power-user deployment checks, and deb
+  packaging wiring) + **apt-checks** (one bulk `apt-cache dumpavail` —
+  ~1 s total — verifying every package name referenced by the scripts).
+  `make check`, `make lint`, `make test`, `make consistency`,
+  `make apt-checks`; `make release-preflight` gates the VERSION/RELEASE.md
+  agreement.
+- **Content deb** (`make pkg-deb`): single data-only
+  `devuan-xfce-assets_0.5.0_all.deb` (~6 MB) shipping the full versioned
+  asset bundle under `/usr/share/devuan-xfce-assets/` when installed.
+  `make check-deb` runs `dpkg-deb` info + lintian with zero errors.
+  `packages/devuan-xfce-assets/` holds the committed DEBIAN metadata;
+  the 13 MB `configs/` is staged from the repo at build time.
+- **AGENTS.md** (repo-root) and **docs/FIXES.md**: project instructions
+  for coding agents and a running issue/resolution record.
+
+### Fixes
+- `21-theme-tokyonight.sh`: `xcursor-breeze` renamed to the real
+  Debian trixie package `breeze-cursor-theme`; `xfce4-pager` removed
+  (built into xfce4-panel, not a separate package).
+- `33-useful-apps.sh`: `mate-disk-usage-analyzer` replaced by `baobab`.
+- `verifySetup.sh`: dropped the phantom `pkg xfce4-pager` line.
+- `.gitignore`: now covers `blend/*/excalibur/rootfs-overlay/`,
+  `__pycache__/`, and `*.pyc`.
+- `README.md`: palette list updated to `tokyonight/catppuccin-mocha/nord`.
+
+Packing check-in of the post-0.3.0 working tree: the default tool swaps
+(xfce4-terminal→Alacritty everywhere, xfce4-screenshooter→Flameshot), picom
+as the compositor with a full config, auto-detected ThinkPad extras, the
+first ISO blend (live-sdk target + build docs), and a battery of is_installed
+guards and verifySetup additions. No new phases were added — this is the
+baseline the toolkits 0.5.0+ build on.
+
+### What's New
+- **Alacritty end-to-end**: lean core (`10-xfce-core.sh`) now ships alacritty
+  instead of xfce4-terminal; ButterBash `term`/`screenshot` aliases,
+  Super+A OpenCode hotkey, and the Print Screen binds all target
+  alacritty/flameshot. verifySetup drops the xfce4-terminal check.
+- **Flameshot is the capture default**: `Print` = `flameshot gui`,
+  `Super+S`/`Shift+Super+S`/`Alt+Super+S` = gui/full/screen
+  (`20-xfce-debloat.sh` flips xfce4-screenshooter to the opt-in; the Print
+  binding is retargeted dynamically when swapped).
+- **picom as compositor**: added to theme deps, full `picom.conf`
+  (square fades, no shadows, inactive dim, fullscreen unredirect), user
+  autostart entry, verifySetup coverage.
+- **ThinkPad extras**: `13-hardware.sh` auto-detects ThinkPad hardware and
+  offers thinkfan (ask_no_full, default N); `12-user-groups.sh` adds the
+  `power` group for powertop/thinkfan/brightnessctl.
+- **Firefox**: dark-theme prefs (`ui.systemUsesDarkTheme`, content/toolbar
+  theme 0) so new profiles match the desktop; `35-first-run.sh` optionally
+  deploys a curated importable `~/bookmarks.html`.
+- **Genmon disk/network rewrites**: sudo-free (smartctl temperature with a
+  `/sys/class/thermal` fallback, device detection for NVMe/mmcblk/SATA) so
+  the panel can never hang on a password dialog.
+- **Shared service handling**: `13-hardware.sh`/`14-bluetooth.sh` replace
+  hand-rolled enable/restart_service helpers with `start_service()` from
+  `lib/common.sh` (no stray systemctl calls).
+- **Live ISO blend**: `blend/devuan-xfce-thinkpad/` (build-here.sh,
+  deploy.sh, sync-overlay.sh, blend lifecycle + excalibur rootfs overlay)
+  targeting the Devuan live-sdk, documented in `docs/BUILDING.md`.
+  `.gitignore` excludes the 5 GB `live-sdk/` tree and `live-build.log`.
+
+### Fixes
+- `15-codecs.sh` no longer aborts when `apt-get update` fails (fails soft,
+  continues with cached lists — same as every other step).
+- verifySetup additions: font-manager (optional), picom, brightnessctl,
+  gufw, gnome-software (optional), update-indicator script, user autostart
+  entries, redshift config, and ufw active-state checks.
+
 ## 0.3.0 — Tokyo Night rice
 
 Whole-project re-theme from the old Catppuccin/KDE borrowings to a Tokyo Night

@@ -117,9 +117,10 @@ matters:
 | core | `18-butterbash.sh` — ButterBash + XFCE shell additions | Y |
 | core | `19-fastfetch.sh` — minimal fancy fastfetch config (anime ascii art) + btop | Y |
 | desktop | `20-xfce-debloat.sh` — trim task apps, keep XFCE-native, silence beep | Y |
-| desktop | `21-theme-tokyonight.sh` — Tokyo Night rice: GTK/xfwm4 + rounded panel + Alacritty theme | Y |
+| desktop | `21-theme-tokyonight.sh` — theme engine (tokyonight/catppuccin-mocha/nord) + icons + picom + panel rice | Y |
 | desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
 | desktop | `23-input-fix.sh` — input fixes + light-locker + Super shortcuts | Y |
+| desktop | `24-power-user.sh` — power-user commands (menu, update-check/gui, lock, suspend) + cron | Y |
 | apps | `30-desktop-essentials.sh` — Flatpak, portal, geoclue, CUPS, firewall, Thunar full, Clipman, Redshift | Y |
 | apps | `31-timeshift.sh` — Timeshift snapshots | Y |
 | apps | `32-time-sync.sh` — chrony NTP time sync | N |
@@ -149,6 +150,35 @@ Prints PASS/FAIL/WARN for groups, lean-core packages, Thunar plugins,
 fonts, Firefox policy, Tokyo Night markers (GTK/icons/Alacritty), the
 LightDM greeter conf, SLiM absence, and services (LightDM, TLP,
 Bluetooth, CUPS, chrony…). Exits non-zero on any FAIL — so it can gate CI.
+
+### Developer test suite (`make check`)
+
+Three read-only tiers (ohmydebn-style harness) live in `tests/`:
+
+| Tier | What it checks |
+|------|----------------|
+| 1 `lint` | `bash -n` on every script/bin/overlay, shellcheck if installed, `py_compile` on the Python widgets |
+| 2 `unit` | sandboxed unit tests — theme engine (seed → render all 3 palettes → no leftover `@TOKEN@`, `picker.colors` hex parse) and `common.sh` `priv()` routing with fake doas/sudo |
+| 3 `consistency` | VERSION ↔ latest RELEASE.md heading, palette vars/hex valid, template tokens ↔ `_t_render`, step-script `DEBSWAY_DESC/DEFAULT` headers, README step parity, `.gitignore` coverage, blend-overlay theme wiring |
+| 3 `apt-checks` | every package name in `scripts/*.sh` verified against the local apt cache (one bulk `apt-cache dumpavail`); contrib-only packages (`libdvd-pkg`, `winetricks`) live in `tests/lib/known-miss.list` |
+
+```bash
+make check              # all tiers
+./tests/run.sh --tier 2 # just the sandboxed unit tests
+./tests/run.sh --skip-apt-checks  # every tier except the apt-cache check
+make release-preflight  # lint + unit + consistency + VERSION/RELEASE.md gate
+```
+
+### Asset bundle (content deb)
+
+`make pkg-deb` builds a single data-only package with all versioned static
+assets (configs, palette library + templates, power-user bins, agent skill)
+as `build/devuan-xfce-assets_$(cat VERSION)_all.deb`; when installed it
+lands under `/usr/share/devuan-xfce-assets/`. `make check-deb` inspects it
+(`dpkg-deb --info` / `--contents`) and runs lintian — zero errors expected.
+Metadata lives in `packages/devuan-xfce-assets/`; the content tree is
+staged from the repo at build time (not duplicated in git), so changes to
+`configs/`/`themes/` flow into the deb automatically.
 
 After a run there's a full log at
 `~/.local/state/devuan-xfce-setup/last-run.log`, and `scripts/51-backup.sh`
@@ -191,8 +221,13 @@ snapshots your config into a timestamped tarball before major operations.
 
 ```
 VERSION / RELEASE.md   toolkit version + changelog (tag: git tag -a "v$(cat VERSION)")
+AGENTS.md         project instructions for AI coding agents
+docs/BUILDING.md  live-ISO build guide (live-sdk + blend overlay)
+docs/FIXES.md     recurring-issue resolution record
 run.sh           ordered runner (phases: core/desktop/apps/optional/utils)
 install.sh       one-command unattended wrapper
+Makefile         make check / lint / test / release-preflight
+tests/           3-tier read-only suite (lint, unit, consistency, apt-checks)
 scripts/
   lib/common.sh  shared helpers (DEBSWAY_* envs, ask, pkgs, priv helper)
   10-*.sh … 52-*.sh  one step each, numbered = run order; runnable standalone
@@ -200,6 +235,7 @@ scripts/
   policies.json  Firefox enterprise policy (used by 16-firefox.sh)
   skills/xfce-setup-SKILL.md   system context for AI agents
 configs/         versioned static config (Thunar/uca.xml — deployed by 30-*)
+themes/          palette library + templates for the theme engine
 butterbash/      bundled ButterBash, used offline
 ```
 
