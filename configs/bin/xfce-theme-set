@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# xfce-theme-set <palette> — apply a theme palette across the app layer
+# (alacritty, gtk-session panel accent, fastfetch colors, active GTK/xfwm4
+# names). Deployed by scripts/21-theme-tokyonight.sh from themes/ + the
+# theme engine in ~/.config/devuan-xfce-setup/. Needs a live X session for
+# the xfconf part; configs always render. See: xfce-theme-list.
+set -u
+
+DEVX_CONFIG="${DEVX_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/devuan-xfce-setup}"
+# shellcheck source=/dev/null
+source "$DEVX_CONFIG/lib/theme-apply.sh"
+
+if [ "$#" -lt 1 ]; then
+    echo "Usage: xfce-theme-set <palette>"
+    echo "Palettes: $(theme_list | tr '\n' ' ')"
+    echo "Current:  $(theme_current)"
+    exit 2
+fi
+
+theme_set "$1"
+exit $?
