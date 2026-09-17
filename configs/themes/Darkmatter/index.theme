@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Darkmatter
+Comment=Near-black GTK and xfwm4 theme built on the Darkmatter terminal palette
+Encoding=UTF-8
+
+[X-GNOME-Metatheme]
+GtkTheme=Darkmatter
+IconTheme=Zafiro-icons-Dark
+ButtonLayout=:minimize,maximize,close
