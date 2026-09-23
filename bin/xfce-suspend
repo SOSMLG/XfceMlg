@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# xfce-suspend — suspend the system.  Tries pm-suspend (via doas/sudo)
+# first, which works on Devuan's non-systemd init; falls back to
+# xfce4-session-logout --suspend (needs a systemd-logind session).
+set -uo pipefail
+if command -v pm-suspend >/dev/null 2>&1; then
+    if command -v doas >/dev/null 2>&1; then
+        exec doas pm-suspend
+    elif sudo -n true 2>/dev/null; then
+        exec sudo pm-suspend
+    else
+        echo "xfce-suspend: pm-suspend requires a password — try: sudo pm-suspend" >&2
+        exit 1
+    fi
+elif command -v xfce4-session-logout >/dev/null 2>&1; then
+    exec xfce4-session-logout --suspend
+else
+    echo "xfce-suspend: no suspend mechanism found (install pm-utils)." >&2
+    exit 1
+fi

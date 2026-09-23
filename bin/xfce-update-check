@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# xfce-update-check — check for pending OS package updates; notify-send
+# the result (with a clickable "Update now" action). Meant to run from
+# cron (09:00 + 18:00 daily) or manually. Adapted from devuan-cinnamon.
+set -uo pipefail
+
+# ---------------------------------------------------------------------------
+# Borrow X/DBus from the XFCE session (cron has no env).
+# ---------------------------------------------------------------------------
+for candidate in "$USER" "${SUDO_USER:-}"; do
+    [ -n "$candidate" ] || continue
+    PID=$(pgrep -u "$candidate" xfce4-session 2>/dev/null | head -n1)
+    [ -n "$PID" ] || PID=$(pgrep -u "$candidate" Xorg 2>/dev/null | head -n1)
+    [ -n "$PID" ] || continue
+    if [ -r "/proc/$PID/environ" ]; then
+        _display="$(tr '\0' '\n' < "/proc/$PID/environ" | sed -n 's/^DISPLAY=//p' | head -n1)"
+        _dbus="$(tr '\0' '\n' < "/proc/$PID/environ" | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | head -n1)"
+        export DISPLAY="$_display"
+        export DBUS_SESSION_BUS_ADDRESS="$_dbus"
+        [ -n "${DISPLAY:-}" ] && break
+    fi
+done
+export DISPLAY="${DISPLAY:-:0}"
+export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/$(id -u)/bus}"
+
+# ---------------------------------------------------------------------------
+# Best-effort apt refresh (works if the user has passwordless sudo).
+# ---------------------------------------------------------------------------
+sudo -n apt-get update -qq >/dev/null 2>&1 || true
+
+COUNT=$(apt list --upgradable 2>/dev/null | grep -c '\[upgradable' || true)
+
+if [ "${COUNT:-0}" -gt 0 ]; then
+    ACTION=$(notify-send \
+        -i software-update-available \
+        "Updates available" \
+        "${COUNT} package(s) can be upgraded." \
+        --app-name="Devuan Update Notifier" \
+        --action="update=Update now" 2>/dev/null || true)
+    if [ "$ACTION" = "update" ]; then
+        DISPLAY="$DISPLAY" DBUS_SESSION_BUS_ADDRESS="$DBUS_SESSION_BUS_ADDRESS" xfce-update-gui &
+    fi
+fi

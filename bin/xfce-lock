@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# xfce-lock — lock the screen on XFCE.  Tries xfce4-screensaver first
+# (the modern way), then xflock4 (older XFCE), then breaks gracefully.
+set -euo pipefail
+if command -v xfce4-screensaver-command >/dev/null 2>&1; then
+    exec xfce4-screensaver-command -l
+elif command -v xflock4 >/dev/null 2>&1; then
+    exec xflock4
+else
+    echo "xfce-lock: no screen locker found (install xfce4-screensaver)." >&2
+    exit 1
+fi
