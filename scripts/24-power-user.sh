@@ -20,9 +20,8 @@ require_not_root
 apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
 log_head "1/4  Dependencies"
-priv apt-get install -y \
-    python3-gi gir1.2-gtk-3.0 gir1.2-vte-2.91 libnotify-bin cron \
-    || log_warn "Some packages failed to install — GUI commands may not work."
+install_pkgs "Power-user deps" \
+    python3-gi gir1.2-gtk-3.0 gir1.2-vte-2.91 libnotify-bin cron
 log_ok "Dependencies installed."
 
 log_head "2/4  Python apps + shell launchers"
@@ -72,8 +71,8 @@ else
 fi
 rm -f "$NEW_CRON"
 
-service_enable_now cron 2>/dev/null && log_ok "cron enabled and started." \
-    || log_warn "Could not enable cron via init — check manually: service cron start"
+start_service cron
+log_ok "cron enabled and started via init (verify with: rc-service cron status / service cron status)."
 
 log_head "4/4  Verify"
 if command -v xfce-menu >/dev/null 2>&1; then

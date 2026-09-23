@@ -71,7 +71,6 @@ newest_archive() {
 latest_archive() { newest_archive; }
 
 do_backup() {
-    local existing=()
     local include=()
     local src
     for src in "${CANDIDATES[@]}"; do

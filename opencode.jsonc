@@ -1,0 +1,57 @@
+{
+  // devuan-xfce-setup — repo-scoped opencode config.
+  // Deep-merges over ~/.config/opencode/opencode.jsonc when working in this
+  // repo. Only REPO policy lives here: nothing machine-specific (no model,
+  // MCP servers, plugins, compaction — those stay in the global config).
+  "$schema": "https://opencode.ai/config.json",
+
+  // Extra support documents beyond the auto-loaded AGENTS.md.
+  "instructions": ["AGENTS.md", "docs/FIXES.md", "docs/BUILDING.md"],
+
+  // Permission map for this repo. Insertion order matters: opencode applies
+  // the LAST matching rule, so the broad allow comes first and the
+  // ask/deny carve-outs follow. This is a deliberate superset of the global
+  // rules: this toolkit only ever uses apt, never systemd, and every
+  // privilege call must go through priv() (doas-first, sudo fallback).
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "*": "allow",
+      // Never systemd / journald — Devuan runs OpenRC on sysvinit.
+      "systemctl *": "deny",
+      "systemd-*": "deny",
+      "journalctl*": "deny",
+      "busctl *": "deny",
+      "timedatectl *": "deny",
+      // apt/dpkg only — the toolkit targets Debian/Devuan exclusively.
+      "pacman*": "deny",
+      "yay*": "deny",
+      "dnf*": "deny",
+      "yum*": "deny",
+      "nix*": "deny",
+      "zypper*": "deny",
+      "apk*": "deny",
+      // Root-y stuff: confirm before running (repo rule: use priv()).
+      "pkexec *": "ask",
+      "sudo *": "ask",
+      "doas *": "ask",
+      "su *": "ask",
+      // apt mutations: confirm.
+      "apt purge*": "ask",
+      "apt remove*": "ask",
+      "apt autoremove*": "ask",
+      "apt-get purge*": "ask",
+      "apt-get remove*": "ask",
+      "apt-get autoremove*": "ask",
+      // Power / destructive hardware ops.
+      "shutdown*": "ask",
+      "reboot*": "ask",
+      "mkfs*": "deny",
+      "fdisk*": "deny",
+      "dd of=/dev/*": "deny",
+      "dd if=/dev/* of=/dev/*": "deny"
+    },
+    "webfetch": "allow",
+    "websearch": "allow"
+  }
+}

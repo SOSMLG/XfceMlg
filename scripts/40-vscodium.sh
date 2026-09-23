@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: VSCodium editor (primary GUI editor)
+# DEBSWAY_DESC: VSCodium editor (Darkmatter theme) + Neovim retirement
 # DEBSWAY_DEFAULT: Y
 #  40-vscodium.sh — VSCodium (primary GUI editor) + Neovim retirement
 #  Telemetry-free VS Code build, installed via its official APT
 #  repo so it updates normally afterward. VSCodium is THE editor
 #  (Mousepad/Geany removed by 20-xfce-debloat.sh, Neovim retired here).
+#  Ships + activates the bundled Darkmatter color theme extension
+#  (configs/vscodium/devuan-xfce-setup.darkmatter-theme) and sets
+#  workbench.colorTheme=Darkmatter in the user settings.
 #  Privilege: priv() (doas-first, sudo fallback)
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -22,7 +25,7 @@ if is_installed codium; then
     log_ok "VSCodium (codium) is already installed."
 else
 
-log_head "1/4  Dependencies"
+log_head "1/5  Dependencies"
 for dep in wget gpg; do
     if ! command -v "$dep" &>/dev/null; then
         log_info "Installing dependency: $dep"
@@ -31,7 +34,7 @@ for dep in wget gpg; do
     fi
 done
 
-log_head "2/4  APT repository"
+log_head "2/5  APT repository"
 KEYRING="/usr/share/keyrings/vscodium-archive-keyring.gpg"
 SOURCES_FILE="/etc/apt/sources.list.d/vscodium.list"
 KEY_SOURCES=(
@@ -76,12 +79,31 @@ else
     log_err "Failed to write $SOURCES_FILE"; exit 1
 fi
 
-log_head "3/4  Install"
+log_head "3/5  Install"
 # New repo just added: must refresh even when the runner otherwise skips per-script updates.
-priv apt-get update || { log_err "apt-get update failed after adding the VSCodium repo."; exit 1; }
-if ! apt-cache policy codium | grep -q 'Candidate:'; then
-    log_err "codium has no install candidate — the VSCodium repo did not register."
-    log_info "Check the key in $KEYRING and the URL in $SOURCES_FILE, then re-run."
+# The vscodium index omits Valid-Until and is refreshed rarely (server keeps re-serving a
+# stale InRelease), so a transient fetch blip can leave apt-cache without a candidate even
+# though the repo is fine — wipe the cached index and retry once rather than failing first.
+cand() { apt-cache policy codium 2>/dev/null | awk -F': ' '/Candidate:/{gsub(/ /,"",$2); print $2}'; }
+registered() { local c; c="$(cand)"; [[ -n "$c" ]] && [[ "$c" != "(none)" ]] \
+    && apt-cache policy codium 2>/dev/null | grep -q "download.vscodium.com"; }
+for attempt in 1 2; do
+    priv apt-get update || { log_err "apt-get update failed after adding the VSCodium repo."; exit 1; }
+    registered && break
+    if [[ $attempt -eq 1 ]]; then
+        log_warn "codium not resolved — wiping the cached vscodium index and retrying once."
+        priv rm -f /var/lib/apt/lists/download.vscodium.com*_InRelease \
+                   /var/lib/apt/lists/download.vscodium.com*_Packages 2>/dev/null || true
+    fi
+done
+if ! registered; then
+    log_err "codium has no install candidate — the VSCodium repo did not register after two refreshes."
+    log_info "Sources file ($SOURCES_FILE):"
+    priv cat "$SOURCES_FILE" | sed 's/^/  /'
+    log_info "Key fingerprints in $KEYRING:"
+    gpg --batch --show-keys "$KEYRING" 2>/dev/null | sed -n '1,6s/^/  /p' || true
+    log_info "apt-cache policy codium reports candidate: $(cand)"
+    log_info "Check $SOURCES_FILE and $KEYRING, then re-run."
     exit 1
 fi
 if priv apt-get install -y codium; then
@@ -91,7 +113,61 @@ else
 fi
 fi
 
-log_head "4/4  Retire Neovim (VSCodium is the editor now)"
+log_head "4/5  Darkmatter color theme"
+THEME_EXT_SRC="$SCRIPT_DIR/../configs/vscodium/devuan-xfce-setup.darkmatter-theme"
+VSCODIUM_CONFIG="$HOME/.config/VSCodium/User"
+VSCODIUM_SETTINGS="$VSCODIUM_CONFIG/settings.json"
+EXT_DIR=""
+for candidate in "$HOME/.vscodium/extensions" "$HOME/.vscode-oss/extensions"; do
+    if [[ -d "$candidate" ]]; then
+        EXT_DIR="$candidate"
+        break
+    fi
+done
+if command -v codium &>/dev/null; then
+    if [[ -z "$EXT_DIR" ]]; then
+        EXT_DIR="$HOME/.vscodium/extensions"
+        mkdir -p "$EXT_DIR"
+    fi
+    if [[ -d "$THEME_EXT_SRC" ]]; then
+        EXT_DEST="$EXT_DIR/devuan-xfce-setup.darkmatter-theme"
+        if [[ -f "$EXT_DEST/package.json" ]]; then
+            cp "$EXT_DEST/package.json" "${EXT_DEST}/package.json.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+            log_info "Backed up existing Darkmatter theme extension metadata."
+        fi
+        rm -rf "$EXT_DEST"
+        cp -r "$THEME_EXT_SRC" "$EXT_DEST"
+        chmod -R u+rwX,go+rX "$EXT_DEST"
+        log_ok "Darkmatter theme extension deployed to $EXT_DEST."
+    else
+        log_warn "Darkmatter theme extension seed missing at $THEME_EXT_SRC."
+    fi
+    mkdir -p "$VSCODIUM_CONFIG"
+    if [[ -f "$VSCODIUM_SETTINGS" ]]; then
+        cp "$VSCODIUM_SETTINGS" "${VSCODIUM_SETTINGS}.bak.$(date +%Y%m%d%H%M%S)"
+        log_info "Backed up existing VSCodium settings.json."
+    fi
+    python3 - "$VSCODIUM_SETTINGS" << 'PYEOF'
+import json, sys
+path = sys.argv[1]
+try:
+    with open(path) as f:
+        data = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    data = {}
+if data.get("workbench.colorTheme") != "Darkmatter":
+    data["workbench.colorTheme"] = "Darkmatter"
+with open(path, "w") as f:
+    json.dump(data, f, indent=4)
+    f.write("\n")
+print("colorTheme set to Darkmatter")
+PYEOF
+    log_ok "VSCodium colorTheme set to Darkmatter (relaunch codium to pick up the new theme)."
+else
+    log_warn "codium not on PATH — theme deploy skipped (re-run after installing VSCodium)."
+fi
+
+log_head "5/5  Retire Neovim (VSCodium is the editor now)"
 # The old 46-neovim.sh step is gone. If neovim lingers from an earlier
 # run, purge it; user data is never deleted, only moved aside.
 if is_installed neovim || command -v nvim &>/dev/null; then

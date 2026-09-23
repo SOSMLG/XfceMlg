@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: (optional) Vesktop / Telegram
+# DEBSWAY_DESC: (optional) Vesktop (Discord) with Darkmatter system24 theme / Telegram
 # DEBSWAY_DEFAULT: Y
 #  45-chat.sh — Vesktop (Discord client) / Telegram
-#  Vesktop: latest GitHub release .deb (not pinned). Telegram:
+#  Vesktop: latest GitHub release .deb (not pinned), then the bundled
+#  Darkmatter system24 theme (configs/vesktop/themes/) is deployed to
+#  ~/.config/vesktop/themes/ and enabled in settings.json. Telegram:
 #  official tar.xz extracted to ~/.local/opt/Telegram — entirely
 #  user-space, no privileges needed for that half at all.
 #  Privilege: priv() (doas-first, sudo fallback) (only for Vesktop's apt install)
@@ -86,10 +88,12 @@ install_telegram() {
 [Desktop Entry]
 Name=Telegram
 Comment=Fast and secure messaging app
-Exec=$HOME/.local/bin/telegram
+Exec=$HOME/.local/bin/telegram -- %U
 Icon=telegram
 Type=Application
 Categories=Network;InstantMessaging;
+MimeType=x-scheme-handler/tg;x-scheme-handler/tonsite;
+StartupWMClass=TelegramDesktop
 Terminal=false
 EOF
 
@@ -99,10 +103,60 @@ EOF
     fi
 }
 
-log_head "1/2  Vesktop"
+deploy_vesktop_theme() {
+    local themesrc="$SCRIPT_DIR/../configs/vesktop/themes/system24-darkmatter.theme.css"
+    local theme_name="system24-darkmatter.theme.css"
+    local vs_config="$HOME/.config/vesktop"
+    local theme_dir="$vs_config/themes"
+    local settings="$vs_config/settings/settings.json"
+
+    [[ -f "$themesrc" ]] || { log_warn "Vesktop theme seed missing at $themesrc — skipping."; return 1; }
+    if ! is_installed vesktop; then
+        log_info "Vesktop not installed — theme stays bundled until a run after install."
+        return 0
+    fi
+    if [[ ! -d "$vs_config/settings" ]]; then
+        log_info "No ~/.config/vesktop/settings yet (first launch not done) — theme deploys on a later re-run."
+        return 0
+    fi
+
+    mkdir -p "$theme_dir"
+    if [[ -f "$theme_dir/$theme_name" ]]; then
+        cp "$theme_dir/$theme_name" "${theme_dir}/$theme_name.bak.$(date +%Y%m%d%H%M%S)"
+        log_info "Backed up existing $theme_dir/$theme_name."
+    fi
+    cp "$themesrc" "$theme_dir/$theme_name"
+    log_ok "system24 Darkmatter theme deployed to $theme_dir/$theme_name."
+
+    if [[ -f "$settings" ]]; then
+        cp "$settings" "${settings}.bak.$(date +%Y%m%d%H%M%S)"
+    fi
+    python3 - "$settings" "$theme_name" << 'PYEOF'
+import json, sys
+path, name = sys.argv[1], sys.argv[2]
+try:
+    with open(path) as f:
+        data = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    data = {}
+enabled = data.setdefault("enabledThemes", [])
+if name not in enabled:
+    enabled.append(name)
+with open(path, "w") as f:
+    json.dump(data, f, indent=4)
+    f.write("\n")
+print("ok", name, "enabled in", path)
+PYEOF
+    log_ok "Enabled $theme_name in $settings (enabledThemes)."
+}
+
+log_head "1/3  Vesktop"
 ask "Install Vesktop (Discord client)?" && install_vesktop
 
-log_head "2/2  Telegram"
+log_head "2/3  Vesktop theme (Darkmatter system24)"
+deploy_vesktop_theme
+
+log_head "3/3  Telegram"
 ask "Install Telegram Desktop?" && install_telegram
 
-log_ok "Vesktop/Telegram log_head complete."
+log_ok "Vesktop/Telegram setup complete."

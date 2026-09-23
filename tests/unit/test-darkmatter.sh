@@ -66,20 +66,17 @@ T21="$REPO_ROOT/scripts/21-theme.sh"
 t_assert "21-theme.sh exists" [ -f "$T21" ]
 t_assert_not_grep "no engine usage (only cleanup)" 'theme_seed|theme_set[^_]|source.*theme-apply' "$T21"
 t_assert_not_grep "genmon is only purged, never installed" 'install_pkgs[^#]*genmon' "$T21"
-# Extract the alacritty heredoc and validate the Darkmatter palette.
-ALAC_TOML="$REPO_ROOT/configs/alacritty-darkmatter.toml.unit"
-awk '/alacritty\.toml" << /{inA=1; next} inA&&/^ALACEOF$/{inA=0} inA{print}' "$T21" > "$ALAC_TOML"
-ALAC_TMP="$(make_tmp alacritty)"
-mv "$ALAC_TOML" "$ALAC_TMP/alacritty.toml"
-if grep -q '^\s*background = "#121113"' "$ALAC_TMP/alacritty.toml"; then
+# Validate the versioned alacritty seed (configs/) that 21-theme.sh deploys.
+ALAC_TOML="$REPO_ROOT/configs/alacritty/alacritty.toml"
+t_assert "alacritty seed exists" [ -f "$ALAC_TOML" ]
+if grep -q '^\s*background = "#121113"' "$ALAC_TOML"; then
     t_ok
 else
-    t_fail "alacritty heredoc in 21-theme.sh did not parse with a Darkmatter background"
+    t_fail "alacritty seed lacks the Darkmatter background"
 fi
-t_assert_grep "alacritty red index matches accent" 'red     = "#e75353"' "$ALAC_TMP/alacritty.toml"
-t_assert_grep "alacritty fg is white" 'foreground = "#ffffff"' "$ALAC_TMP/alacritty.toml"
-t_assert_grep "alacritty toml is the 0.13+ format" '\[colors.primary\]' "$ALAC_TMP/alacritty.toml"
-cleanup_dirs "$ALAC_TMP"
+t_assert_grep "alacritty red index matches accent" 'red     = "#e75353"' "$ALAC_TOML"
+t_assert_grep "alacritty fg is white" 'foreground = "#ffffff"' "$ALAC_TOML"
+t_assert_grep "alacritty toml is the 0.13+ format" '\[colors.primary\]' "$ALAC_TOML"
 
 echo "  [unit] 22-theme-boot.sh — Darkmatter boot theming"
 T22="$REPO_ROOT/scripts/22-theme-boot.sh"

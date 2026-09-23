@@ -39,7 +39,6 @@ pkg-deb: ## Stage repo tree into $(DEB_FILE) (data-only, all arch)
 	mkdir -p "$(DEB_STAGE)/DEBIAN"
 	mkdir -p "$(DEB_STAGE)/usr/share/doc/$(DEB_NAME)"
 	mkdir -p "$(DEB_STAGE)/usr/share/$(DEB_NAME)/skills"
-	@set -e
 	sed "s/@VERSION@/$(DEB_VER)/" packages/$(DEB_NAME)/DEBIAN/control > "$(DEB_STAGE)/DEBIAN/control"
 	cp packages/$(DEB_NAME)/DEBIAN/postinst "$(DEB_STAGE)/DEBIAN/postinst"
 	sed "s/@VERSION@/$(DEB_VER)/" packages/$(DEB_NAME)/usr/share/doc/$(DEB_NAME)/copyright > "$(DEB_STAGE)/usr/share/doc/$(DEB_NAME)/copyright"

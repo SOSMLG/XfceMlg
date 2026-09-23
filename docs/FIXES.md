@@ -15,7 +15,7 @@ README.md (`docs/BUILDING.md` for the live-ISO path). Verified against v0.6.0.
 | Update check without git remote | The repo has no remote, so `xfce-update-check` checks apt upgrades, not upstream releases. | `configs/bin/xfce-update-check` |
 | DEBSWAY_* env consistency | Escalator and install flags share the `DEBSWAY_` namespace with the older devuan-kde-setup for muscle memory; `DEBSWAY_PRIV` forces the escalator. | `scripts/lib/common.sh` |
 | Test noise from derived trees | `live-sdk/` (permission-dense bootstrap), `blend/*/excalibur/rootfs-overlay/` and `__pycache__/` are pruned from lint `find` traversal and gitignored. | `tests/lint.sh`, `.gitignore` |
-| Known-miss apt packages | `libdvd-pkg`, `winetricks` live in `contrib`, which the toolkit adds at install time but a bare source list lacks — allowlisted rather than failed. | `tests/lib/known-miss.list`, `scripts/lib/common.sh` `add_sources` |
+| Known-miss apt packages | `libdvd-pkg`, `winetricks` live in `contrib`, which the toolkit adds at install time but a bare source list lacks — allowlisted rather than failed. | `tests/lib/known-miss.list`, `scripts/lib/common.sh` `ensure_repo_component` |
 | Long apt-checks wall time | One bulk `apt-cache dumpavail` (≈0.5 s for 69 k packages) plus `grep -Fx` replaces N × `apt-cache show` (~4 s/12 pkgs). | `tests/apt-checks.sh` |
 | awk quoting in extractor | Package-label extraction lives in `tests/lib/extract-packages.sh`; apostrophes inside the awk block break bash single-quoting, so wording avoids contractions. | `tests/lib/extract-packages.sh` |
 | Shell-capability of awk | The extractor uses POSIX `awk` (`match`/`RLENGTH`/`split`), which both gawk and mawk provide — no gawk-only extensions. | `tests/lib/extract-packages.sh` |

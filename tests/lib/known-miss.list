@@ -2,7 +2,7 @@
 # in repos the toolkit adds at install time (contrib/non-free) but which
 # are NOT in the default Devuan Excalibur sources.list. Packages listed
 # here are real, verified against the Devuan Excalibur archive — they are
-# NOT typos. See: scripts/lib/common.sh (add_sources), 11-backports.sh.
+# NOT typos. See: scripts/lib/common.sh (ensure_repo_component), 11-backports.sh.
 #
 # Format: one package name per line (lines starting with # are comments).
 libdvd-pkg
@@ -11,5 +11,5 @@ winetricks
 # 40-vscodium.sh — never in the default Devuan Excalibur archive.
 codium
 # steam: lives in the contrib component, which only exists after
-# scripts/lib/common.sh add_sources appends contrib/non-free at install time.
+# scripts/lib/common.sh ensure_repo_component appends contrib/non-free at install time.
 steam

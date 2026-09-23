@@ -21,9 +21,9 @@ Every step is idempotent and re-runnable.
 
 - **No `systemctl` / `journalctl` / unit files.** Nothing in this repo calls
   them (must never start).
-- Control services via `service_enable_now` / `service_start` /
-  `service_restart` from `scripts/lib/common.sh` (they wrap `rc-service`,
-  falling back to sysvinit `service`).
+- Control services via `start_service <svc>` from `scripts/lib/common.sh`
+  (it detects the live init: systemd / OpenRC (`rc-update`/`rc-service`) /
+  sysvinit (`update-rc.d`/`service`)).
 - Logs live under `/var/log/` (rsyslog/syslogd), not a journal.
 
 ## Root escalation: `priv()`, never bare sudo
@@ -44,7 +44,7 @@ Every step is idempotent and re-runnable.
   `install_pkgs "label" pkg1 pkg2 ...`. Both are parsed by the test suite's
   apt-checks (see Testing below).
 - Devuan Excalibur tracks Debian trixie. `contrib`/`non-free` components are
-  added by the toolkit itself (`scripts/lib/common.sh` `add_sources`,
+  added by the toolkit itself (`scripts/lib/common.sh` `ensure_repo_component`,
   `11-backports.sh`) — so a bare sources.list may legitimately miss
   `libdvd-pkg`, `winetricks`, etc. See `tests/lib/known-miss.list`.
 
@@ -57,7 +57,8 @@ Every step is idempotent and re-runnable.
   bundled GTK3/GTK4 + xfwm4 theme (`gtk-3.0`, `gtk-4.0`, `xfwm4`, `assets`,
   `index.theme`); `scripts/21-theme.sh` deploys it to `/usr/share/themes/`,
   purges the old Tokyo Night themes, writes the native
-  `~/.config/alacritty/alacritty.toml`, seeds the panel + picom, deploys
+  `~/.config/alacritty/alacritty.toml`, seeds the panel + the built-in
+  xfwm4 compositor, deploys
   `configs/wallpapers/darkmatter/` to
   `/usr/share/backgrounds/xfce/devuan-darkmatter/`, and writes the static
   `~/.config/devuan-xfce-setup/picker.colors` (bg0/bg1/bg3/fg0).

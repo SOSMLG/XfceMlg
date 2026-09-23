@@ -8,7 +8,7 @@ Devuan 6 (excalibur) **live ISO** using the official
 What you get:
 
 - Boots to a Darkmatter-themed XFCE desktop (panel seed, Alacritty,
-  Alacritty, themed greeter) in a live session
+  themed greeter) in a live session
 - **OpenRC** init (Devuan's hybrid: sysvinit stays PID1, openrc is the
   service manager — the same transition the Devuan installer performs)
 - **Lean core**: no `task-xfce-desktop`/`task-desktop` meta-pack (which drag

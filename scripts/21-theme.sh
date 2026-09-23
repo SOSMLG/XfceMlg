@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: Darkmatter GTK/xfwm4 theme + Zafiro icons + picom + panel rice
+# DEBSWAY_DESC: Darkmatter GTK/xfwm4 theme + Zafiro icons + xfwm4 compositor + panel rice
 # DEBSWAY_DEFAULT: Y
 #  21-theme.sh — the whole dark look, one pass, no theme engine.
 #
@@ -8,8 +8,10 @@
 #    - Deploy Darkmatter (+ hdpi/xhdpi) to /usr/share/themes; remove the
 #      old Tokyo Night themes; set GTK2/3 + xfwm4 theme to Darkmatter
 #    - Deploy bundled Zafiro icons (dark) to /usr/share/icons
-#    - Alacritty as THE terminal + a Darkmatter alacritty.toml
-#    - Compositor: picom fades-only (no shadows)
+#    - Alacritty as THE terminal + Darkmatter alacritty.toml from
+#      configs/alacritty/
+#    - Compositor: xfwm4 built-in (use_compositing on — subtle shadows,
+#      inactive dim, move/resize fade) — the xfwm4.xml seed handles it
 #    - Panel + window-manager seed from configs/xfce4/ (item layout,
 #      clock/title fonts, decorations) written to xfconf; panel re-runs
 #    - Wallpapers deployed + live backdrop set
@@ -32,13 +34,12 @@ require_not_root
 apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
 log_head "1/9  Dependencies"
-priv apt-get install -y \
+install_pkgs "Theme deps" \
     gtk2-engines-murrine gnome-themes-extra adwaita-icon-theme \
-    alacritty numlockx flameshot picom \
+    alacritty numlockx flameshot \
     xfce4-whiskermenu-plugin xfce4-docklike-plugin \
     xfce4-datetime-plugin \
-    acpi lm-sensors gawk \
-    || log_warn "Some packages failed to install (continuing — the theme may partially apply)."
+    acpi lm-sensors gawk
 log_ok "Dependencies installed."
 
 log_head "2/9  Deploy bundled Darkmatter themes + remove the old Tokyo Night set"
@@ -74,7 +75,8 @@ fi
 
 log_head "3/9  Active GTK + xfwm4 theme: Darkmatter"
 GTK_THEME="Darkmatter"
-xfconf-query -c xsettings -p /Net/ThemeName -s "$GTK_THEME" 2>/dev/null || true
+xfconf-query -c xsettings -n -p /Net/ThemeName -t string -s "$GTK_THEME" 2>/dev/null \
+    || log_warn "Could not set GTK theme via xfconf — re-run inside a desktop session if /Net/ThemeName is missing."
 gsettings set org.gnome.desktop.interface gtk-theme "$GTK_THEME" 2>/dev/null || true
 GTK2_RC="$HOME/.gtkrc-2.0"
 if [[ -f "$GTK2_RC" ]]; then
@@ -88,7 +90,8 @@ GTK2EOF
 log_ok "GTK2/3 theme set to $GTK_THEME."
 XFWM_THEME="Darkmatter"
 if [[ -d "$SYS_THEMES/$XFWM_THEME/xfwm4" ]]; then
-    xfconf-query -c xfwm4 -p /general/theme -s "$XFWM_THEME" 2>/dev/null || true
+    xfconf-query -c xfwm4 -n -p /general/theme -t string -s "$XFWM_THEME" 2>/dev/null \
+        || log_warn "Could not set xfwm4 theme via xfconf — re-run inside a desktop session if /general/theme is missing."
     log_ok "xfwm4 theme set to $XFWM_THEME."
 else
     log_warn "xfwm4 theme dir missing for $XFWM_THEME — window decorations may be unthemed."
@@ -106,13 +109,15 @@ if [[ -d "$ICONS_SRC/$ICON_THEME" ]]; then
     else
         log_ok "$ICON_THEME already present — reusing."
     fi
-    xfconf-query -c xsettings -p /Net/IconThemeName -s "$ICON_THEME" 2>/dev/null || true
+    xfconf-query -c xsettings -n -p /Net/IconThemeName -t string -s "$ICON_THEME" 2>/dev/null \
+        || log_warn "Could not set icon theme via xfconf — re-run inside a desktop session if /Net/IconThemeName is missing."
     gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" 2>/dev/null || true
     log_ok "Active icon theme: $ICON_THEME"
 else
     log_warn "Bundled icons missing at $ICONS_SRC/$ICON_THEME — falling back to Papirus-Dark."
     priv apt-get install -y papirus-icon-theme 2>/dev/null || true
-    xfconf-query -c xsettings -p /Net/IconThemeName -s "Papirus-Dark" 2>/dev/null || true
+    xfconf-query -c xsettings -n -p /Net/IconThemeName -t string -s "Papirus-Dark" 2>/dev/null \
+        || log_warn "Could not set fallback icon theme via xfconf."
 fi
 
 CURSOR_NAME=""
@@ -124,7 +129,8 @@ else
     priv apt-get install -y breeze-cursor-theme 2>/dev/null && CURSOR_NAME="breeze_cursors" || true
 fi
 if [[ -n "$CURSOR_NAME" && -d "$HOME/.icons/$CURSOR_NAME" ]]; then
-    xfconf-query -c xsettings -p /Gtk/CursorThemeName -s "$CURSOR_NAME" 2>/dev/null || true
+    xfconf-query -c xsettings -n -p /Gtk/CursorThemeName -t string -s "$CURSOR_NAME" 2>/dev/null \
+        || log_warn "Could not set cursor theme via xfconf — re-run inside a desktop session if /Gtk/CursorThemeName is missing."
     mkdir -p "$HOME/.icons/default"
     printf '[Icon Theme]\nInherits=%s\n' "$CURSOR_NAME" > "$HOME/.icons/default/index.theme"
     log_ok "Cursor theme: $CURSOR_NAME"
@@ -151,8 +157,8 @@ log_head "6/9  Terminal — Alacritty as THE terminal (Darkmatter toml)"
 HELPERS_RC="$HOME/.config/xfce4/helpers.rc"
 mkdir -p "$HOME/.config/xfce4"
 if [[ -f "$HELPERS_RC" ]]; then
-    grep -v '^TerminalEmulator=' "$HELPERS_RC" > "${HELPERS_RC}.tmp" 2>/dev/null || true
-    mv -f "${HELPERS_RC}.tmp" "$HELPERS_RC"
+    cp -a "$HELPERS_RC" "${HELPERS_RC}.bak.$(date +%Y%m%d%H%M%S)"
+    sed -i '/^TerminalEmulator=/d' "$HELPERS_RC"
 else
     touch "$HELPERS_RC"
 fi
@@ -167,128 +173,40 @@ if [[ -n "$ALACRITTY_BIN" ]] && command -v update-alternatives &>/dev/null; then
 fi
 
 ALACRITTY_DIR="$HOME/.config/alacritty"
+ALACRITTY_SEED="$SCRIPT_DIR/../configs/alacritty/alacritty.toml"
 mkdir -p "$ALACRITTY_DIR"
 rm -f "$ALACRITTY_DIR/alacritty.yml" 2>/dev/null || true
-cat > "$ALACRITTY_DIR/alacritty.toml" << 'ALACEOF'
-# alacritty.toml — Darkmatter palette (near-black, red accent)
-# Written by 21-theme.sh. TOML is the only config format alacritty 0.13+ reads.
-
-[window]
-decorations = "Full"
-opacity = 1.0
-option_as_alt = "Both"
-
-[font]
-normal = { family = "JetBrainsMono Nerd Font", style = "Regular" }
-bold = { family = "JetBrainsMono Nerd Font", style = "Bold" }
-italic = { family = "JetBrainsMono Nerd Font", style = "Italic" }
-size = 10.0
-
-[terminal]
-shell = { program = "/bin/bash" }
-
-[colors]
-draw_bold_text_with_bright_colors = true
-
-[colors.primary]
-background = "#121113"
-foreground = "#ffffff"
-
-[colors.normal]
-black   = "#060506"
-red     = "#e75353"
-green   = "#5f8787"
-yellow  = "#fbcb97"
-blue    = "#999999"
-magenta = "#e75353"
-cyan    = "#fbcb97"
-white   = "#c1c1c1"
-
-[colors.bright]
-black   = "#333333"
-red     = "#e75353"
-green   = "#5f8787"
-yellow  = "#fbcb97"
-blue    = "#aaaaaa"
-magenta = "#e75353"
-cyan    = "#fbcb97"
-white   = "#ffffff"
-
-[colors.cursor]
-text = "#121113"
-cursor = "#e75353"
-
-[colors.selection]
-text = "#ffffff"
-background = "#1c1b1d"
-ALACEOF
-log_ok "Darkmatter alacritty.toml written (0.13+ TOML format)."
-
-log_head "7/9  Compositor — picom (fades only, no shadows)"
-PICOM_CONF="$HOME/.config/picom/picom.conf"
-mkdir -p "$HOME/.config/picom"
-if [[ -f "$PICOM_CONF" ]]; then
-    cp "$PICOM_CONF" "${PICOM_CONF}.bak.$(date +%Y%m%d%H%M%S)"
+if [[ -f "$ALACRITTY_SEED" ]]; then
+    if [[ -f "$ALACRITTY_DIR/alacritty.toml" ]]; then
+        cp "$ALACRITTY_DIR/alacritty.toml" "${ALACRITTY_DIR}/alacritty.toml.bak.$(date +%Y%m%d%H%M%S)"
+        log_info "Backed up existing alacritty.toml."
+    fi
+    cp "$ALACRITTY_SEED" "$ALACRITTY_DIR/alacritty.toml"
+    log_ok "Darkmatter alacritty.toml deployed (0.13+ TOML format)."
+else
+    log_warn "Alacritty seed missing at $ALACRITTY_SEED."
 fi
-cat > "$PICOM_CONF" << 'PICOMEOF'
-# picom config — written by 21-theme.sh
-# Fades only, no shadows — keeps the panel translucent look clean.
 
-backend = "glx";
-vsync = true;
-glx-no-stencil = true;
-
-# Fading
-fading = true;
-fade-in-step = 0.03;
-fade-out-step = 0.03;
-fade-delta = 5;
-
-# No shadows
-shadow = false;
-
-# Transparency for the panel
-inactive-opacity = 0.95;
-active-opacity = 1.0;
-frame-opacity = 1.0;
-opacity-rule = [
-    "100:class_g = 'xfce4-panel'",
-    "100:class_g = 'Thunar'",
-    "100:class_g = 'Alacritty'",
-    "100:_NET_WM_STATE@:32a *= '_NET_WM_STATE_FULLSCREEN'"
-];
-
-# Rounded corners (if picom supports it)
-corner-radius = 8;
-PICOMEOF
-log_ok "Picom config deployed (fades only, no shadows, panel transparency)."
-
-PICOM_AUTOSTART="$HOME/.config/autostart/picom.desktop"
-if [[ ! -f "$PICOM_AUTOSTART" ]]; then
-    cat > "$PICOM_AUTOSTART" << 'PICOMDESKEOF'
-[Desktop Entry]
-Type=Application
-Name=Picom
-Comment=Compositor for translucent panels and smooth fading
-Exec=picom --config ~/.config/picom/picom.conf
-NoDisplay=true
-X-GNOME-Autostart-enabled=true
-PICOMDESKEOF
-    log_ok "Picom autostart entry created."
+log_head "7/9  Compositor — xfwm4 built-in (picom removed)"
+# picom is gone: xfwm4's own compositing (seeded in xfwm4.xml below) does
+# shadows, inactive dim and move/resize fade with zero extra daemon. Clean
+# up any picom a previous run left behind so the two can't fight over the
+# screen.
+if is_installed picom; then
+    priv apt-get purge -y picom 2>/dev/null || log_warn "picom purge failed (continuing)."
 fi
+rm -f "$HOME/.config/autostart/picom.desktop" 2>/dev/null || true
+rm -rf "$HOME/.config/picom" 2>/dev/null || true
 if [[ -n "${DISPLAY:-}" ]]; then
     pkill -x picom 2>/dev/null || true
-    (picom --config "$PICOM_CONF" &>/dev/null & disown) || true
-    log_ok "Picom started."
-else
-    log_info "No graphical session — picom will start on next login."
 fi
+log_ok "picom removed — xfwm4 built-in compositor takes over (seed below)."
 
 log_head "8/9  Panel + window manager seed (items, decorations, fonts)"
 XFCE_CONF="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml"
 XFCE_SEED="$SCRIPT_DIR/../configs/xfce4/xfconf/xfce-perchannel-xml"
 mkdir -p "$XFCE_CONF"
-for CH in xfce4-panel xfwm4; do
+for CH in xfce4-panel xfwm4 xfce4-power-manager xsettings; do
     SRC="$XFCE_SEED/$CH.xml"
     DEST="$XFCE_CONF/$CH.xml"
     if [[ ! -f "$SRC" ]]; then
@@ -300,8 +218,30 @@ for CH in xfce4-panel xfwm4; do
         log_info "Backed up existing $CH.xml."
     fi
     cp "$SRC" "$DEST"
-    log_ok "Deployed $CH.xml (panel items + fonts / WM decorations + title font)."
+    log_ok "Deployed $CH.xml (panel items + launchers / WM decorations + title font / power manager / GTK theme)."
 done
+
+# Launcher plugin payloads (items referenced by xfce4-panel.xml live next to the
+# panel config, under ~/.config/xfce4/panel/launcher-*). The seed carries @USER_HOME@
+# where a machine-specific home path would otherwise leak in — stamp with the real
+# $HOME so launchers keep working for whoever the fresh install actually runs as.
+PANEL_SEED="$SCRIPT_DIR/../configs/xfce4/panel"
+PANEL_CONF="$HOME/.config/xfce4/panel"
+if [[ -d "$PANEL_SEED" ]]; then
+    while IFS= read -r -d '' SRC_LAUNCH; do
+        REL="${SRC_LAUNCH#"$PANEL_SEED"/}"
+        DEST_LAUNCH="$PANEL_CONF/$REL"
+        if [[ -f "$DEST_LAUNCH" ]]; then
+            cp "$DEST_LAUNCH" "${DEST_LAUNCH}.bak.$(date +%Y%m%d%H%M%S)"
+            log_info "Backed up existing panel launcher $REL."
+        fi
+        mkdir -p "$(dirname "$DEST_LAUNCH")"
+        sed "s|@USER_HOME@|$HOME|g" "$SRC_LAUNCH" > "$DEST_LAUNCH"
+        log_ok "Deployed panel launcher $REL."
+    done < <(find "$PANEL_SEED" -type f -name '*.desktop' -print0)
+else
+    log_warn "Panel launcher seed missing at $PANEL_SEED — skipping launcher payloads."
+fi
 
 if [[ -n "${DISPLAY:-}" ]]; then
     if command -v xfce4-panel &>/dev/null; then
@@ -336,7 +276,11 @@ if [[ -f "$FIRST_WALLPAPER" && -n "${DISPLAY:-}" ]] && command -v xfconf-query &
     fi
     SCREEN_IDX=0
     for MON in $MONITORS; do
-        xfconf-query -c xfce4-desktop -p "/backdrop/screen${SCREEN_IDX}/monitor${MON}/last-image" -s "$FIRST_WALLPAPER" 2>/dev/null || true
+        BASE="/backdrop/screen${SCREEN_IDX}/monitor${MON}"
+        xfconf-query -c xfce4-desktop -p "$BASE/image-path" -s "$FIRST_WALLPAPER" 2>/dev/null || true
+        xfconf-query -c xfce4-desktop -p "$BASE/last-image" -s "$FIRST_WALLPAPER" 2>/dev/null || true
+        xfconf-query -c xfce4-desktop -p "$BASE/workspace0/last-image" -s "$FIRST_WALLPAPER" 2>/dev/null || true
+        xfconf-query -c xfce4-desktop -p "$BASE/image-show" -s true 2>/dev/null || true
         SCREEN_IDX=$((SCREEN_IDX + 1))
     done
     log_ok "Live backdrop set to $FIRST_WALLPAPER"
@@ -357,6 +301,6 @@ if [[ -f "$SCRIPT_DIR/../configs/rofi/darkmatter.rasi" ]] && command -v rofi &>/
 fi
 
 echo
-log_ok "Theme applied — Darkmatter (GTK/xfwm4), Zafiro icons, picom, panel, alacritty, wallpapers."
+log_ok "Theme applied — Darkmatter (GTK/xfwm4), Zafiro icons, xfwm4 compositor, panel, alacritty, wallpapers."
 echo -e "If anything looks half-applied, a full logout/login always settles it."
 echo -e "Re-run this script any time to refresh icons after installing new apps."

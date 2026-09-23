@@ -29,7 +29,8 @@ default-Y so `install.sh` really does give you everything.
   backgrounds now come from this same directory.
 - **`21-theme.sh`** (renamed from `21-theme-tokyonight.sh`): deploys the
   themes/icons, writes a native **`~/.config/alacritty/alacritty.toml`**
-  (0.13+ TOML, no more YAML), seeds the rounded panel + picom, deploys the
+  (0.13+ TOML, no more YAML), seeds the rounded panel + the xfwm4 built-in
+  compositor, deploys the
   wallpapers, writes the static `picker.colors`, and removes the old engine
   leftovers (`~/.config/devuan-xfce-setup/lib|themes|current`,
   `xfce-theme-set/list`, per-user `~/.config/gtk-3.0/gtk.css`,
@@ -45,6 +46,22 @@ default-Y so `install.sh` really does give you everything.
   `gpg --dearmor` + `gpg --batch --show-keys` (2256 B rsa4096), overwrites
   any stale empty keyring, and refuses to add the repo unless Debian's
   common trusted keyring is already present.
+- **Battery maximizer** — `13-hardware.sh` writes
+  `/etc/tlp.d/70-maxbattery.conf` (CPU EPP=power + PCIe ASPM=powersave on
+  battery, CPU boost kept), appends `pcie_aspm=force` to GRUB, applies a
+  battery-first XFCE power profile (blank 3/10 min, suspend after 30 min,
+  brightness 55% on battery, lid= suspend on battery / nothing on AC,
+  presentation-mode off) in the seed + live xfconf, and enables the
+  powertop auto-tune service init-agnostically via `start_service`.
+  `verifySetup.sh` checks the battery config, GRUB param and profile.
+- **picom is gone** — removed from the theme deps, `configs/picom/` deleted,
+  `21-theme.sh` purges any leftover picom package/autostart/config and kills a
+  running instance before the WM seed applies. **xfwm4 owns compositing** — the
+  `xfwm4.xml` seed enables the built-in compositor (`use_compositing`,
+  `vblank_mode auto`) with soft window/popup/dock shadows (`shadow_opacity 40`),
+  inactive-window dim (95%), see-through while move/resize (90%) and
+  `wrap_workspaces`; the panel's 75% background-alpha now actually renders.
+  `verifySetup.sh` checks `use_compositing` + picom absence.
 
 ### Removals
 - The whole theme engine: `scripts/lib/theme-apply.sh`, the `themes/`

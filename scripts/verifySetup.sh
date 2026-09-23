@@ -198,7 +198,6 @@ pkg xfce4-whiskermenu-plugin
 pkg xfce4-docklike-plugin
 pkg xfce4-datetime-plugin
 pkg alacritty
-pkg picom optional
 pkg brightnessctl optional
 pkg gufw optional
 pkg gnome-software optional
@@ -358,9 +357,18 @@ if [ -x "$HOME/.local/bin/check-apt-updates.sh" ]; then
 else
     report "update helper script" warn "missing (re-run 30-desktop-essentials.sh)"
 fi
-# Picom config + autostart
-cfg "picom config" "$HOME/.config/picom/picom.conf" optional
-cfg "picom autostart" "$HOME/.config/autostart/picom.desktop" optional
+# Compositor — xfwm4 built-in (picom is gone)
+XCOMP=$(xfconf-query -c xfwm4 -p /general/use_compositing 2>/dev/null || true)
+if [ "$XCOMP" = "true" ]; then
+    report "xfwm4 compositor" ok "built-in (use_compositing, shadows + dim)"
+else
+    report "xfwm4 compositor" warn "use_compositing not enabled (re-run 21-theme.sh)"
+fi
+if [ -e "$HOME/.config/autostart/picom.desktop" ] || [ -d "$HOME/.config/picom" ]; then
+    report "picom absent" warn "picom leftovers present (re-run 21-theme.sh)"
+else
+    report "picom absent" ok "no leftover autostart or config"
+fi
 
 # Wallpapers
 if [ -d "/usr/share/backgrounds/xfce/devuan-darkmatter" ]; then
@@ -399,7 +407,6 @@ service_state bluetooth bluetoothd optional
 service_state tlp tlp optional
 service_state cups cupsd optional
 service_state chrony chronyd optional
-service_state picom picom optional
 if command -v ufw >/dev/null 2>&1; then
     if ufw status 2>/dev/null | grep -qi "Status: active"; then
         report "ufw firewall" ok "active"
@@ -434,10 +441,27 @@ else
     report "wifi managed" warn "nmcli not found (10-xfce-core.sh installs network-manager)"
 fi
 
+# --- 9. Battery maximizer (13-hardware.sh) -------------------------------
+if [ -f /etc/tlp.d/70-maxbattery.conf ]; then
+    report "TLP max-battery config" ok "/etc/tlp.d/70-maxbattery.conf"
+else
+    report "TLP max-battery config" warn "missing (re-run 13-hardware.sh)"
+fi
+if [ -f /etc/default/grub ] && grep -q 'pcie_aspm=force' /etc/default/grub; then
+    report "GRUB pcie_aspm=force" ok
+else
+    report "GRUB pcie_aspm=force" warn "not set (re-run 13-hardware.sh, then reboot)"
+fi
+if [ -f "$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml" ] &&
+   grep -q 'name="presentation-mode" type="bool" value="false"' "$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml"; then
+    report "xfce power-manager battery profile" ok "presentation-mode off"
+else
+    report "xfce power-manager battery profile" warn "presentation-mode on/absent (re-run 13-hardware.sh)"
+fi
+
 echo
 echo -e "${GREEN}  ${PASS} passed${NC}, ${RED}${FAIL} failed${NC}, ${YELLOW}${WARN} warnings${NC}"
 if [ "$FAIL" -gt 0 ]; then
-    echo
     log_err "Some checks failed — see lines above, then re-run the relevant script."
     exit 1
 fi

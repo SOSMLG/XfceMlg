@@ -92,7 +92,7 @@ matters:
 | Editor | **VSCodium** (primary GUI editor; Mousepad/Geany removed — no TUI-editor detour) |
 | Browser | **Firefox ESR** hardened with Betterfox-derived system defaults + locked `policies.json` |
 | Shell | **ButterBash**: saner bash (aliases, `eza`/`bat`, fzf/zoxide, starship) + XFCE additions block |
-| Compositor | **picom** (square fades + fork animations, inactive dim, no shadows/blur, unredirects fullscreen; xfwm4 compositing stays off) |
+| Compositor | **xfwm4 built-in** (picom removed): compositing on with subtle window/popup shadows, inactive dim, move/resize fade — no extra daemon, unredirects fullscreen |
 | Notifications | **xfce4-notifyd** stock (Dunst stays opt-in, matches the theme) |
 | Capture | **Flameshot** on `Print` (region-select with annotate/blur; xfce4-screenshooter removed) |
 | Clipboard | **xfce4-clipman** panel plugin |
@@ -109,7 +109,7 @@ matters:
 | core | `10-xfce-core.sh` — lean XFCE + LightDM, SLiM purge, no tasksel | Y |
 | core | `11-backports.sh` — backports + apt pinning (priority 100) | Y |
 | core | `12-user-groups.sh` — `input`/`video`/`render`/`plugdev` + doas persist | Y |
-| core | `13-hardware.sh` — WiFi/BT/AMD firmware, microcode, fwupd, TLP | Y |
+| core | `13-hardware.sh` — WiFi/BT/AMD firmware, microcode, fwupd, TLP battery maximizer, boot params, XFCE power profile, ThinkPad extras | Y |
 | core | `14-bluetooth.sh` — Bluetooth stack + Blueman | Y |
 | core | `15-codecs.sh` — audio/video codecs + DVD | Y |
 | core | `16-firefox.sh` — Firefox ESR + Betterfox hardening | Y |
@@ -117,7 +117,7 @@ matters:
 | core | `18-butterbash.sh` — ButterBash + XFCE shell additions | Y |
 | core | `19-fastfetch.sh` — minimal fancy fastfetch config (anime ascii art) + btop | Y |
 | desktop | `20-xfce-debloat.sh` — trim task apps (Xfce Terminal, screenshooter), keep XFCE-native, silence beep | Y |
-| desktop | `21-theme.sh` — Darkmatter GTK/xfwm4 + Zafiro icons + picom + panel/WM seed (items + fonts) + wallpapers | Y |
+| desktop | `21-theme.sh` — Darkmatter GTK/xfwm4 + Zafiro icons + xfwm4 compositor + panel/WM seed (items + fonts) + wallpapers | Y |
 | desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
 | desktop | `23-input-fix.sh` — input fixes + light-locker + Super shortcuts | Y |
 | desktop | `24-power-user.sh` — power-user commands (menu, update-check/gui, lock, suspend) + cron | Y |
@@ -127,11 +127,11 @@ matters:
 | apps | `33-useful-apps.sh` — base tools, Python stack, Ristretto, Atril, Disks | Y |
 | apps | `34-opencode-agent.sh` — OpenCode AI agent + Super+A hotkey + skill file | Y |
 | apps | `35-first-run.sh` — welcome wizard + wallpaper seeder (autostart) | Y |
-| optional | `40-vscodium.sh` — VSCodium (primary editor) + Neovim purge | Y |
+| optional | `40-vscodium.sh` — VSCodium (primary editor, bundled Darkmatter theme) + Neovim purge | Y |
 | optional | `41-dev-essentials.sh` — C/C++ + Python toolchains | Y |
 | optional | `43-photogimp.sh` — GIMP + PhotoGIMP layout | Y |
 | optional | `44-gaming.sh` — Heroic/Steam/Wine | Y |
-| optional | `45-chat.sh` — Vesktop (Discord) / Telegram | Y |
+| optional | `45-chat.sh` — Vesktop (Discord, bundled Darkmatter system24 theme) / Telegram | Y |
 | optional | `46-heavy-optins.sh` — Thunderbird / LibreOffice / OBS Studio | Y |
 | utils | `50-maintenance.sh` — apt cleanup + dead symlink tidy | Y |
 | utils | `51-backup.sh` — timestamped HOME config backup/restore | Y |
@@ -241,6 +241,8 @@ configs/         versioned static config (Thunar/uca.xml — deployed by 30-*)
   icons/         bundled Zafiro-icons-Dark
   wallpapers/    curated dark/red set (deployed to devuan-darkmatter/)
   dunst/ · rofi/ opt-in matching configs (optional)
+  vesktop/       Darkmatter system24 theme (system24-darkmatter.theme.css) — 45-*
+  vscodium/      bundled Darkmatter color-theme extension — 40-*
   share/         power-user widgets (xfce-menu, xfce-update-gui)
 butterbash/      bundled ButterBash, used offline
 ```

@@ -51,9 +51,10 @@ system:
   - Notifications are **xfce4-notifyd** (stock), screenshots are
     **Flameshot** (`Print` = `flameshot gui`, `Super+S` shortcuts via
     `23-input-fix.sh`), clipboard history is
-    **xfce4-clipman**, night-light is **Redshift**, compositor is **picom**
-    (fades only; xfwm4's built-in compositing stays off so the two don't
-    fight).
+    **xfce4-clipman**, night-light is **Redshift**, compositor is **xfwm4's
+    built-in compositor** (picom is gone): subtle window/popup shadows,
+    inactive dim and move/resize fade, all handled by the xfwm4.xml seed —
+    no extra daemon.
   - System info in the terminal/login is **fastfetch** with bundled anime
     ascii art (not neofetch).
   - Panel + window-manager rice is a static seed in
@@ -90,7 +91,8 @@ system:
   `~/.local/state/devuan-xfce-setup/last-run.log`.
   Notable steps: `21-theme.sh` applies the rice — it deploys the bundled
   Darkmatter GTK/xfwm4 themes + Zafiro icons, writes the Darkmatter
-  `alacritty.toml`, seeds the rounded panel and picom, writes the static
+  `alacritty.toml`, seeds the rounded panel and the xfwm4 compositor, writes
+  the static
   `picker.colors`, and cleans up any old palette-engine leftovers.
   `22-theme-boot.sh` themes Plymouth/GRUB/LightDM to match (near-black
   `#121113` + red `#e75353`). Most steps now default to **Y**, including the

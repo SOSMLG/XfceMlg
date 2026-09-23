@@ -155,8 +155,13 @@ fi
 log_head "5/5  Restart audio + Bluetooth so changes take effect now"
 case "$AUDIO_SERVER" in
     pipewire)
-        systemctl --user restart pipewire pipewire-pulse wireplumber &>/dev/null \
-            || (pkill -x wireplumber; pkill -x pipewire; sleep 1; (pipewire &>/dev/null & disown); (pipewire-pulse &>/dev/null & disown); (wireplumber &>/dev/null & disown)) 2>/dev/null || true
+        # Use the user systemd unit only when systemd actually drives the
+        # session; Devuan/OpenRC runs the manual restart path instead.
+        if command_exists systemctl && [ -d /run/systemd/system ]; then
+            systemctl --user restart pipewire pipewire-pulse wireplumber &>/dev/null || true
+        else
+            (pkill -x wireplumber; pkill -x pipewire; sleep 1; (pipewire &>/dev/null & disown); (pipewire-pulse &>/dev/null & disown); (wireplumber &>/dev/null & disown)) 2>/dev/null || true
+        fi
         ;;
     pulseaudio)
         pulseaudio -k &>/dev/null || true

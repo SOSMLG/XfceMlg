@@ -152,8 +152,12 @@ normalize_display_manager() {
 # means later keys silently never apply — this replaces in place when the
 # header already exists, and only appends header+key when neither exists.
 # Fixed-string matching throughout (section names like `Seat:*` carry regex
-# metachars that grep -E/sed would misread); content is computed by a root
-# awk and written back through root tee, so no ownership/nesting hazards.
+# metachars that grep -E/sed would misread). The update/insert branches are
+# SECTION-AWARE: only lines inside the named [section] block are matched, so
+# a same-named key in a different section is never touched (lightdm.conf
+# style files can carry identical keys under [Seat:*] and [Seat:x]).
+# Content is computed by a root awk and written back through root tee, so no
+# ownership/nesting hazards.
 ini_dedup_key() {
     local file="$1" section="$2" key="$3" value="$4"
     if [ ! -f "$file" ] || ! grep -qF "[${section}]" "$file"; then
@@ -164,25 +168,39 @@ ini_dedup_key() {
         fi
         return 0
     fi
+    local hdr="[${section}]" seek="${key}="
+    # Was the key already present inside [section]? (drives the log label)
+    local had_key
+    had_key="$(priv awk -v h="$hdr" -v k="$seek" '
+        $0 == h { insec = 1; next }
+        insec && /^\[/ { insec = 0 }
+        insec && index($0, k) == 1 { found = 1; exit }
+        END { if (found) print 1 }
+    ' "$file" 2>/dev/null)"
     local content
-    if grep -qF "${key}=" "$file"; then
-        content="$({ priv awk -v k="${key}" -v v="${value}" '
-            { if (index($0, k "=") == 1) print k "=" v; else print }
-        ' "$file"; } 2>/dev/null)" || return 1
-        label="updated"
-    else
-        content="$({ priv awk -v hdr="[${section}]" -v kv="${key}=${value}" '
-            { print }
-            $0 == hdr && !seen { print kv; seen = 1 }
-        ' "$file"; } 2>/dev/null)" || return 1
-        label="inserted (existing [${section}] kept, no duplicate header)"
-    fi
+    content="$({ priv awk -v h="$hdr" -v k="$seek" -v kv="${key}=${value}" '
+        $0 == h && !seen { seen = 1; insec = 1; print; next }
+        seen && insec && /^\[/ {
+            if (!replaced) { print kv; replaced = 1 }
+            insec = 0; print; next
+        }
+        insec && index($0, k) == 1 {
+            if (!replaced) { print kv; replaced = 1 }
+            next
+        }
+        { print }
+        END { if (seen && insec && !replaced) print kv }
+    ' "$file"; } 2>/dev/null)" || return 1
     if [ -z "$content" ]; then
         log_warn "ini_dedup_key: nothing read from $file."
         return 1
     fi
     printf '%s\n' "$content" | priv tee "$file" >/dev/null
-    log_ok "${label}: ${key}=${value} in $file"
+    if [ "$had_key" = "1" ]; then
+        log_ok "updated: ${key}=${value} in $file ([${section}])"
+    else
+        log_ok "inserted (existing [${section}] kept, no duplicate header): ${key}=${value} in $file"
+    fi
 }
 
 # ensure_doas_persist [user] — make sure /etc/doas.conf grants
