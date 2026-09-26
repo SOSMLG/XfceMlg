@@ -102,7 +102,7 @@ nm_service_name() {
     fi
 }
 if ! is_installed network-manager-gnome && ! is_installed connman-gtk; then
-    if ask "Install network-manager + applet (no network GUI otherwise)?" "N"; then
+    if ask "Install network-manager + applet (no network GUI otherwise)?" "Y"; then
         apt_update || true
         install_pkgs "NetworkManager" network-manager network-manager-gnome || true
         start_service "$(nm_service_name)" || true

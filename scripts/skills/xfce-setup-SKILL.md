@@ -3,7 +3,7 @@
 This machine was set up with `devuan-xfce-setup`, a post-install toolkit for a
 ThinkPad-class laptop running Devuan 6 (excalibur) — binary-compatible with
 Debian 13 (Trixie) — with a lean **XFCE** desktop (X11, floating) on a dark
-**Tokyo Night** rice (background `#1a1b26`, accent `#bf616a`). Keep the
+**Darkmatter** rice (background `#121113`, red accent `#e75353`). Keep the
 following in mind when suggesting commands or diagnosing issues on this
 system:
 
@@ -27,7 +27,7 @@ system:
   `rc-update add <svc> default` and `rc-service <svc> start`, list with
   `rc-status`.
 - Display manager is **LightDM + lightdm-gtk-greeter** (themed to match the
-  Tokyo Night desktop). SLiM and greetd must NOT be enabled alongside it —
+  Darkmatter desktop). SLiM and greetd must NOT be enabled alongside it —
   exactly one DM owns the console. Default session: `Xfce Session`.
 
 ## Desktop environment
@@ -40,7 +40,7 @@ system:
   - Keyboard shortcuts are `/commands/custom/<keysym>` properties in the
     `xfce4-keyboard-shortcuts` channel — there is no sway-style config file
     with `bindsym` lines.
-  - Terminal is **Alacritty** (GPU-composited, Tokyo Night colorscheme) and
+  - Terminal is **Alacritty** (GPU-composited, Darkmatter colorscheme) and
     is THE default: `x-terminal-emulator` alternative +
     `~/.config/xfce4/helpers.rc` (`TerminalEmulator=alacritty`) — covers
     Thunar "Open Terminal Here", Whisker Menu, and panel launchers.
@@ -51,20 +51,30 @@ system:
   - Notifications are **xfce4-notifyd** (stock), screenshots are
     **Flameshot** (`Print` = `flameshot gui`, `Super+S` shortcuts via
     `23-input-fix.sh`), clipboard history is
-    **xfce4-clipman**, night-light is **Redshift**, compositor is **picom**
-    (fades only; xfwm4's built-in compositing stays off so the two don't
-    fight).
+    **xfce4-clipman**, night-light is **Redshift**, compositor is **xfwm4's
+    built-in compositor** (picom is gone): subtle window/popup shadows,
+    inactive dim and move/resize fade, all handled by the xfwm4.xml seed —
+    no extra daemon.
   - System info in the terminal/login is **fastfetch** with bundled anime
     ascii art (not neofetch).
-  - Panel: one rounded bottom panel with **genmon** widgets — the update
-    indicator (hourly `check-apt-updates.sh`), clipman, pulseaudio,
-    power-manager, optional cpugraph/netload.
-- The Tokyo Night rice is bundled in `configs/themes/`: `Tokyonight-Dark-BL`
-  is the active GTK/general theme, `Tokyo Night - Bordered` is the xfwm4
-  window theme, with `Graphite-dark` / `Habiboow` / `Aesthetic` as
-  alternates. Genmon definitions live in `configs/genmon`, wallpapers in
-  `configs/wallpapers`. Plymouth, GRUB and the LightDM greeter are themed to
-  match.
+  - Panel + window-manager rice is a static seed in
+    `configs/xfce4/xfconf/xfce-perchannel-xml/` (`xfce4-panel.xml`,
+    `xfwm4.xml`) — item layout, decorations and the JetBrainsMono Nerd
+    Font clock/title fonts. `21-theme.sh` copies it into
+    `~/.config/xfce4/xfconf/` (backing up) then restarts `xfce4-panel`
+    and `xfwm4`. No genmon — the old update-indicator widget is gone;
+    updates are handled by the power-user commands + notifier in
+    `24-power-user.sh`.
+- The Darkmatter rice is bundled in `configs/themes/` (all three variants —
+  plain / hdpi / xhdpi) and deployed to `/usr/share/themes/` by
+  `21-theme.sh`; there is **no theme engine** and no palette switcher —
+  `Darkmatter` is the GTK + xfwm4 theme, period. Icons are the bundled
+  **Zafiro-icons-Dark** (`configs/icons/`), wallpapers the curated dark/red
+  set in `configs/wallpapers/darkmatter/` (deployed to
+  `/usr/share/backgrounds/xfce/devuan-darkmatter/`). The static
+  `~/.config/devuan-xfce-setup/picker.colors` file carries the palette for
+  the Python menu/update-gui widgets. Plymouth, GRUB and the LightDM greeter
+  are themed to match.
 
 ## This toolkit's own conventions (for consistency if extending it)
 - Scripts live in `scripts/`, numbered `??-*.sh` (1x core, 2x desktop,
@@ -79,13 +89,15 @@ system:
   `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`, `BETTERFOX_TAG=150.0`.
   State log:
   `~/.local/state/devuan-xfce-setup/last-run.log`.
-  Notable steps: `21-theme-tokyonight.sh` applies the rice — it seeds the
-  palette-driven theme engine (`themes/<id>/palette.sh` + `lib/theme-apply.sh`
-  rendered into `~/.config/devuan-xfce-setup/`, with `xfce-theme-set` /
-  `xfce-theme-list` commands; palettes: tokyonight, catppuccin-mocha, nord),
-  then GTK/xfwm4, rounded panel, Alacritty, genmon. `22-theme-boot.sh` themes
-  Plymouth/GRUB/LightDM; the 4x optional phase ends with
-  `46-heavy-optins.sh` (Thunderbird, LibreOffice, OBS — all default-N).
+  Notable steps: `21-theme.sh` applies the rice — it deploys the bundled
+  Darkmatter GTK/xfwm4 themes + Zafiro icons, writes the Darkmatter
+  `alacritty.toml`, seeds the rounded panel and the xfwm4 compositor, writes
+  the static
+  `picker.colors`, and cleans up any old palette-engine leftovers.
+  `22-theme-boot.sh` themes Plymouth/GRUB/LightDM to match (near-black
+  `#121113` + red `#e75353`). Most steps now default to **Y**, including the
+  4x optional phase (`43-photogimp`, `44-gaming`, `45-chat`,
+  `46-heavy-optins` — Thunderbird, LibreOffice, OBS) and the 5x utils.
   `24-power-user.sh` deploys the power-user commands (xfce-menu,
   xfce-update-gui/check, xfce-lock/xfce-suspend + cron notifier).
 - Root escalation goes through the `priv()` helper (`scripts/lib/common.sh`):
@@ -96,8 +108,8 @@ system:
   (`*.bak.<timestamp>`) precede any destructive config write.
 - Test suite (ohmydebn-style, three tiers, all read-only): `make check`
   or `./tests/run.sh`. Tier 1 lint (bash -n/shellcheck/py_compile), tier 2
-  sandboxed unit tests (theme-apply + common.sh, no root/no apt/no X),
-  tier 3 consistency guards (VERSION↔RELEASE.md, palette hex/tokens,
+  sandboxed unit tests (Darkmatter bundle + common.sh, no root/no apt/no X),
+  tier 3 consistency guards (VERSION↔RELEASE.md, Darkmatter bundle/remap,
   step-script headers, README parity, .gitignore) + apt-checks (read-only
   package existence against the local cache; `tests/lib/known-miss.list`
   covers contrib packages the toolkit adds at install time). Release gate:

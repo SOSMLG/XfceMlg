@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DEBSWAY_DESC: (optional) Steam / Heroic / Wine
-# DEBSWAY_DEFAULT: N
+# DEBSWAY_DEFAULT: Y
 #  44-gaming.sh — Steam, Heroic, Wine (optional)
 #  Based on your own games.sh: Steam via Valve's official .deb
 #  (no sources.list editing needed), Heroic via the latest
@@ -39,7 +39,7 @@ ensure_i386() {
 }
 
 log_head "1/4  Core gaming libraries"
-if ask "Install core gaming libraries (Vulkan, GameMode, MangoHud)?" "N"; then
+if ask "Install core gaming libraries (Vulkan, GameMode, MangoHud)?" "Y"; then
     ensure_i386
     install_pkgs "Gaming libraries" \
         libvulkan1 libvulkan1:i386 mesa-vulkan-drivers mesa-vulkan-drivers:i386 \
@@ -47,7 +47,7 @@ if ask "Install core gaming libraries (Vulkan, GameMode, MangoHud)?" "N"; then
 fi
 
 log_head "2/4  Steam"
-if ask "Install Steam?" "N"; then
+if ask "Install Steam?" "Y"; then
     if is_installed steam-launcher || is_installed steam; then
         log_ok "Steam already installed."
     else
@@ -72,7 +72,7 @@ if ask "Install Steam?" "N"; then
 fi
 
 log_head "3/4  Heroic Games Launcher"
-if ask "Install Heroic Games Launcher (Epic/GOG/Amazon)?" "N"; then
+if ask "Install Heroic Games Launcher (Epic/GOG/Amazon)?" "Y"; then
     if is_installed heroic; then
         log_ok "Heroic already installed."
     else
@@ -106,7 +106,7 @@ if ask "Install Heroic Games Launcher (Epic/GOG/Amazon)?" "N"; then
 fi
 
 log_head "4/4  Wine"
-if ask "Install Wine (run Windows .exe apps directly)?" "N"; then
+if ask "Install Wine (run Windows .exe apps directly)?" "Y"; then
     if is_installed wine; then
         log_ok "Wine already installed."
     else

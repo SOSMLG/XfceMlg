@@ -3,7 +3,7 @@
 
 Falls back to a plain xfce4-terminal window if VTE is unavailable
 (gir1.2-vte-2.91 not installed). Reads palette from picker.colors
-(the same file xfce-menu uses), falling back to Tokyo Night defaults.
+(the same file xfce-menu uses), falling back to Darkmatter defaults.
 """
 import os
 import subprocess
@@ -26,7 +26,7 @@ DEVX_CONFIG = os.environ.get(
     os.path.expanduser("~/.config/devuan-xfce-setup"),
 )
 PICKER = os.path.join(DEVX_CONFIG, "picker.colors")
-DEFAULTS = {"bg0": "#1a1b26F2", "bg1": "#1a1b26", "bg3": "#bf616aF2", "fg0": "#efefef"}
+DEFAULTS = {"bg0": "#121113F2", "bg1": "#1c1b1d", "bg3": "#e75353F2", "fg0": "#ffffff"}
 
 
 def theme_colors():
@@ -51,7 +51,7 @@ def parse_rgba(value, alpha=1.0):
     if len(v) == 9:
         v = v[:7]
     if not (v.startswith("#") and len(v) == 7):
-        v = "#1a1b26"
+        v = "#121113"
     return Gdk.RGBA(
         red=int(v[1:3], 16) / 255.0,
         green=int(v[3:5], 16) / 255.0,

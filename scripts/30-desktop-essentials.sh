@@ -237,9 +237,9 @@ EOF
     log_ok "location-provider=geoclue2 for manual lat/lon — see 'man redshift.conf'."
 fi
 
-log_head "10/10  Update notifier (periodic list refresh + panel indicator)"
-if ask "Set up periodic apt list refresh + a panel icon showing pending updates?"; then
-    install_pkgs "Update notifier" unattended-upgrades xfce4-genmon-plugin
+log_head "10/10  Update notifier (periodic apt list refresh)"
+if ask "Set up periodic apt list refresh (+ a ready-to-use updater helper script)?"; then
+    install_pkgs "Update notifier" unattended-upgrades
 
     APT_AUTO="/etc/apt/apt.conf.d/20auto-upgrades"
     [[ -f "$APT_AUTO" ]] && priv cp "$APT_AUTO" "${APT_AUTO}.bak.$(date +%Y%m%d%H%M%S)"
@@ -259,54 +259,18 @@ EOF
     mkdir -p "$HOME/.local/bin"
     cat > "$HOME/.local/bin/check-apt-updates.sh" << 'CHECKEOF'
 #!/usr/bin/env bash
+# Pending-update counter (uses apt's own status data, nothing is installed).
 COUNT=$(apt list --upgradable 2>/dev/null | grep -c '\[upgradable' || true)
 if [[ "$COUNT" -gt 0 ]]; then
-    echo "<txt>⬆ ${COUNT}</txt><tool>${COUNT} package(s) can be updated — click to upgrade</tool>"
+    echo "${COUNT} package(s) can be updated"
 else
-    echo "<txt></txt><tool>System is up to date</tool>"
+    echo "System is up to date"
 fi
 CHECKEOF
     chmod +x "$HOME/.local/bin/check-apt-updates.sh"
-
-    # Idempotent genmon: reuse the existing update-indicator when present
-    # instead of appending another one on every re-run.
-    EXISTING_GENMON=""
-    if command -v xfconf-query &>/dev/null; then
-        while IFS= read -r prop; do
-            [[ "$prop" =~ (/plugins/plugin-[0-9]+)/command$ ]] || continue
-            if [[ "$(xfconf-query -c xfce4-panel -p "$prop" 2>/dev/null || true)" == *"check-apt-updates.sh"* ]]; then
-                EXISTING_GENMON="${BASH_REMATCH[1]}"
-                break
-            fi
-        done < <(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null)
-    fi
-    if [[ -n "$EXISTING_GENMON" ]]; then
-        log_ok "Update indicator already on the panel ($EXISTING_GENMON) — refreshing its config, no duplicate."
-        xfconf-query -c xfce4-panel -p "${EXISTING_GENMON}/command" -n -t string -s "$HOME/.local/bin/check-apt-updates.sh" 2>/dev/null || true
-        xfconf-query -c xfce4-panel -p "${EXISTING_GENMON}/period" -n -t int -s 3600 2>/dev/null || true
-        xfconf-query -c xfce4-panel -p "${EXISTING_GENMON}/click-command" -n -t string -s "sh -c '$(command -v doas >/dev/null 2>&1 && echo doas || echo sudo) apt upgrade'" 2>/dev/null || true
-        command -v xfce4-panel &>/dev/null && xfce4-panel -r 2>/dev/null || true
-        log_ok "Update indicator config refreshed (hourly check, click to upgrade)."
-    else
-    BEFORE_IDS=$(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -oE '/plugins/plugin-[0-9]+' | sort -u || true)
-    if xfce4-panel --add=genmon 2>/dev/null; then
-        sleep 1
-        AFTER_IDS=$(xfconf-query -c xfce4-panel -p /plugins -l 2>/dev/null | grep -oE '/plugins/plugin-[0-9]+' | sort -u || true)
-        NEW_ID=$(comm -13 <(echo "$BEFORE_IDS") <(echo "$AFTER_IDS") | head -1 || true)
-        if [[ -n "$NEW_ID" ]]; then
-            xfconf-query -c xfce4-panel -p "${NEW_ID}/command" -n -t string -s "$HOME/.local/bin/check-apt-updates.sh" 2>/dev/null || true
-            xfconf-query -c xfce4-panel -p "${NEW_ID}/period" -n -t int -s 3600 2>/dev/null || true
-            xfconf-query -c xfce4-panel -p "${NEW_ID}/click-command" -n -t string -s "sh -c '$(command -v doas >/dev/null 2>&1 && echo doas || echo sudo) apt upgrade'" 2>/dev/null || true
-            log_ok "Update indicator added to the panel (hourly check, click to upgrade)."
-        else
-            log_warn "genmon added but couldn't auto-configure it — right-click it → Properties, and set"
-            log_warn "the command to: $HOME/.local/bin/check-apt-updates.sh"
-        fi
-    else
-        log_warn "Couldn't auto-add the genmon plugin — add it manually via Panel → Add New Items,"
-        log_warn "then point its command at: $HOME/.local/bin/check-apt-updates.sh"
-    fi
-    fi
+    log_ok "Helper written to $HOME/.local/bin/check-apt-updates.sh (run it any time — it only reports)."
+    log_warn "The old genmon panel widget is gone; if you want a visible counter, add a generic"
+    log_warn "panel generator yourself (or just rely on 24-power-user.sh's update checks + notifier)."
 fi
 
 log_ok "Desktop essentials log_head complete."

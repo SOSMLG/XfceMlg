@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DEBSWAY_DESC: NTP time sync via chrony
-# DEBSWAY_DEFAULT: N
+# DEBSWAY_DEFAULT: Y
 # =======================================================
 # Time Sync (NTP) via chrony
 # -------------------------------------------------------

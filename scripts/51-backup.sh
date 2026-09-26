@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DEBSWAY_DESC: (utility) timestamped HOME config backup
-# DEBSWAY_DEFAULT: N
+# DEBSWAY_DEFAULT: Y
 # =======================================================
 # Config Backup / Restore
 # -------------------------------------------------------
@@ -71,7 +71,6 @@ newest_archive() {
 latest_archive() { newest_archive; }
 
 do_backup() {
-    local existing=()
     local include=()
     local src
     for src in "${CANDIDATES[@]}"; do

@@ -49,7 +49,7 @@ else
 fi
 
 log_head "2/3  libinput tuning (optional)"
-if ask "Apply sane libinput defaults (tap-to-click on, natural scroll off)?" "N"; then
+if ask "Apply sane libinput defaults (tap-to-click on, natural scroll off)?" "Y"; then
     XORG_CONF_DIR="/etc/X11/xorg.conf.d"
     XORG_CONF_FILE="$XORG_CONF_DIR/30-touchpad.conf"
     priv mkdir -p "$XORG_CONF_DIR"
@@ -115,6 +115,21 @@ bind_key() {  # bind_key <channel> <property> <command>
 }
 
 if command -v xfconf-query &>/dev/null && ask "Install the Super-based shortcut set (terminal, files, screenshots, tiling, workspaces) + Ctrl+Alt+L lock?"; then
+    # -- Print Screen: reclaim from the purged xfce4-screenshooter (20-*)
+    #    overwrites only bindings that still target it; other user bindings win.
+    PRINTSHOT_LOOKUP=( "screen" "/commands/custom/<Print>" "flameshot gui"
+                       "" "/commands/custom/<Primary><Print>" "flameshot full"
+                       "window" "/commands/custom/<Alt><Print>" "flameshot screen" )
+    for ((i=0; i<${#PRINTSHOT_LOOKUP[@]}; i+=3)); do
+        _label="${PRINTSHOT_LOOKUP[$i]}" _prop="${PRINTSHOT_LOOKUP[$((i+1))]}" _cmd="${PRINTSHOT_LOOKUP[$((i+2))]}"
+        _cur="$(xfconf-query -c xfce4-keyboard-shortcuts -p "$_prop" 2>/dev/null || true)"
+        if [[ -n "$_cur" && "$_cur" == xfce4-screenshooter* ]]; then
+            bind_key xfce4-keyboard-shortcuts "$_prop" "$_cmd"
+        elif [ -z "$_cur" ]; then
+            bind_key xfce4-keyboard-shortcuts "$_prop" "$_cmd"
+        fi
+    done
+    unset _label _prop _cmd _cur
     # -- lock + launcher basics (commands channel) --
     bind_key xfce4-keyboard-shortcuts "/commands/custom/<Primary><Alt>l" "xflock4"
     bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>Return" "exo-open --launch TerminalEmulator"

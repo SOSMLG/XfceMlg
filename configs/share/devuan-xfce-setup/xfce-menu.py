@@ -23,7 +23,7 @@ DEVX_CONFIG = os.environ.get(
     os.path.expanduser("~/.config/devuan-xfce-setup"),
 )
 PICKER = os.path.join(DEVX_CONFIG, "picker.colors")
-DEFAULTS = {"bg0": "#1e1e2eF2", "bg1": "#1e1e2e", "bg3": "#bf616aF2", "fg0": "#efefef"}
+DEFAULTS = {"bg0": "#121113F2", "bg1": "#1c1b1d", "bg3": "#e75353F2", "fg0": "#ffffff"}
 
 CATEGORIES = {
     "Apps": [
@@ -54,7 +54,6 @@ CATEGORIES = {
         ("Restart", "sudo shutdown -r now"),
         ("Shut Down", "sudo shutdown -h now"),
         ("Log Out", "xfce4-session-logout --logout --no-prompt"),
-        ("Theme List", "xfce-theme-list"),
     ],
 }
 
@@ -89,7 +88,7 @@ def rgba(value, alpha=1.0):
     if len(value) == 9:
         value = value[:7]
     if not (value.startswith("#") and len(value) == 7):
-        value = "#1e1e2e"
+        value = "#121113"
     return Gdk.RGBA(
         red=int(value[1:3], 16) / 255.0,
         green=int(value[3:5], 16) / 255.0,

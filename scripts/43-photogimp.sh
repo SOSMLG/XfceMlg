@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DEBSWAY_DESC: (optional) GIMP + PhotoGIMP layout
-# DEBSWAY_DEFAULT: N
+# DEBSWAY_DEFAULT: Y
 #  43-photogimp.sh — GIMP + PhotoGIMP's Photoshop-like layout
 #  Fetched live from https://github.com/Diolinux/PhotoGIMP at
 #  install time (latest release tag, pinned fallback if the

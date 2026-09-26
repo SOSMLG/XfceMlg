@@ -7,8 +7,8 @@ Devuan 6 (excalibur) **live ISO** using the official
 
 What you get:
 
-- Boots to a Tokyo-Night-themed XFCE desktop (panel seed, genmon widgets,
-  Alacritty, themed greeter) in a live session
+- Boots to a Darkmatter-themed XFCE desktop (panel seed, Alacritty,
+  themed greeter) in a live session
 - **OpenRC** init (Devuan's hybrid: sysvinit stays PID1, openrc is the
   service manager — the same transition the Devuan installer performs)
 - **Lean core**: no `task-xfce-desktop`/`task-desktop` meta-pack (which drag
@@ -90,7 +90,7 @@ blend/devuan-xfce-thinkpad/
 └── excalibur/
     ├── config                 # the package set (lean XFCE + OpenRC + TLP)
     ├── rootfs-overlay/        # files rsynced INTO the live rootfs:
-    │   ├── home/devuan/...    #   alacritty, gtk.css, genmon, fastfetch,
+    │   ├── home/devuan/...    #   alacritty, panel, fastfetch,
     │   │                      #   redshift.conf  (user session seed)
     │   └── etc/...            #   lightdm greeter, apt auto-upgrades, tlp.d
     ├── isolinux-overlay/      # boot splash (splash.png)
@@ -107,7 +107,7 @@ blend/devuan-xfce-thinkpad/
 | Release codename / version / ISO name | `config` |
 | Kernel cmdline / boot menu | `iso_write_isolinux_cfg` + `iso_write_grub_cfg` in the `.blend` |
 | In-rootfs post-processing | `blend_finalize` in the `.blend` |
-| Tokyo Night / panel / terminal / wallpapers | `configs/` (re-run `sync-overlay.sh`) |
+| Darkmatter / panel / terminal / wallpapers | `configs/` (re-run `sync-overlay.sh`) |
 
 To bump to the next release: change `release`/`version`/`image_name` in
 `config`, retarget `extra/syslinux`, and move `excalibur/` to
@@ -116,7 +116,7 @@ To bump to the next release: change `release`/`version`/`image_name` in
 
 ## Cookbook: value-add the whole toolkit into the ISO
 
-The ISO ships the *applied* desktop (themes, panel, terminal, genmon,
+The ISO ships the *applied* desktop (themes, panel, terminal,
 wallpapers, greeter). If you also want the toolkit's **scripts** inside the
 live system so a user can re-run/adjust anything:
 

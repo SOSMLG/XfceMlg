@@ -43,142 +43,26 @@ else
     t_assert_eq "VERSION == latest RELEASE.md heading" "$VERSION" "$RELEASE_VER"
 fi
 
-# ── C3: palette validity — required vars + hex format ────────────────────────
-echo "  [consistency] palette validity"
-REQUIRED_VARS="THEME_NAME THEME_BG THEME_BG_ALT THEME_FG THEME_ACCENT THEME_ACCENT_ALT"
-HEX_VARS="THEME_BG THEME_BG_ALT THEME_FG THEME_ACCENT THEME_ACCENT_ALT"
-ALACRITTY_NAMES="BG FG BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE"
-BRIGHT_NAMES="BRIGHT_BLACK BRIGHT_RED BRIGHT_GREEN BRIGHT_YELLOW BRIGHT_BLUE BRIGHT_MAGENTA BRIGHT_CYAN BRIGHT_WHITE"
-HEX_RE='^[0-9a-fA-F]{6}$'
-
-# Build the complete list of palette vars we need to capture via declare -p
-ALL_PALETTE_VARS="$REQUIRED_VARS $HEX_VARS FASTFETCH_COLOR GTK_THEME_NAME XFWM_THEME_NAME"
-for suffix in $ALACRITTY_NAMES $BRIGHT_NAMES; do
-    ALL_PALETTE_VARS="$ALL_PALETTE_VARS ALACRITTY_${suffix}"
+# ── C3: Darkmatter theme bundle — all variants have the real payload ─────────
+echo "  [consistency] Darkmatter theme bundle integrity"
+for variant in Darkmatter Darkmatter-hdpi Darkmatter-xhdpi; do
+    D="configs/themes/$variant"
+    for piece in index.theme gtk-3.0 gtk-4.0 xfwm4 assets; do
+        t_assert "$variant has $piece" [ -e "$D/$piece" ]
+    done
+    t_assert_grep "$variant wires Zafiro icons (index.theme)" 'Zafiro-icons-Dark' "$D/index.theme"
 done
 
-for pal_dir in themes/*/palette.sh; do
-    [ -f "$pal_dir" ] || continue
-    PAL="$(basename "$(dirname "$pal_dir")")"
-
-    # Capture palette variables via declare -p (works under set -u;
-    # if any required var is unset, declare -p fails → PALETTE_DECLS empty).
-    PALETTE_DECLS="$(bash -c ". '$pal_dir'; declare -p $ALL_PALETTE_VARS" 2>/dev/null \
-        | sed 's/^declare -- /export /')"
-    if [ -z "$PALETTE_DECLS" ]; then
-        t_fail "$PAL: palette could not be sourced or is missing required vars"
-        continue
-    fi
-    eval "$PALETTE_DECLS" 2>/dev/null
-
-    for var in $REQUIRED_VARS; do
-        eval "val=\"\${$var:-}\""
-        if [ -z "$val" ]; then
-            t_fail "$PAL: required var $var is empty"
-        fi
-    done
-
-    for var in $HEX_VARS; do
-        eval "val=\"\${$var:-}\""
-        if [ -n "$val" ] && ! echo "$val" | grep -qE "$HEX_RE"; then
-            t_fail "$PAL: $var = '$val' is not 6-digit hex"
-        fi
-    done
-
-    # Alacritty vars are always lowercase in palette files
-    for suffix in $ALACRITTY_NAMES $BRIGHT_NAMES; do
-        var="ALACRITTY_${suffix}"
-        eval "val=\"\${$var:-}\""
-        if [ -z "$val" ]; then
-            t_fail "$PAL: $var is empty"
-        elif ! echo "$val" | grep -qE '^[0-9a-f]{6}$'; then
-            t_fail "$PAL: $var = '$val' is not lowercase 6-hex"
-        fi
-    done
-
-    # FASTFETCH_COLOR non-empty and a named color (not hex)
-    if [ -z "${FASTFETCH_COLOR:-}" ]; then
-        t_fail "$PAL: FASTFETCH_COLOR is empty"
-    elif echo "$FASTFETCH_COLOR" | grep -qE '^[0-9a-fA-F]{6}$'; then
-        t_fail "$PAL: FASTFETCH_COLOR is hex '$FASTFETCH_COLOR' (expected named color)"
-    fi
-
-    # GTK_THEME_NAME, XFWM_THEME_NAME non-empty
-    for var in GTK_THEME_NAME XFWM_THEME_NAME; do
-        eval "val=\"\${$var:-}\""
-        [ -z "$val" ] && t_fail "$PAL: $var is empty"
-    done
-
-    # All palette vars set OK = implicit pass per pal (counted above)
-done
-
-# ── C4: template / renderer token sync ───────────────────────────────────────
-echo "  [consistency] template tokens ↔ theme-apply.sh renderer"
-# Tokens used in _t_render sed expressions (the real renderer contract).
-# "@TOKEN@" in the file header comment is documentation, not a token.
-RENDER_TOKENS="$(grep -oE '@[A-Z_]+@' scripts/lib/theme-apply.sh \
-    | sed -n 's/@//gp' \
-    | grep -v '^TOKEN$' \
-    | sort -u)"
-# Tokens present in tpl files
-TPL_TOKENS="$(grep -ohE '@[A-Z_]+@' themes/_base/tpl/* 2>/dev/null \
-    | sed 's/@//g' | sort -u)"
-
-if [ -z "$RENDER_TOKENS" ]; then
-    t_fail "no @TOKEN@ found in theme-apply.sh — is _t_render empty?"
-elif [ -z "$TPL_TOKENS" ]; then
-    t_fail "no @TOKEN@ found in templates under themes/_base/tpl/"
-else
-    # Every template token must have a matching sed line
-    ORPHAN_TOKENS="$(comm -23 <(echo "$TPL_TOKENS") <(echo "$RENDER_TOKENS"))"
-    if [ -n "$ORPHAN_TOKENS" ]; then
-        t_fail "template tokens not handled by _t_render: $(echo "$ORPHAN_TOKENS" | tr '\n' ' ')"
+# ── C4: accent remap integrity — no stale orange, red accent actually used ───
+echo "  [consistency] Darkmatter accent remap (#e78a53 → #e75353)"
+t_assert_grep "Darkmatter gtk-3.0 css uses the red accent" '#e75353' "configs/themes/Darkmatter/gtk-3.0/gtk.css"
+for pat in '#e78a53' '#1a1b26'; do
+    STALE="$(grep -rIl "$pat" configs/themes configs/icons configs/dunst configs/rofi configs/lightdm 2>/dev/null | head -5)"
+    if [ -n "$STALE" ]; then
+        t_fail "stale palette hex $pat found in: $STALE"
     else
-        t_ok "every template @TOKEN@ has a matching _t_render sed line"
+        t_ok
     fi
-
-    # Every renderer token must appear in at least one template
-    UNUSED_TOKENS="$(comm -13 <(echo "$TPL_TOKENS") <(echo "$RENDER_TOKENS"))"
-    if [ -n "$UNUSED_TOKENS" ]; then
-        t_fail "renderer sed lines for tokens missing from all templates: $(echo "$UNUSED_TOKENS" | tr '\n' ' ')"
-    else
-        t_ok "every _t_render sed token appears in at least one template"
-    fi
-fi
-
-# ── C5: palette vars / token mapping: every mapped var exists in every pal ───
-echo "  [consistency] palette vars ↔ template token mapping"
-# Tokens with non-obvious variable names
-declare -A TOKEN_TO_VAR=(
-    [ACCENT_HEX]="THEME_ACCENT"
-    [ACCENT_ALT_HEX]="THEME_ACCENT_ALT"
-    [FASTFETCH_COLOR]="FASTFETCH_COLOR"
-)
-
-for pal_dir in themes/*/palette.sh; do
-    PAL="$(basename "$(dirname "$pal_dir")")"
-
-    PAL_DECLS="$(bash -c ". '$pal_dir'; declare -p THEME_NAME THEME_BG THEME_BG_ALT THEME_FG THEME_ACCENT THEME_ACCENT_ALT FASTFETCH_COLOR GTK_THEME_NAME XFWM_THEME_NAME $(
-        for suffix in $ALACRITTY_NAMES; do printf 'ALACRITTY_%s ' "$suffix"; done
-    )" 2>/dev/null | sed 's/^declare -- /export /')"
-    if [ -z "$PAL_DECLS" ]; then
-        continue  # already flagged in C3
-    fi
-    eval "$PAL_DECLS" 2>/dev/null
-
-    # Direct-name tokens: @ALACRITTY_FOO@ → $ALACRITTY_FOO
-    for suffix in $ALACRITTY_NAMES; do
-        var="ALACRITTY_${suffix}"
-        eval "val=\"\$$var\""
-        [ -z "${val:-}" ] && t_fail "$PAL: palette missing $var for template @${var}@"
-    done
-
-    # Non-obvious mappings
-    for token in "${!TOKEN_TO_VAR[@]}"; do
-        var="${TOKEN_TO_VAR[$token]}"
-        eval "val=\"\$$var\""
-        [ -z "${val:-}" ] && t_fail "$PAL: palette missing $var for template @${token}@"
-    done
 done
 
 # ── C6: every step script sources lib/common.sh ─────────────────────────────
@@ -219,28 +103,27 @@ for pattern in 'live-sdk/' 'live-build.log' '__pycache__' 'rootfs-overlay/' 'bui
     t_assert_grep ".gitignore covers $pattern" "$pattern" .gitignore
 done
 
-# ── C9: sync-overlay uses theme engine ───────────────────────────────────────
-echo "  [consistency] blend sync-overlay theme engine integration"
-OVERLAY="blend/devuan-xfce-thinkpad/sync-overlay.sh"
-if [ -f "$OVERLAY" ]; then
-    t_assert_grep "sync-overlay sources theme-apply.sh" \
-        'theme-apply\.sh' "$OVERLAY"
-    t_assert_grep "sync-overlay calls theme_seed" \
-        'theme_seed' "$OVERLAY"
+# ── C9: icon theme bundle + no stale engine references in shipped code ───────
+echo "  [consistency] no theme-engine references in shipped config/code"
+OLD_ENGINE_REFS="$(grep -rInE '(source|\.)[[:space:]]+[^#]*theme-apply|theme_seed|theme_set[^_]' \
+    scripts/ configs/ --include='*.sh' --include='*.py' 2>/dev/null || true)"
+if [ -n "$OLD_ENGINE_REFS" ]; then
+    t_fail "theme-engine references still in shipped code:"
+    echo -e "$OLD_ENGINE_REFS" | sed 's/^/\t/'
 else
-    t_fail "sync-overlay.sh not found at expected path"
+    t_ok "no theme-engine references remain in scripts/ configs/ tests/"
 fi
 
-# ── C10: bin scripts reference the engine ────────────────────────────────────
-echo "  [consistency] bin scripts source theme-apply.sh"
-for bin in configs/bin/xfce-theme-set configs/bin/xfce-theme-list; do
-    if [ -f "$bin" ]; then
-        t_assert_grep "$(basename "$bin") sources theme-apply.sh" \
-            'theme-apply\.sh' "$bin"
-    else
-        t_fail "bin script missing: $bin"
-    fi
-done
+# ── C10: widgets/24-power-user freed of the engine ───────────────────────────
+echo "  [consistency] power-user surface is engine-free"
+if [ -f "configs/share/devuan-xfce-setup/xfce-menu.py" ]; then
+    t_assert_not_grep "xfce-menu has no Theme-List entry" 'xfce-theme-list' \
+        "configs/share/devuan-xfce-setup/xfce-menu.py"
+fi
+if [ -f "scripts/24-power-user.sh" ]; then
+    t_assert_not_grep "24-power-user does not reference the engine" 'theme-apply|theme_set' \
+        "scripts/24-power-user.sh"
+fi
 
 # ── C11: 24-power-user.sh deploys bin scripts ────────────────────────────────
 echo "  [consistency] 24-power-user.sh deploys expected bins"
@@ -251,12 +134,11 @@ if [ -f "$PUSER" ]; then
     done
 fi
 
-# ── C12: all 3 palette ids documented in README ──────────────────────────────
-echo "  [consistency] README palette documentation"
-for pal_dir in themes/*/palette.sh; do
-    PAL="$(basename "$(dirname "$pal_dir")")"
-    t_assert_grep "README mentions palette $PAL" \
-        "$PAL" README.md
+# ── C12: Darkmatter stack documented in README ───────────────────────────────
+echo "  [consistency] README Darkmatter documentation"
+for marker in 'Darkmatter' 'Zafiro-icons-Dark' 'devuan-darkmatter' '21-theme.sh'; do
+    t_assert_grep "README mentions $marker" \
+        "$marker" README.md
 done
 
 # ── C13: agent/docs files present ────────────────────────────────────────────
@@ -277,6 +159,11 @@ for art in packages/devuan-xfce-assets/DEBIAN/control \
     t_assert "deb tree has $art" [ -f "$art" ]
 done
 t_assert_grep 'Makefile .gitignore covers build output' '/build/' .gitignore
+if grep -q 'cp -a themes' Makefile; then
+    t_fail "Makefile still stages the deleted themes/ palette tree"
+else
+    t_ok "Makefile no longer copies themes/ (payload ships inside configs/)"
+fi
 
 echo
 t_summary "consistency"

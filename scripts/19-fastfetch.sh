@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# DEBSWAY_DESC: fastfetch config + btop (catppuccin_mocha — no tokyonight theme upstream)
+# DEBSWAY_DESC: fastfetch config + btop (catppuccin_mocha theme)
 # DEBSWAY_DEFAULT: Y
 #  19-fastfetch.sh — system info on terminal open
-#  Writes one minimal, fancy fastfetch config locally (Tokyo Night
-#  palette, custom anime ASCII art, essential modules only — no network
+#  Writes one minimal, fancy fastfetch config locally (Darkmatter red
+#  accent, custom anime ASCII art, essential modules only — no network
 #  needed beyond the fastfetch package itself). Also offers btop
-#  (system monitor) with the Catppuccin Mocha flavor — no Tokyo Night
-#  btop theme exists upstream yet, and it's a dark palette that fits.
+#  (system monitor) with the Catppuccin Mocha flavor — a dark palette
+#  that fits the Darkmatter desktop.
 #  Privilege: priv() (doas-first, sudo fallback) (fastfetch/btop installs)
 set -uo pipefail
 # NOTE: no -e — one failed package must degrade gracefully, not abort
@@ -28,7 +28,7 @@ else
 fi
 
 log_head "2/3  Config (minimal, fancy — written locally, no downloads)"
-if ask "Write the minimal fancy fastfetch config (Tokyo Night palette, custom logo)?"; then
+if ask "Write the minimal fancy fastfetch config (Darkmatter palette, custom logo)?"; then
     FF_DIR="$HOME/.config/fastfetch"
     mkdir -p "$FF_DIR"
     FF_CONF="$FF_DIR/config.jsonc"
@@ -79,7 +79,7 @@ EOF
 fi
 
 log_head "3/3  btop (system monitor)"
-if ask "Install btop with a Tokyo Night-ish theme (matches the dark desktop)?"; then
+if ask "Install btop with the Catppuccin Mocha theme (matches the dark desktop)?"; then
     install_pkgs "btop + fetcher" btop curl || true
     if ! is_installed btop; then
         log_warn "btop not installed — skipping theme (re-run this script later)."

@@ -1,4 +1,4 @@
-/* devuan-xfce-setup lightdm-gtk-greeter shim (Tokyo Night)
+/* devuan-xfce-setup lightdm-gtk-greeter shim (Darkmatter)
  *
  * Adapted from Butterbian's greeter shim. Requires a dark GTK theme in
  * lightdm-gtk-greeter.conf — this CSS layers on top of it. The login
@@ -9,13 +9,13 @@
  *   /var/lib/lightdm/.config/gtk-3.0/gtk.css   (lightdm-owned, greeter-readable)
  */
 
-/* Brand palette — Tokyo Night + accent red */
-@define-color xr_bg     #1a1b26;
-@define-color xr_panel  #24283b;
-@define-color xr_fg     #efefef;
-@define-color xr_dim    #9699a8;
-@define-color xr_accent #bf616a;
-@define-color xr_border #32344a;
+/* Brand palette — Darkmatter near-black + red accent */
+@define-color xr_bg     #121113;
+@define-color xr_panel  #171618;
+@define-color xr_fg     #ffffff;
+@define-color xr_dim    #888888;
+@define-color xr_accent #e75353;
+@define-color xr_border #2b2b2b;
 
 /* ── Login modal box ─ flat dark bg + subtle accent line ─ */
 #login_window {
@@ -76,7 +76,7 @@
 
 /* ── Top indicator panel — blend into wallpaper ─────────────── */
 #panel_window {
-    background-color: rgba(26, 27, 38, 0.85);
+    background-color: rgba(18, 17, 19, 0.85);
     color: @xr_dim;
 }
 #panel_window button {

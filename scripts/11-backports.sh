@@ -44,6 +44,7 @@ SRCS_FILE="/etc/apt/sources.list.d/debian-backports.sources"
 
 # Devuan already provides <suite>-backports from deb.devuan.org/merged,
 # so the Debian-mirror file (URIs: deb.debian.org) is wrong AND redundant.
+NEED_WRITE=0
 if [ "$ID" = "devuan" ]; then
     log_info "Detected Devuan $CODENAME — backports suite ships in sources.list already."
     if [ -f "$SRCS_FILE" ]; then
@@ -109,7 +110,11 @@ fi
 # 3. Refresh + verify
 # ---------------------------------------------------------------------------
 log_info "Refreshing package lists (backports included)..."
-if priv apt-get update; then
+# run.sh already refreshes once and exports DEBSWAY_SKIP_APT_UPDATE=1; only
+# re-update here when this script actually wrote a source file (Debian case).
+if [ "$NEED_WRITE" -ne 1 ] && [ -n "${DEBSWAY_SKIP_APT_UPDATE:-}" ]; then
+    log_info "Package lists already refreshed this run (DEBSWAY_SKIP_APT_UPDATE=1)."
+elif priv apt-get update; then
     if apt-cache policy 2>/dev/null | sed -n 's/^ .*n/\n&/p' | grep -qi "$BACKPORTS_SUITE" \
         || priv apt-cache policy 2>/dev/null | grep -qi "$BACKPORTS_SUITE"; then
         log_ok "$BACKPORTS_SUITE is live. Install from it with:"

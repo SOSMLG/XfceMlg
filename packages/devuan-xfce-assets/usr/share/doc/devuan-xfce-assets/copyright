@@ -25,6 +25,11 @@ License: MIT
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Files: configs/themes/*
-Copyright: 2024-2026 their respective theme authors
+Copyright: 2024-2026 Darkmatter theme authors
 License: GPL-3.0-or-later
  See the per-theme COPYING/license files in each theme tree.
+
+Files: configs/icons/*
+Copyright: 2024-2026 Zafiro icons authors
+License: GPL-3.0-or-later
+ See the license file in the icon theme tree.

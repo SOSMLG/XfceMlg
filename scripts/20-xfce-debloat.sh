@@ -3,9 +3,11 @@
 # DEBSWAY_DEFAULT: Y
 #  20-xfce-debloat.sh — trim the default task-xfce-desktop app set.
 #  Stays XFCE-native: VSCodium (40-*) replaces Mousepad, VLC replaces
-#  Parole, while flameshot and xfce4-notifyd are the defaults
-#  (xfce4-screenshooter and Dunst stay opt-in below), and
-#  kill the system beep for good — that's genuinely four unrelated
+#  Parole; flocked out of the box are the Xfce Terminal (Alacritty is
+#  the toolkit's one true terminal, set up by 21-theme.sh) and
+#  xfce4-screenshooter (flameshot owns Print), and Dunst stays opt-in
+#  below. Also kills the system beep for good — that's genuinely
+#  four unrelated
 #  sources (PC speaker, X11 bell, XFCE's own event-sound bell, and
 #  bash's readline bell), which is why so many "I turned it off but
 #  it's still beeping" reports exist; this addresses all four.
@@ -58,38 +60,34 @@ if ask "Remove Xfburn (CD/DVD burner — skip if you actually use an optical dri
     purge_if_installed "Xfburn" xfburn
 fi
 
-log_head "4/7  Screenshots: flameshot default (xfce4-screenshooter opt-in)"
-if ask "Replace flameshot with stock xfce4-screenshooter (simpler, no annotate/blur)?" "N"; then
-    priv apt-get install -y xfce4-screenshooter || log_warn "xfce4-screenshooter failed to install — keeping flameshot."
-    if is_installed xfce4-screenshooter; then
-        purge_if_installed "flameshot" flameshot
-
-        # Print Screen is bound via xfconf, not a config file — check
-        # whether the property already exists (it does by default, bound
-        # to flameshot) before deciding create-new vs update.
-        if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" &>/dev/null; then
-            xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -s "xfce4-screenshooter -r"
-        else
-            xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -n -t string -s "xfce4-screenshooter -r"
-        fi
-        log_ok "Print Screen now opens xfce4-screenshooter's region-select dialog."
+log_head "4/7  Screenshots: flameshot owns Print, stock widgets purged"
+# The stock task install binds Print to xfce4-screenshooter. This toolkit
+# standardizes on flameshot (installed by 10-xfce-core.sh) — so kill the
+# duplicate and pin Print to flameshot's region-select overlay. genmon
+# (the old update-indicator widget) is retired too.
+purge_if_installed "xfce4-screenshooter" xfce4-screenshooter
+purge_if_installed "genmon (retired panel widget)" xfce4-genmon-plugin
+rm -rf "$HOME/.config/xfce4/genmon" 2>/dev/null || true
+if is_installed flameshot; then
+    if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" &>/dev/null; then
+        xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -s "flameshot gui"
+    else
+        xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -n -t string -s "flameshot gui"
     fi
+    log_ok "Print Screen opens flameshot's region-select overlay."
 else
-    log_warn "Skipped — keeping flameshot."
-    # Default path: flameshot is installed by 10-xfce-core.sh, but XFCE's
-    # stock Print binding still points at xfce4-screenshooter (now absent).
-    # Rebind Print to flameshot so the key doesn't silently do nothing.
-    if is_installed flameshot; then
-        if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" &>/dev/null; then
-            xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -s "flameshot gui"
-        else
-            xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Print>" -n -t string -s "flameshot gui"
-        fi
-        log_ok "Print Screen opens flameshot's region-select overlay."
-    fi
+    log_warn "flameshot not installed (10-xfce-core.sh installs it) — Print binding left untouched."
 fi
 
-log_head "5/7  xfce4-notifyd → Dunst"
+log_head "5/7  Xfce Terminal → Alacritty"
+# Alacritty is the toolkit's default terminal (see 21-theme.sh) and also
+# takes over the x-terminal-emulator alternative. Xfce Terminal stays only
+# if you explicitly want a second fallback terminal.
+if ask "Remove Xfce Terminal and its data package (Alacritty is the default terminal)?" "Y"; then
+    purge_if_installed "Xfce Terminal" xfce4-terminal xfce4-terminal-data
+fi
+
+log_head "6/7  xfce4-notifyd → Dunst"
 if ask "Replace xfce4-notifyd with Dunst (lighter, far more configurable notification daemon)?" "N"; then
     priv apt-get install -y dunst || log_warn "Dunst failed to install — leaving xfce4-notifyd in place."
     if is_installed dunst; then
@@ -101,51 +99,12 @@ if ask "Replace xfce4-notifyd with Dunst (lighter, far more configurable notific
             cp "$DUNST_CONF_DIR/dunstrc" "$DUNST_CONF_DIR/dunstrc.bak.$(date +%Y%m%d%H%M%S)"
             log_info "Backed up your existing dunstrc."
         fi
-        cat > "$DUNST_CONF_DIR/dunstrc" << 'EOF'
-[global]
-    monitor = 0
-    follow = mouse
-    geometry = "350x5-30+30"
-    indicate_hidden = yes
-    shrink = no
-    transparency = 10
-    separator_height = 2
-    padding = 12
-    horizontal_padding = 12
-    frame_width = 2
-    frame_color = "#f7768e"
-    sort = yes
-    idle_threshold = 120
-    font = JetBrainsMono Nerd Font Mono 10
-    markup = full
-    format = "<b>%s</b>\n%b"
-    alignment = left
-    word_wrap = yes
-    stack_duplicates = true
-    show_indicators = yes
-    icon_position = left
-    max_icon_size = 48
-    sticky_history = yes
-    history_length = 20
-    corner_radius = 8
-
-[urgency_low]
-    background = "#1a1b26"
-    foreground = "#efefef"
-    timeout = 5
-
-[urgency_normal]
-    background = "#1a1b26"
-    foreground = "#efefef"
-    timeout = 8
-
-[urgency_critical]
-    background = "#1a1b26"
-    foreground = "#f7768e"
-    frame_color = "#f7768e"
-    timeout = 0
-EOF
-        log_ok "Dunst configured (Tokyo Night-accented) at $DUNST_CONF_DIR/dunstrc"
+        if [[ -f "$SCRIPT_DIR/../configs/dunst/dunstrc" ]]; then
+            cp "$SCRIPT_DIR/../configs/dunst/dunstrc" "$DUNST_CONF_DIR/dunstrc"
+            log_ok "Dunst configured (Darkmatter-accented) at $DUNST_CONF_DIR/dunstrc"
+        else
+            log_warn "Bundled configs/dunst/dunstrc missing — leaving your current dunstrc in place."
+        fi
 
         # dunst registers org.freedesktop.Notifications via D-Bus service
         # activation once installed — it starts itself on the first
@@ -158,7 +117,7 @@ else
     log_warn "Skipped — keeping xfce4-notifyd."
 fi
 
-log_head "6/7  Stop the system beep"
+log_head "7/7  Stop the system beep"
 # The "beep" is actually up to four independent, unrelated sources —
 # fixing only one is why so many "I turned it off but it's still
 # beeping" reports exist. This addresses all four:
@@ -231,7 +190,7 @@ log_info "Cleaning up orphaned dependencies..."
 priv apt-get autoremove --purge -y || log_warn "autoremove reported issues (non-fatal)."
 priv apt-get clean || true
 
-log_head "7/7  Orphaned .desktop entries"
+log_head "8/7  Orphaned .desktop entries"
 # After task-meta purges / theme rebrands, a .desktop whose Exec binary is
 # gone shows up as a broken menu entry. Scan both per-user spots; system
 # /usr/share stays untouched. ask_no_full: removing entries is destructive.

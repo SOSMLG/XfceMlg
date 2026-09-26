@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # DEBSWAY_DESC: (utility) per-user defaults into /etc/skel
-# DEBSWAY_DEFAULT: N
+# DEBSWAY_DEFAULT: Y
 # =======================================================
 # Export to /etc/skel
 # -------------------------------------------------------
 # Copies a curated set of per-user config produced by this
 # toolkit into /etc/skel, so every FUTURE user account on
 # that machine (and any image built from this toolkit) starts
-# with the same defaults: alacritty, GTK, panel, genmon,
-# fastfetch, Thunar, fonts, .desktop entries.
+# with the same defaults: alacritty, GTK, panel, fastfetch,
+# Thunar, fonts, .desktop entries.
 #
 # Existing files in /etc/skel are never clobbered unless
 # --force is given. Uses priv() for privilege escalation.

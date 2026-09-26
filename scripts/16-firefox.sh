@@ -103,7 +103,7 @@ pref("signon.autofillForms", false);
 pref("geo.provider.use_geoclue", false);
 pref("pdfjs.defaultZoomValue", "page-width");
 pref("browser.firefox-view.feature-tour", "{\"screen\":\"\",\"complete\":true}");
-// Follow the Tokyo Night dark desktop — no white-flash on new profiles.
+// Follow the Darkmatter dark desktop — no white-flash on new profiles.
 pref("ui.systemUsesDarkTheme", 1);
 pref("browser.theme.content-theme", 0);
 pref("browser.theme.toolbar-theme", 0);

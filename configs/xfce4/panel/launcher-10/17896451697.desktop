@@ -1,0 +1,19 @@
+[Desktop Entry]
+Name=Telegram
+Comment=New era of messaging
+TryExec=@USER_HOME@/.local/bin/telegram
+Exec=@USER_HOME@/.local/bin/telegram -- %U
+Icon=telegram
+Terminal=false
+StartupWMClass=TelegramDesktop
+Type=Application
+Categories=Chat;Network;InstantMessaging;
+MimeType=x-scheme-handler/tg;x-scheme-handler/tonsite;
+Keywords=tg;chat;im;messaging;messenger;sms;tdesktop;
+Actions=quit;
+X-XFCE-Source=file://@USER_HOME@/.local/share/applications/telegram.desktop
+
+[Desktop Action quit]
+Exec=@USER_HOME@/.local/bin/telegram -quit
+Name=Quit Telegram
+Icon=application-exit

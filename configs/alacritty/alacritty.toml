@@ -1,0 +1,51 @@
+# alacritty.toml — Darkmatter palette (near-black, red accent)
+# Seed for 21-theme.sh. TOML is the only config format alacritty 0.13+ reads.
+
+[window]
+decorations = "Full"
+opacity = 1.0
+option_as_alt = "Both"
+
+[font]
+normal = { family = "JetBrainsMono Nerd Font", style = "Regular" }
+bold = { family = "JetBrainsMono Nerd Font", style = "Bold" }
+italic = { family = "JetBrainsMono Nerd Font", style = "Italic" }
+size = 10.0
+
+[terminal]
+shell = { program = "/bin/bash" }
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[colors.primary]
+background = "#121113"
+foreground = "#ffffff"
+
+[colors.normal]
+black   = "#060506"
+red     = "#e75353"
+green   = "#5f8787"
+yellow  = "#fbcb97"
+blue    = "#999999"
+magenta = "#e75353"
+cyan    = "#fbcb97"
+white   = "#c1c1c1"
+
+[colors.bright]
+black   = "#333333"
+red     = "#e75353"
+green   = "#5f8787"
+yellow  = "#fbcb97"
+blue    = "#aaaaaa"
+magenta = "#e75353"
+cyan    = "#fbcb97"
+white   = "#ffffff"
+
+[colors.cursor]
+text = "#121113"
+cursor = "#e75353"
+
+[colors.selection]
+text = "#ffffff"
+background = "#1c1b1d"

@@ -1,0 +1,8 @@
+/live-sdk/
+/build/
+/dist/
+live-build.log
+blend/*/excalibur/rootfs-overlay/
+*.iso
+*.img
+__pycache__/

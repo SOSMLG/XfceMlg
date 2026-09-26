@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # DEBSWAY_DESC: (utility) apt cleanup + dead symlink tidy
-# DEBSWAY_DEFAULT: N
+# DEBSWAY_DEFAULT: Y
 # =======================================================
 # System Maintenance
 # -------------------------------------------------------

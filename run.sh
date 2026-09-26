@@ -153,7 +153,7 @@ declare -A RENAMED=(
     [bluetoothSetup]=14-bluetooth.sh [multimediaCodecs]=15-codecs.sh
     [firefoxHarden]=16-firefox.sh [installFonts]=17-fonts.sh
     [terminalButterbash]=18-butterbash.sh [fastfetchConfig]=19-fastfetch.sh
-    [xfceDebloat]=20-xfce-debloat.sh     [tokyonightTheme]=21-theme-tokyonight.sh
+    [xfceDebloat]=20-xfce-debloat.sh     [tokyonightTheme]=21-theme.sh
     [bootThemeSetup]=22-theme-boot.sh [touchpadTrackpointFix]=23-input-fix.sh
     [desktopEssentials]=30-desktop-essentials.sh [timeshiftSetup]=31-timeshift.sh
     [usefulApps]=33-useful-apps.sh [installVscodium]=40-vscodium.sh

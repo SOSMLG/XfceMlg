@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # DEBSWAY_DESC: (optional) Thunderbird, LibreOffice, OBS Studio
-# DEBSWAY_DEFAULT: N
+# DEBSWAY_DEFAULT: Y
 #  46-heavy-optins.sh — Thunderbird, LibreOffice, OBS Studio (optional)
 #  Large apps that don't belong in the default install but many users want.
-#  LibreOffice gets the GTK3 VCL so it picks up the system Tokyo Night
+#  LibreOffice gets the GTK3 VCL so it picks up the system Darkmatter
 #  theme automatically; the welcome screen is disabled via a minimal
 #  registrymodifications.xcu pre-seed.
 #  Privilege: priv() (doas-first, sudo fallback)
@@ -17,13 +17,13 @@ require_not_root
 apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
 log_head "1/3  Thunderbird"
-if ask "Install Thunderbird (email client)?" "N"; then
+if ask "Install Thunderbird (email client)?" "Y"; then
     install_pkgs "Thunderbird" thunderbird
     is_installed thunderbird && log_ok "Thunderbird installed. On first launch, choose 'Sync' to link your account."
 fi
 
 log_head "2/3  LibreOffice"
-if ask "Install LibreOffice (office suite, GTK3-themed to match the desktop)?" "N"; then
+if ask "Install LibreOffice (office suite, GTK3-themed to match the desktop)?" "Y"; then
     install_pkgs "LibreOffice" libreoffice libreoffice-gtk3
 
     # Pre-create a first-run profile that disables the welcome screen and
@@ -50,11 +50,11 @@ if ask "Install LibreOffice (office suite, GTK3-themed to match the desktop)?" "
 XMLEOF
         log_ok "LibreOffice profile pre-seeded (welcome screen + tip-of-day disabled)."
     fi
-    log_info "LibreOffice will use the system GTK3 theme (Tokyo Night) via the gtk3 VCL — no manual theme files needed."
+    log_info "LibreOffice will use the system GTK3 theme (Darkmatter) via the gtk3 VCL — no manual theme files needed."
 fi
 
 log_head "3/3  OBS Studio"
-if ask "Install OBS Studio (screen recording / streaming)?" "N"; then
+if ask "Install OBS Studio (screen recording / streaming)?" "Y"; then
     install_pkgs "OBS Studio" obs-studio
     is_installed obs-studio && log_ok "OBS Studio installed. First launch opens the auto-config wizard."
     log_info "Hardware encoding (VA-API) is available if your GPU supports it — check Settings → Output → Encoder."
