@@ -192,8 +192,42 @@ if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortc
 		[ "$n" = "0" ] && ws="10"
 		bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>${n}" "workspace_${ws}_key"
 	done
+	# -- XF86Sleep: suspend via xfce-suspend (pm-utils — Devuan has no systemd) --
+	bind_key xfce4-keyboard-shortcuts "/commands/custom/<XF86Sleep>" "xfce-suspend"
+	# -- CapsLock as Escape (input comfort) --
+	if command -v setxkbmap >/dev/null 2>&1; then
+		# native store: xfsettingsd re-applies this at the next session start
+		xfconf-query -c keyboard-layout -n -p /Default/XkbOptions/Caps -t string -s "caps:escape" 2>/dev/null || true
+		# immediate apply for this session, preserving the configured option(s)
+		opts=()
+		CUR="$(xfconf-query -c keyboard-layout -p /Default/XkbOptions/Group 2>/dev/null || true)"
+		[ -n "$CUR" ] && opts+=("$CUR")
+		opts+=(caps:escape)
+		setxkbmap -option "${opts[@]}"
+	fi
+	# -- touchpad natural scroll (libinput) for the current session --
+	if command -v xinput >/dev/null 2>&1; then
+		TC=$(xinput list --name-only 2>/dev/null | grep -i touchpad | head -1)
+		if [ -n "$TC" ] && xinput list-props "$TC" 2>/dev/null | grep -q 'libinput Natural Scrolling Enabled'; then
+			xinput set-prop "$TC" "libinput Natural Scrolling Enabled" 1
+		fi
+	fi
 else
 	log_info "Skipped the shortcut set — defaults stay as XFCE shipped them."
+fi
+
+# -- persist the touchpad natural-scroll across sessions (self-guarding) --
+XINIT="$HOME/.config/xfce4/xinitrc"
+if [[ -n "$XINIT" ]] && ! grep -q 'devuan-xfce-setup: natural scroll' "$XINIT" 2>/dev/null; then
+	mkdir -p "$(dirname "$XINIT")"
+	cat >>"$XINIT" <<'XEOF'
+# -- devuan-xfce-setup: touchpad natural scroll (libinput) --
+TC=$(xinput list --name-only 2>/dev/null | grep -i touchpad | head -1)
+if [ -n "$TC" ] && xinput list-props "$TC" 2>/dev/null | grep -q 'libinput Natural Scrolling Enabled'; then
+    xinput set-prop "$TC" "libinput Natural Scrolling Enabled" 1
+fi
+XEOF
+	log_ok "Natural-scroll persistence seeded in $XINIT (takes effect next login)."
 fi
 
 log_ok "Touchpad/trackpoint fix complete."
