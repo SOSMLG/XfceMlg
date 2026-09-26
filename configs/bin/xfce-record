@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# xfce-record — Super+Ctrl+Print screen recorder launcher (cross-WM scheme).
+# Prefers SimpleScreenRecorder; falls back to OBS 28+ (--startrecording is
+# supported there). If neither is installed, pops a dunst/notify-send hint.
+set -u
+
+if command -v simplescreenrecorder >/dev/null 2>&1; then
+    exec simplescreenrecorder
+fi
+
+if command -v obs >/dev/null 2>&1; then
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send -t 3000 "OBS" "Starting recording (Super+Ctrl+Print) — stop it from OBS or press the hotkey again."
+    fi
+    exec obs --startrecording
+fi
+
+if command -v notify-send >/dev/null 2>&1; then
+    notify-send -u critical -t 6000 "No screen recorder" "Install SimpleScreenRecorder or OBS (44-media.sh), then bind Super+Ctrl+Print."
+fi
+exit 1

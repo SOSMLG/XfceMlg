@@ -119,7 +119,7 @@ matters:
 | desktop | `20-xfce-debloat.sh` — trim task apps (Xfce Terminal, screenshooter), keep XFCE-native, silence beep | Y |
 | desktop | `21-theme.sh` — Darkmatter GTK/xfwm4 + Zafiro icons + xfwm4 compositor + panel/WM seed (items + fonts) + wallpapers | Y |
 | desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
-| desktop | `23-input-fix.sh` — input fixes + light-locker + Super shortcuts | Y |
+| desktop | `23-input-fix.sh` — input fixes + locker + cross-WM Super shortcuts (term/codium/lock/vol/screenshots) | Y |
 | desktop | `24-power-user.sh` — power-user commands (menu, update-check/gui, lock, suspend) + cron | Y |
 | apps | `30-desktop-essentials.sh` — Flatpak, portal, geoclue, CUPS, firewall, Thunar full, Clipman, Redshift | Y |
 | apps | `31-timeshift.sh` — Timeshift snapshots | Y |

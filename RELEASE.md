@@ -132,7 +132,8 @@ asset deb so the toolkit's configs/themes ship as a trackable package.
   asset bundle under `/usr/share/devuan-xfce-assets/` when installed.
   `make check-deb` runs `dpkg-deb` info + lintian with zero errors.
   `packages/devuan-xfce-assets/` holds the committed DEBIAN metadata;
-  the 13 MB `configs/` is staged from the repo at build time.
+  the ~36 MB `configs/` (incl. the bundled Darkmatter themes + Zafiro
+  icons) is staged from the repo at build time.
 - **AGENTS.md** (repo-root) and **docs/FIXES.md**: project instructions
   for coding agents and a running issue/resolution record.
 
