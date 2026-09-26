@@ -1,4 +1,6 @@
 # devuan-xfce-setup
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/049a9afe-ec71-4917-a05f-92e6e1fcfe58" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/20efabff-95bb-4ca0-9bf4-72b858897aea" />
 
 A post-install toolkit that turns a fresh **Devuan 6 (Excalibur)** install
 (binary-compatible with **Debian 13 (Trixie)**) into a lean, finished
