@@ -62,6 +62,53 @@ default-Y so `install.sh` really does give you everything.
   inactive-window dim (95%), see-through while move/resize (90%) and
   `wrap_workspaces`; the panel's 75% background-alpha now actually renders.
   `verifySetup.sh` checks `use_compositing` + picom absence.
+- **`xfce-scratch` — drop-down terminal** (`configs/bin/xfce-scratch`,
+  Super+grave): one dedicated undecorated alacritty (class `xfce-ddown`,
+  Darkmatter-themed), docked top-center at 60%×45% on every workspace,
+  toggled via windowunmap/map so it never occupies the taskbar. Pure
+  xdotool — no new packages. Deployed by `24-power-user.sh`.
+- **tmux auto-attach** — `configs/tmux.conf` (Ctrl+b, base-index 1, vi keys,
+  mouse, Darkmatter status bar) deployed by `18-butterbash.sh`, and
+  alacritty now runs `tmux new -A -s main` on launch (plain bash fallback),
+  so every terminal — dropdown included — is a tmux client. `18` also
+  installs git-delta and wires it as the git pager (decorations,
+  line-numbers, Catppuccin-Mocha) without clobbering an existing
+  `core.pager`.
+- **Battery + thermal watchdogs** — `xfce-battery-warn` / `xfce-temp-warn`
+  (flock-guarded daemons reading sysfs, no acpi dependency): one dunst
+  notification per threshold crossing (battery 20/10/5%, cpu 80/90°C),
+  critical is persistent, warnings re-arm on recharge/cool-down; autostarted
+  by `24-power-user.sh`; sensors/interval/lock env-overridable for headless
+  tests.
+- **Hardened `xfce-lock`** — idempotent (skips when `light-locker-command
+  -q` already reports active), prefers light-locker directly, pauses dunst
+  and clears the clipboard while locked, restores both on unlock.
+- **Cross-WM Super set** (`23-input-fix.sh`): `Super+t` terminal,
+  `Super+e/f/w` focus-or-launch via new `xfce-raise`,
+  `Super+Shift+Left/Right` move window between workspaces, `Super+grave`
+  dropdown, `Super+n` / `Shift+Super+n` dunst mute / re-show-last,
+  `XF86Sleep` suspend (`xfce-suspend`), Print=full / Super+Print=area /
+  Super+Ctrl+Print=OBS-record, CapsLock→Escape (stored in the
+  keyboard-layout channel so xfsettingsd persists it), touchpad natural
+  scroll (libinput, persisted via a guarded session-xinitrc block).
+- **Thunar deep pack** — `configs/Thunar/uca.xml` grows to 7 actions
+  (Open Terminal Here, Open as Root, Open in VSCodium, Play with VLC, Play
+  Folder with VLC, Copy Full Path, Make Executable); `21-theme.sh` seeds
+  Thunar view defaults create-only so per-folder settings and user choices
+  are never clobbered.
+- **VSCodium defaults + VLC dark** — `40-vscodium.sh` merges additive
+  Darkmatter editor defaults (Nerd Font, minimap off, bracket pairs, trim
+  whitespace — only keys the user hasn't set) and seeds keybindings
+  (ctrl+alt+t new terminal, ctrl+alt+b sidebar) only when none exist. VLC
+  installs alongside `qt5-gtk-platformtheme` and the session xinitrc exports
+  `QT_QPA_PLATFORMTHEME=gtk3` (self-guarding on the plugin), so VLC's Qt
+  chrome renders in Darkmatter; the Thunar "Play with VLC" actions pair
+  with it.
+- **Autostart hygiene** — duplicate user-vs-system `.desktop` entries are
+  deduplicated; both watchdog daemons are flock-guarded so a double spawn
+  can never run twice.
+- **`verifySetup.sh`** now guards dunst (Darkmatter config) and alacritty
+  (default terminal helper).
 
 ### Removals
 - The whole theme engine: `scripts/lib/theme-apply.sh`, the `themes/`
