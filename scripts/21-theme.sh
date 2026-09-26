@@ -3,11 +3,15 @@
 # DEBSWAY_DEFAULT: Y
 #  21-theme.sh — the whole dark look, one pass, no theme engine.
 #
-#  Applies the bundled Darkmatter theme (near-black #121113 with a red
-#  accent #e75353, bundled engine-free under configs/themes/) in one pass:
-#    - Deploy Darkmatter (+ hdpi/xhdpi) to /usr/share/themes; remove the
-#      old Tokyo Night themes; set GTK2/3 + xfwm4 theme to Darkmatter
-#    - Deploy bundled Zafiro icons (dark) to /usr/share/icons
+#  Applies the Darkmatter theme (near-black #121113 with a red accent
+#  #e75353). Nothing is bundled in git anymore: the theme comes from
+#  stevedylandev/darkmatter-linux and the icons from zayronxio/Zafiro-icons,
+#  fetched at install time and auto-tweaked by scripts/lib/darkmatter-fetch.sh
+#  (red-accent remap, hdpi/xhdpi assembly, Zafiro-icons-Dark rename + trim).
+#  One pass does:
+#    - Fetch + tweak + deploy Darkmatter (+ hdpi/xhdpi) to /usr/share/themes;
+#      remove the old Tokyo Night themes; set GTK2/3 + xfwm4 theme to Darkmatter
+#    - Fetch + tweak + deploy Zafiro icons (dark) to /usr/share/icons
 #    - Alacritty as THE terminal + Darkmatter alacritty.toml from
 #      configs/alacritty/
 #    - Compositor: xfwm4 built-in (use_compositing on — subtle shadows,
@@ -16,7 +20,8 @@
 #      clock/title fonts, decorations) written to xfconf; panel re-runs
 #    - Wallpapers deployed + live backdrop set
 #    - picker.colors for the Python menu/update-gui widgets
-#    - Optional dunst + rofi configs from the Darkmatter repo
+#    - Optional dunst config from the Darkmatter repo (rofi is NOT used —
+#      stock xfce4-appfinder owns Super+space)
 #
 #  The old palette engine (themes/ + theme-apply.sh + xfce-theme-set/list)
 #  is gone — the look is fixed, not swappable.
@@ -27,6 +32,13 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
+# shellcheck source=lib/darkmatter-fetch.sh
+source "$SCRIPT_DIR/lib/darkmatter-fetch.sh"
+
+# Pin the fetched upstream tarballs (recomputed hashes — override with
+# DM_THEME_SHA256 / DM_ICONS_SHA256 env if upstream shifts its branches).
+export DM_THEME_SHA256="${DM_THEME_SHA256:-c8438ce5f87ed7876773a447ce27c3444fb55b268360ae7951548595fc4b6047}"
+export DM_ICONS_SHA256="${DM_ICONS_SHA256:-ea09183265b256c8eab1163e79b9203c485b0e299eb1d974a5aa43b76b97398f}"
 
 require_not_root
 
@@ -38,11 +50,10 @@ install_pkgs "Theme deps" \
 	alacritty numlockx flameshot \
 	xfce4-whiskermenu-plugin xfce4-docklike-plugin \
 	xfce4-datetime-plugin \
-	acpi lm-sensors gawk
+	acpi lm-sensors gawk imagemagick
 log_ok "Dependencies installed."
 
-log_head "2/9  Deploy bundled Darkmatter themes + remove the old Tokyo Night set"
-REPO_THEMES="$SCRIPT_DIR/../configs/themes"
+log_head "2/9  Fetch + build + deploy Darkmatter themes (darkmatter-linux upstream)"
 SYS_THEMES="/usr/share/themes"
 priv mkdir -p "$SYS_THEMES"
 for OLD_THEME in "Tokyonight-Dark-BL" "Tokyo Night - Bordered" "Graphite-dark" "Habiboow" "Aesthetic"; do
@@ -53,23 +64,25 @@ done
 if [[ -d /usr/share/backgrounds/xfce/devuan-tokyonight ]]; then
 	priv rm -rf /usr/share/backgrounds/xfce/devuan-tokyonight && log_info "Removed old Tokyo Night wallpapers."
 fi
-if [[ -d "$REPO_THEMES" ]]; then
-	DEPLOYED=0
-	for THEME_DIR in "$REPO_THEMES"/Darkmatter*/; do
-		[[ -d "$THEME_DIR" ]] || continue
-		THEME_NAME=$(basename "$THEME_DIR")
-		SYS_THEME="$SYS_THEMES/$THEME_NAME"
-		priv mkdir -p "$SYS_THEME"
-		for SUB in gtk-3.0 gtk-4.0 xfwm4; do
-			[[ -d "$THEME_DIR/$SUB" ]] && priv cp -r "$THEME_DIR/$SUB" "$SYS_THEME/"
+THEME_SRC="$(dm_fetch_themes)" || log_warn "darkmatter-linux fetch failed — theme not deployed (check network, or DM_SKIP_FETCH=1 to reuse a cached fetch)."
+if [[ -n "$THEME_SRC" ]]; then
+	DM_BUILD="$HOME/.cache/devuan-xfce-setup/dm-build"
+	rm -rf "$DM_BUILD/themes"
+	if dm_build_theme_variants "$THEME_SRC" "$DM_BUILD/themes" && dm_remap_accent "$DM_BUILD/themes"; then
+		# Purge any previously deployed Darkmatter variant first.
+		for OLD in "$SYS_THEMES"/Darkmatter*; do
+			[[ -d "$OLD" ]] && priv rm -rf "$OLD"
 		done
-		priv cp -r "$THEME_DIR/assets" "$SYS_THEME/"
-		[[ -f "$THEME_DIR/index.theme" ]] && priv cp "$THEME_DIR/index.theme" "$SYS_THEME/"
-		DEPLOYED=$((DEPLOYED + 1))
-	done
-	log_ok "Deployed $DEPLOYED Darkmatter variants to $SYS_THEMES/."
-else
-	log_warn "No bundled themes found at $REPO_THEMES — theme may be partially applied."
+		DEPLOYED=0
+		for THEME_DIR in "$DM_BUILD/themes"/Darkmatter*/; do
+			[[ -d "$THEME_DIR" ]] || continue
+			priv cp -r "$THEME_DIR" "$SYS_THEMES/"
+			DEPLOYED=$((DEPLOYED + 1))
+		done
+		log_ok "Fetched, tweaked and deployed $DEPLOYED Darkmatter variants to $SYS_THEMES/."
+	else
+		log_warn "Theme build/tweak failed — theme may be partially applied."
+	fi
 fi
 
 log_head "3/9  Active GTK + xfwm4 theme: Darkmatter"
@@ -96,27 +109,36 @@ else
 	log_warn "xfwm4 theme dir missing for $XFWM_THEME — window decorations may be unthemed."
 fi
 
-log_head "4/9  Icons — bundled Zafiro (dark)"
-ICONS_SRC="$SCRIPT_DIR/../configs/icons"
+log_head "4/9  Icons — Zafiro (dark) fetched from zayronxio/Zafiro-icons"
 SYS_ICONS="/usr/share/icons"
 ICON_THEME="Zafiro-icons-Dark"
-if [[ -d "$ICONS_SRC/$ICON_THEME" ]]; then
-	priv mkdir -p "$SYS_ICONS"
-	if [[ ! -d "$SYS_ICONS/$ICON_THEME" ]]; then
-		priv cp -r "$ICONS_SRC/$ICON_THEME" "$SYS_ICONS/"
-		log_ok "Deployed $ICON_THEME to $SYS_ICONS/."
-	else
-		log_ok "$ICON_THEME already present — reusing."
-	fi
-	xfconf-query -c xsettings -n -p /Net/IconThemeName -t string -s "$ICON_THEME" 2>/dev/null ||
-		log_warn "Could not set icon theme via xfconf — re-run inside a desktop session if /Net/IconThemeName is missing."
-	gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" 2>/dev/null || true
-	log_ok "Active icon theme: $ICON_THEME"
-else
-	log_warn "Bundled icons missing at $ICONS_SRC/$ICON_THEME — falling back to Papirus-Dark."
+ICONS_SRC="$(dm_fetch_icons)" || ICONS_SRC=""
+if [[ -z "$ICONS_SRC" ]]; then
+	log_warn "Zafiro icons fetch failed — falling back to Papirus-Dark."
 	priv apt-get install -y papirus-icon-theme 2>/dev/null || true
 	xfconf-query -c xsettings -n -p /Net/IconThemeName -t string -s "Papirus-Dark" 2>/dev/null ||
 		log_warn "Could not set fallback icon theme via xfconf."
+else
+	DM_BUILD="$HOME/.cache/devuan-xfce-setup/dm-build"
+	rm -rf "$DM_BUILD/icons"
+	if dm_build_icons "$ICONS_SRC" "$DM_BUILD/icons"; then
+		priv mkdir -p "$SYS_ICONS"
+		if [[ ! -d "$SYS_ICONS/$ICON_THEME" ]]; then
+			priv cp -r "$DM_BUILD/icons/$ICON_THEME" "$SYS_ICONS/"
+			log_ok "Deployed $ICON_THEME to $SYS_ICONS/."
+		else
+			log_ok "$ICON_THEME already present — reusing."
+		fi
+		xfconf-query -c xsettings -n -p /Net/IconThemeName -t string -s "$ICON_THEME" 2>/dev/null ||
+			log_warn "Could not set icon theme via xfconf — re-run inside a desktop session if /Net/IconThemeName is missing."
+		gsettings set org.gnome.desktop.interface icon-theme "$ICON_THEME" 2>/dev/null || true
+		log_ok "Active icon theme: $ICON_THEME"
+	else
+		log_warn "Icon build/tweak failed — falling back to Papirus-Dark."
+		priv apt-get install -y papirus-icon-theme 2>/dev/null || true
+		xfconf-query -c xsettings -n -p /Net/IconThemeName -t string -s "Papirus-Dark" 2>/dev/null ||
+			log_warn "Could not set fallback icon theme via xfconf."
+	fi
 fi
 
 CURSOR_NAME=""
@@ -304,16 +326,11 @@ else
 	log_warn "No graphical session or no wallpapers found — apply after first login."
 fi
 
-log_head "Bonus  Dunst + Rofi configs (opt-in, only if present)"
+log_head "Bonus  Dunst config (opt-in, only if present)"
 if [[ -f "$SCRIPT_DIR/../configs/dunst/dunstrc" ]] && command -v dunst &>/dev/null; then
 	mkdir -p "$HOME/.config/dunst"
 	cp "$SCRIPT_DIR/../configs/dunst/dunstrc" "$HOME/.config/dunst/dunstrc"
 	log_ok "Darkmatter dunstrc deployed (active if you later swap to Dunst)."
-fi
-if [[ -f "$SCRIPT_DIR/../configs/rofi/darkmatter.rasi" ]] && command -v rofi &>/dev/null; then
-	mkdir -p "$HOME/.config/rofi"
-	cp "$SCRIPT_DIR/../configs/rofi/darkmatter.rasi" "$HOME/.config/rofi/darkmatter.rasi"
-	log_ok "Darkmatter rofi theme deployed."
 fi
 
 echo

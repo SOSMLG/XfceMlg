@@ -24,12 +24,23 @@ License: MIT
  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-Files: configs/themes/*
-Copyright: 2024-2026 Darkmatter theme authors
-License: GPL-3.0-or-later
- See the per-theme COPYING/license files in each theme tree.
+Files: configs/*
+Copyright: 2024-2026 devuan-xfce-setup contributors
+License: MIT
+ (same MIT terms as the Files: * stanza above)
 
-Files: configs/icons/*
-Copyright: 2024-2026 Zafiro icons authors
+Files: configs/wallpapers/*
+Copyright: 2024-2026 individual wallpaper authors
+License: CC0-1.0 / GPL-3.0-or-later
+ See per-image metadata or the source wallpapers repo.
+
+Files: configs/vesktop/* configs/vscodium/*
+Copyright: 2024-2026 theme authors
 License: GPL-3.0-or-later
- See the license file in the icon theme tree.
+ See the theme files for full license text.
+
+# The Darkmatter GTK/xfwm4 themes and Zafiro icons are NOT shipped in this
+# package anymore: they are fetched at install time from
+#   https://github.com/stevedylandev/darkmatter-linux   (GPL-3.0)
+#   https://github.com/zayronxio/Zafiro-icons           (GPL-3.0)
+# by scripts/lib/darkmatter-fetch.sh.

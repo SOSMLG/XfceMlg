@@ -8,7 +8,7 @@ Follow these conventions when extending, debugging, or reviewing this repo.
 
 Ten-ish numbered, independently runnable shell scripts (`scripts/01?.sh`
 …) that turn a bare Devuan Excalibur XFCE install into a themed, powered-up
-desktop: Darkmatter theme (bundled, engine-free), ThinkPad extras, Power-user
+desktop: Darkmatter theme (fetched at install, engine-free), ThinkPad extras, Power-user
 commands (menu/update GUI), update notifier, CLI stack, Firefox ESR
 hardening, first-run wizard, dev toolchains, AI agents + VSCodium.
 
@@ -48,27 +48,33 @@ Every step is idempotent and re-runnable.
   `11-backports.sh`) — so a bare sources.list may legitimately miss
   `libdvd-pkg`, `winetricks`, etc. See `tests/lib/known-miss.list`.
 
-## Theme (Darkmatter — bundled, engine-free, fixed)
+## Theme (Darkmatter — fetched at install, engine-free, fixed)
 
 - The look is **fixed**, not swappable. There is **no palette engine** and no
   `themes/<id>/palette.sh` / `theme-apply.sh` / `xfce-theme-set|list`
   anything — those were removed in 0.6.0. Do not reintroduce them.
-- `configs/themes/{Darkmatter,Darkmatter-hdpi,Darkmatter-xhdpi}` is the
-  bundled GTK3/GTK4 + xfwm4 theme (`gtk-3.0`, `gtk-4.0`, `xfwm4`, `assets`,
-  `index.theme`); `scripts/21-theme.sh` deploys it to `/usr/share/themes/`,
-  purges the old Tokyo Night themes, writes the native
-  `~/.config/alacritty/alacritty.toml`, seeds the panel + the built-in
-  xfwm4 compositor, deploys
-  `configs/wallpapers/darkmatter/` to
+- The Darkmatter GTK3/GTK4 + xfwm4 theme and the Zafiro icons are **not
+  bundled in git** (that was ~29 MB of payload). `scripts/lib/darkmatter-fetch.sh`
+  fetches them at install time from `stevedylandev/darkmatter-linux` (root
+  `gtk-3.0`/`gtk-4.0`/`assets` + `xfwm4/Darkmatter{,-hdpi,-xhdpi}/xfwm4`)
+  and `zayronxio/Zafiro-icons` (`Dark/` dir), then auto-tweaks:
+  red-accent remap `#e78a53`→`#e75353` (text + PNG), per-variant
+  `index.theme` (`IconTheme=Zafiro-icons-Dark`), `Dark/`→`Zafiro-icons-Dark`
+  rename + `apps/scalable` + `previews/` trim.
+  Fetch backends: codeload tarballs, sha256-pinned by default
+  (`DM_THEME_SHA256` / `DM_ICONS_SHA256` env overridable; `DM_SKIP_FETCH=1`
+  reuses whatever `~/.cache/devuan-xfce-setup/` already holds).
+- `scripts/21-theme.sh` deploys the assembled variants to `/usr/share/themes/`
+  (purging stale `Darkmatter*` and the old Tokyo Night themes first), writes
+  the native `~/.config/alacritty/alacritty.toml`, seeds the panel + the
+  built-in xfwm4 compositor, deploys `configs/wallpapers/darkmatter/` to
   `/usr/share/backgrounds/xfce/devuan-darkmatter/`, and writes the static
   `~/.config/devuan-xfce-setup/picker.colors` (bg0/bg1/bg3/fg0).
 - Palette: near-black `#121113` (`bg`/`dark`), `#1c1b1d` base, red accent
   `#e75353` (upstream orange `#e78a53` was remapped across all CSS + PNGs),
   teal `#5f8787`, cream `#fbcb97`, fg `#ffffff`.
-- Icons: bundled **Zafiro-icons-Dark** in `configs/icons/` (SVG variant,
-  trimmed from upstream v1.3; symlinks dereferenced for git portability).
-  `22-theme-boot.sh`
-  and `verifySetup.sh` assume the `Darkmatter` / `Zafiro-icons-Dark` /
+- Icons: **Zafiro-icons-Dark** (fetched, trimmed). `22-theme-boot.sh` and
+  `verifySetup.sh` assume the `Darkmatter` / `Zafiro-icons-Dark` /
   `devuan-darkmatter` names — keep them in sync if you rename anything.
 - `scripts/22-theme-boot.sh` themes Plymouth/GRUB/LightDM to match
   (near-black + red; see `configs/lightdm/gtk.css`).
@@ -87,9 +93,9 @@ flock-guarded and env-overridable for headless tests). Python widgets
 
 - `make check` — three read-only tiers (see `tests/README`-ish comments in
   `tests/run.sh`): **lint** (bash -n + shellcheck-if-present +
-  py_compile), **unit** (sandboxed Darkmatter-bundle + common.sh tests), and
-  **consistency + apt-checks** (cross-file guards; package-existence vs the
-  local apt cache via one bulk `apt-cache dumpavail`).
+  py_compile), **unit** (sandboxed Darkmatter fetch/tweak pipeline + common.sh
+  tests), and **consistency + apt-checks** (cross-file guards; package-existence
+  vs the local apt cache via one bulk `apt-cache dumpavail`).
 - `make release-preflight` — the version gate (lint + unit + consistency +
   VERSION/RELEASE.md agreement) used before tagging.
 - After adding a `scripts/##-*.sh`: it must carry `# DEBSWAY_DESC:` and
@@ -112,8 +118,10 @@ flock-guarded and env-overridable for headless tests). Python widgets
   runs `dpkg-deb --info/--contents` and lintian (no errors expected).
 - The package tree lives in `packages/devuan-xfce-assets/` — only the
   DEBIAN metadata (control/postinst) and `usr/share/doc/` copyright +
-  changelog are committed there; the full `configs/` payload (~36 MB, incl.
-  the Darkmatter theme, Zafiro icons and wallpapers) is staged with
+  changelog are committed there; the full `configs/` payload (~7 MB:
+  wallpapers, power-user bins, agent skill, Firefox policy, vesktop/vscodium
+  themes; the Darkmatter themes + Zafiro icons are fetched at install time,
+  not shipped in the deb) is staged with
   `cp -a` at build time, never duplicated in git. `@VERSION@` in the
   control/copyright/changelog templates is substituted from `VERSION`.
 - content deb = assets under `/usr/share/devuan-xfce-assets/` when
@@ -124,7 +132,8 @@ flock-guarded and env-overridable for headless tests). Python widgets
 ## Blend / ISO
 
 - `blend/devuan-xfce-thinkpad/sync-overlay.sh` regenerates the overlay
-  (and its own HOME rendering) by copying the bundled `configs/` assets
-  (Darkmatter theme/icons/wallpapers, alacritty.toml and panel seed as
-  written by `21-theme.sh`, with `DEVX_SKIP_XFCONF=1`). The overlay tree is
-  derived — never hand-edit it.
+  (and its own HOME rendering) by copying the `configs/` assets
+  (wallpapers, alacritty.toml, panel seed and dunst/vesktop/vscodium configs
+  — the Darkmatter themes/icons are fetched at install time by
+  `scripts/lib/darkmatter-fetch.sh`, not copied from a bundle), with
+  `DEVX_SKIP_XFCONF=1`. The overlay tree is derived — never hand-edit it.

@@ -7,8 +7,10 @@ Maintainer: devuan-xfce-setup <devuan-xfce-setup@users.noreply.github.com>
 Depends: bash (>= 5.0), python3 (>= 3.9)
 Description: devuan-xfce-setup versioned asset bundle
  Ships a system-wide snapshot of the toolkit's static assets
- (configs/ - Darkmatter theme, Zafiro icons, wallpapers, power-user
- bins, agent skill, Firefox policy) under /usr/share/devuan-xfce-assets/
- so scripts and /etc/skel seeding can read them without a git checkout.
+ (configs/ - Darkmatter wallpapers, power-user bins, alacritty + panel
+ seeds, vesktop/vscodium themes, agent skill, Firefox policy) under
+ /usr/share/devuan-xfce-assets/ so scripts and /etc/skel seeding can read
+ them without a git checkout. The Darkmatter themes + Zafiro icons are
+ fetched at install time (scripts/lib/darkmatter-fetch.sh), not shipped.
  Data-only tweaks land here; the per-user deploy happens at install
  time via the numbered scripts.

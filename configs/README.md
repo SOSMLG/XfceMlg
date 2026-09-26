@@ -18,15 +18,16 @@
 #                      (Open Terminal Here via exo, Open as Root via pkexec)
 #   lightdm/gtk.css  — Darkmatter login-box shim, installed by 22-theme-boot.sh
 #                      to /var/lib/lightdm/.config/gtk-3.0/gtk.css (lightdm-owned)
-#   themes/          — bundled Darkmatter GTK/xfwm4 theme, all three variants
-#                      (Darkmatter / -hdpi / -xhdpi), deployed by 21-theme.sh to
-#                      /usr/share/themes/. No theme engine — this IS the theme.
-#   icons/           — bundled Zafiro-icons-Dark (PNG variant), deployed by
-#                      21-theme.sh to /usr/share/icons/
+#                      NOTE: the Darkmatter GTK/xfwm4 themes and Zafiro icons
+#                      are NOT stored here — 21-theme.sh fetches them at install
+#                      time from stevedylandev/darkmatter-linux and
+#                      zayronxio/Zafiro-icons and auto-tweaks them via
+#                      scripts/lib/darkmatter-fetch.sh (red-accent remap,
+#                      hdpi/xhdpi assembly, Zafiro-icons-Dark rename + trim)
+#                      into /usr/share/themes/ and /usr/share/icons/.
 #   wallpapers/      — curated dark/red wallpaper set, deployed by 21-theme.sh
 #                      to /usr/share/backgrounds/xfce/devuan-darkmatter/
 #   dunst/dunstrc    — Darkmatter-accented Dunst config (20-* opt-in)
-#   rofi/darkmatter.rasi — matching rofi theme (21-* optional deploy)
 #   fastfetch/ascii_art_anime.txt — fastfetch logo art, deployed by 19-fastfetch.sh
 #   firefox/bookmarks.html — curated bookmarks imported by 35-first-run.sh
 #   bin/xfce-first-run      — welcome wizard (update + Timeshift), deployed by

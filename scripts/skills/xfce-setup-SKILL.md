@@ -65,12 +65,16 @@ system:
     and `xfwm4`. No genmon — the old update-indicator widget is gone;
     updates are handled by the power-user commands + notifier in
     `24-power-user.sh`.
-- The Darkmatter rice is bundled in `configs/themes/` (all three variants —
-  plain / hdpi / xhdpi) and deployed to `/usr/share/themes/` by
-  `21-theme.sh`; there is **no theme engine** and no palette switcher —
-  `Darkmatter` is the GTK + xfwm4 theme, period. Icons are the bundled
-  **Zafiro-icons-Dark** (`configs/icons/`), wallpapers the curated dark/red
-  set in `configs/wallpapers/darkmatter/` (deployed to
+- The Darkmatter rice is **fetched at install time**, not bundled:
+  `scripts/lib/darkmatter-fetch.sh` pulls the theme from
+  `stevedylandev/darkmatter-linux` (assembling the plain/hdpi/xhdpi
+  variants) and the icons from `zayronxio/Zafiro-icons` (renamed to
+  **Zafiro-icons-Dark**, `apps/scalable` trimmed), auto-applies the
+  red-accent remap (`#e78a53`→`#e75353`) and deploys to
+  `/usr/share/themes/` + `/usr/share/icons/` via `21-theme.sh`; there is
+  **no theme engine** and no palette switcher — `Darkmatter` is the GTK +
+  xfwm4 theme, period. Wallpapers are the curated dark/red set in
+  `configs/wallpapers/darkmatter/` (deployed to
   `/usr/share/backgrounds/xfce/devuan-darkmatter/`). The static
   `~/.config/devuan-xfce-setup/picker.colors` file carries the palette for
   the Python menu/update-gui widgets. Plymouth, GRUB and the LightDM greeter
@@ -86,11 +90,14 @@ system:
   --full/--no-update/--verify`); `install.sh` is the fully-unattended
   one-command wrapper. Env vars honored: `DEBSWAY_ASSUME_YES=1`,
   `DEBSWAY_SKIP_APT_UPDATE=1`, plus upstream pins `XFCE_GTK_REF=`,
-  `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`, `BETTERFOX_TAG=150.0`.
+  `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`, `BETTERFOX_TAG=150.0`
+  and the theme fetch pins `DM_THEME_SHA256=` / `DM_ICONS_SHA256=` /
+  `DM_THEME_URL=` / `DM_ICONS_URL=` / `DM_SKIP_FETCH=1`.
   State log:
   `~/.local/state/devuan-xfce-setup/last-run.log`.
-  Notable steps: `21-theme.sh` applies the rice — it deploys the bundled
-  Darkmatter GTK/xfwm4 themes + Zafiro icons, writes the Darkmatter
+  Notable steps: `21-theme.sh` applies the rice — it fetches the Darkmatter
+  GTK/xfwm4 themes + Zafiro icons via `scripts/lib/darkmatter-fetch.sh`
+  (nothing bundled in git), writes the Darkmatter
   `alacritty.toml`, seeds the rounded panel and the xfwm4 compositor, writes
   the static
   `picker.colors`, and cleans up any old palette-engine leftovers.
@@ -108,15 +115,18 @@ system:
   (`*.bak.<timestamp>`) precede any destructive config write.
 - Test suite (ohmydebn-style, three tiers, all read-only): `make check`
   or `./tests/run.sh`. Tier 1 lint (bash -n/shellcheck/py_compile), tier 2
-  sandboxed unit tests (Darkmatter bundle + common.sh, no root/no apt/no X),
-  tier 3 consistency guards (VERSION↔RELEASE.md, Darkmatter bundle/remap,
+  sandboxed unit tests (Darkmatter fetch/tweak pipeline + common.sh, no
+  root/no apt/no X/no network),
+  tier 3 consistency guards (VERSION↔RELEASE.md, no-theme-bundle guards,
+  fetch-lib/remap guards,
   step-script headers, README parity, .gitignore) + apt-checks (read-only
   package existence against the local cache; `tests/lib/known-miss.list`
   covers contrib packages the toolkit adds at install time). Release gate:
   `make release-preflight`. When adding a new `scripts/##-*.sh`, run
   `make check` (adds its DEBSWAY_DESC/DEFAULT headers + README row).
 - Content deb: `make pkg-deb` builds the single data-only asset package
-  (`build/devuan-xfce-assets_*.deb`, ~6 MB, installed under
+  (`build/devuan-xfce-assets_*.deb`, ~7 MB, installed under
   `/usr/share/devuan-xfce-assets/`); `make check-deb` verifies it with
   dpkg-deb + lintian (zero errors). `packages/devuan-xfce-assets/` holds
-  the metadata; the 13 MB payload is staged from the repo at build time.
+  the metadata; the ~7 MB payload (configs/ — the Darkmatter themes/icons
+  are fetched at install, not shipped) is staged from the repo at build time.

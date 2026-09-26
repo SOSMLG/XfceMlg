@@ -260,7 +260,7 @@ else
 	report "Active xfwm4 theme" warn "set to '$CURRENT_XFWM', expected Darkmatter"
 fi
 
-# Icons — bundled Zafiro (dark)
+# Icons — Zafiro (dark), fetched at install time
 if [ -d "/usr/share/icons/Zafiro-icons-Dark" ]; then
 	report "Zafiro-icons-Dark dir" ok
 else

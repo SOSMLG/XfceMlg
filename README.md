@@ -83,7 +83,7 @@ matters:
 | Layer | Choice |
 |---|---|
 | Desktop | **XFCE 4.20 on X11** (floating, single panel) via **LightDM + gtk-greeter** login, themed to match |
-| Theme | **Darkmatter** (dark `#121113`, red accent `#e75353`): bundled GTK + xfwm4 (engine-free, all three variants), **Zafiro** dark icons, single bottom panel seed (items + JetBrainsMono Nerd Font clock/WM title fonts), matching Plymouth + GRUB + LightDM, curated dark/red wallpapers |
+| Theme | **Darkmatter** (dark `#121113`, red accent `#e75353`): GTK + xfwm4 fetched at install (engine-free, all three variants) from `stevedylandev/darkmatter-linux`, **Zafiro** dark icons fetched from `zayronxio/Zafiro-icons`, single bottom panel seed (items + JetBrainsMono Nerd Font clock/WM title fonts), matching Plymouth + GRUB + LightDM, curated dark/red wallpapers |
 | Terminal | **Alacritty** (GPU terminal) themed Darkmatter (TOML config), wired as THE terminal via `x-terminal-emulator` + exo `helpers.rc` |
 | Shortcuts | Super-based set (terminal, files, appfinder, screenshots, clipman, tiling, workspaces) + `Ctrl+Alt+L` lock via **light-locker** |
 | First login | Welcome wizard (update + Timeshift check, once) + wallpaper seeder (new monitors only, never overwrites) |
@@ -158,8 +158,8 @@ Three read-only tiers (ohmydebn-style harness) live in `tests/`:
 | Tier | What it checks |
 |------|----------------|
 | 1 `lint` | `bash -n` on every script/bin/overlay, shellcheck if installed, `py_compile` on the Python widgets |
-| 2 `unit` | sandboxed unit tests — Darkmatter bundle integrity (theme variants, Zafiro icons, wallpapers, accent remap) + engine-free 21/22/verifySetup markers + `common.sh` `priv()` routing with fake doas/sudo |
-| 3 `consistency` | VERSION ↔ latest RELEASE.md heading, Darkmatter bundle/icon/remap guards, step-script `DEBSWAY_DESC/DEFAULT` headers, README step parity, `.gitignore` coverage, no theme-engine leftovers |
+| 2 `unit` | sandboxed unit tests — Darkmatter fetch/tweak pipeline (variant assembly + red-accent remap on an offline fixture, Zafiro dark trim) + engine-free 21/22/verifySetup markers + `common.sh` `priv()` routing with fake doas/sudo |
+| 3 `consistency` | VERSION ↔ latest RELEASE.md heading, no-theme-bundle guards (themes/icons/rofi absent), fetch-lib + remap guards, step-script `DEBSWAY_DESC/DEFAULT` headers, README step parity, `.gitignore` coverage, no theme-engine leftovers |
 | 3 `apt-checks` | every package name in `scripts/*.sh` verified against the local apt cache (one bulk `apt-cache dumpavail`); contrib-only packages (`libdvd-pkg`, `winetricks`) live in `tests/lib/known-miss.list` |
 
 ```bash
@@ -172,8 +172,8 @@ make release-preflight  # lint + unit + consistency + VERSION/RELEASE.md gate
 ### Asset bundle (content deb)
 
 `make pkg-deb` builds a single data-only package with all versioned static
-assets (configs — Darkmatter themes, Zafiro icons, wallpapers, power-user
-bins, agent skill)
+assets (configs — wallpapers, power-user bins, agent skill; the Darkmatter
+themes/icons are fetched at install, not shipped)
 as `build/devuan-xfce-assets_$(cat VERSION)_all.deb`; when installed it
 lands under `/usr/share/devuan-xfce-assets/`. `make check-deb` inspects it
 (`dpkg-deb --info` / `--contents`) and runs lintian — zero errors expected.
@@ -237,14 +237,19 @@ scripts/
   skills/xfce-setup-SKILL.md   system context for AI agents
 configs/         versioned static config (Thunar/uca.xml — deployed by 30-*)
   xfce4/         panel + window-manager seed (items, decorations, fonts) — 21-*
-  themes/        bundled Darkmatter GTK/xfwm4 (hdpi/xhdpi variants)
-  icons/         bundled Zafiro-icons-Dark
   wallpapers/    curated dark/red set (deployed to devuan-darkmatter/)
-  dunst/ · rofi/ opt-in matching configs (optional)
+  dunst/         opt-in matching Darkmatter dunstrc (optional)
   vesktop/       Darkmatter system24 theme (system24-darkmatter.theme.css) — 45-*
   vscodium/      bundled Darkmatter color-theme extension — 40-*
   share/         power-user widgets (xfce-menu, xfce-update-gui)
 butterbash/      bundled ButterBash, used offline
+
+The Darkmatter GTK/xfwm4 themes and Zafiro icons are **not** in the repo —
+`21-theme.sh` fetches them at install time from
+`stevedylandev/darkmatter-linux` and `zayronxio/Zafiro-icons` and auto-tweaks
+them via `scripts/lib/darkmatter-fetch.sh` (red-accent remap #e78a53→#e75353,
+variant assembly, Zafiro-icons-Dark rename + trim), so the git payload stays
+~29 MB lighter. Cached builds live in `~/.cache/devuan-xfce-setup/`.
 ```
 
 ---
@@ -260,6 +265,10 @@ butterbash/      bundled ButterBash, used offline
   set by `run.sh --full` / `install.sh`), `DEBSWAY_SKIP_APT_UPDATE=1`,
   `DEBSWAY_PRIV=doas|sudo`, plus upstream pins `XFCE_GTK_REF=`,
   `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`, `BETTERFOX_TAG=150.0`.
+  Theme fetch: `DM_THEME_URL=` / `DM_ICONS_URL=` (tarball overrides),
+  `DM_THEME_SHA256=` / `DM_ICONS_SHA256=` (upstream pins, already set to the
+  recorded hashes by `21-theme.sh`), `DM_SKIP_FETCH=1` (reuse a cached fetch),
+  `DM_FETCH_DIR=` (cache location, default `~/.cache/devuan-xfce-setup`).
   Safety prompts (`apt full-upgrade`, backup restore, battery cap,
   PhotoGIMP version mismatch) use `ask_no_full()` and
   never auto-fire, even on `--full`.

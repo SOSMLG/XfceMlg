@@ -2,6 +2,45 @@
 
 Tag a release with: `git tag -a "v$(cat VERSION)" -m "v$(cat VERSION)" && git push --tags`
 
+## 0.7.0 — Themes/icons fetched at install (bundles deleted), rofi removed
+
+The delivery model for the rice changes: the ~29 MB of bundled themes and
+icons no longer live in git. `21-theme.sh` now fetches the Darkmatter GTK
+theme from `stevedylandev/darkmatter-linux` and the Zafiro icons from
+`zayronxio/Zafiro-icons` at install time, then applies the same tweaks that
+used to be applied by hand in 0.6.0 — all automated by
+`scripts/lib/darkmatter-fetch.sh`. Rofi and its config are gone entirely;
+stock `xfce4-appfinder` owns Super+space.
+
+### What's New
+- **No more bundles.** `configs/themes/` (7.7 MB), `configs/icons/` (21 MB)
+  and `configs/rofi/` are deleted. The repo payload drops ~29 MB (79 → 51 MB)
+  and so does the content deb.
+- **`scripts/lib/darkmatter-fetch.sh`** — the fetch+build+tweak engine:
+  - fetches `darkmatter-linux` (codeload tarball, sha256-pinned by default,
+    overridable via `DM_THEME_SHA256` / `DM_ICONS_SHA256`; `DM_SKIP_FETCH=1`
+    reuses a cached fetch for offline runs);
+  - assembles the three variants (`Darkmatter`, `Darkmatter-hdpi`,
+    `Darkmatter-xhdpi`) from the upstream root `gtk-3.0`/`gtk-4.0`/`assets`
+    plus its `xfwm4/Darkmatter{,-hdpi,-xhdpi}/xfwm4` decorations;
+  - rewrites `index.theme` per variant
+    (`Name=<variant>`, `IconTheme=Zafiro-icons-Dark`);
+  - remaps the upstream orange `#e78a53` → red `#e75353` in every text
+    asset (css/scss/svg) via sed and every PNG pixel via ImageMagick;
+  - builds `Zafiro-icons-Dark` from the upstream `Dark/` dir, dropping the
+    heavy `apps/scalable` SVG subtree (1553 files) + `previews/`.
+- **`21-theme.sh`** reworked: step 2 fetches+builds+deploys the themes to
+  `/usr/share/themes/` (purging earlier Darkmatter variants), step 4 does
+  the same for the icons (Papirus-Dark fallback if the fetch fails), the
+  rofi bonus block is removed, and `imagemagick` joins the theme deps.
+- **Full unit coverage of the pipeline** — `tests/unit/test-darkmatter.sh`
+  builds variants + runs the remap against an offline fixture (a 1x1
+  `#e78a53` PNG included as base64), asserts the orange is gone everywhere,
+  the PNG pixels changed, and the icon trim (no `apps/scalable`), still with
+  no root / no apt / no X / no network.
+- Dependencies of the fetch step: `curl` and `imagemagick` (both already
+  used elsewhere in the toolkit).
+
 ## 0.6.0 — Darkmatter rice (engine removed), VSCodium key fix, leaner desktop
 
 The theme layer was replaced wholesale. The palette-driven engine is gone:
