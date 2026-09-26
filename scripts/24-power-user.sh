@@ -43,7 +43,7 @@ fi
 
 # Shell launchers + CLI commands from configs/bin/
 BIN_DIR="$SCRIPT_DIR/../configs/bin"
-LAUNCHERS="xfce-menu xfce-update-gui xfce-record"
+LAUNCHERS="xfce-menu xfce-update-gui xfce-record xfce-scratch"
 CLI_CMDS="xfce-update-check xfce-lock xfce-suspend"
 for f in $LAUNCHERS $CLI_CMDS; do
 	[[ -f "$BIN_DIR/$f" ]] || continue

@@ -167,6 +167,8 @@ if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortc
 		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>F11" "pactl set-sink-mute @DEFAULT_SINK@ toggle"
 		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>F12" "pactl set-sink-volume @DEFAULT_SINK@ +5%"
 	fi
+	# -- dropdown terminal: Super+grave (xfce-scratch, spawned by 24-power-user) --
+	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>grave" "xfce-scratch"
 	# -- window actions (xfwm4 channel) --
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>q" "close_window_key"
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>Up" "tile_up_key"
