@@ -19,50 +19,49 @@ source "$SCRIPT_DIR/lib/common.sh"
 
 require_not_root
 
-
-
 BUTTERBASH_SRC="$SCRIPT_DIR/../butterbash"
-
 
 log_head "1/3  Supporting packages"
 apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
-log_info "Installing bat, duf, eza, fzf, btop, ncdu, ripgrep, tree, zoxide, unar..."
-priv apt-get install -y bat duf eza fzf btop ncdu ripgrep tree zoxide unar \
-    || log_warn "Some packages failed to install (continuing)."
+log_info "Installing bat, duf, eza, fzf, btop, ncdu, ripgrep, tree, zoxide, unar, git-delta..."
+priv apt-get install -y bat duf eza fzf btop ncdu ripgrep tree zoxide unar git-delta ||
+	log_warn "Some packages failed to install (continuing)."
 log_ok "Supporting packages installed"
 
 if command -v starship &>/dev/null; then
-    log_ok "Starship already installed."
+	log_ok "Starship already installed."
 else
-    log_info "Installing Starship (not in Debian's repos — uses its official installer)..."
-    WORK_DIR=$(mktemp -d)
-    trap 'rm -rf "$WORK_DIR"' EXIT
-    if curl -sS https://starship.rs/install.sh -o "$WORK_DIR/starship-install.sh"; then
-        chmod +x "$WORK_DIR/starship-install.sh"
-        if priv "$WORK_DIR/starship-install.sh" --yes --bin-dir /usr/local/bin; then
-            log_ok "Starship installed to /usr/local/bin"
-        else
-            log_warn "Starship installer failed."
-        fi
-    else
-        log_warn "Could not download the Starship installer."
-    fi
+	log_info "Installing Starship (not in Debian's repos — uses its official installer)..."
+	WORK_DIR=$(mktemp -d)
+	trap 'rm -rf "$WORK_DIR"' EXIT
+	if curl -sS https://starship.rs/install.sh -o "$WORK_DIR/starship-install.sh"; then
+		chmod +x "$WORK_DIR/starship-install.sh"
+		if priv "$WORK_DIR/starship-install.sh" --yes --bin-dir /usr/local/bin; then
+			log_ok "Starship installed to /usr/local/bin"
+		else
+			log_warn "Starship installer failed."
+		fi
+	else
+		log_warn "Could not download the Starship installer."
+	fi
 fi
 
 log_head "2/3  Install ButterBash"
 if [[ ! -d "$BUTTERBASH_SRC" ]] || [[ ! -f "$BUTTERBASH_SRC/install.sh" ]]; then
-    log_err "Bundled ButterBash not found at $BUTTERBASH_SRC"; exit 1
+	log_err "Bundled ButterBash not found at $BUTTERBASH_SRC"
+	exit 1
 fi
 
 log_info "Installing ButterBash from $BUTTERBASH_SRC ..."
 # ButterBash's own install.sh relies on relative paths (./bash,
 # ./bashrc.example), so it needs to be run from inside its directory.
 # It backs up any existing ~/.bashrc before replacing it.
-if ( cd "$BUTTERBASH_SRC" && bash install.sh --yes ); then
-    log_ok "ButterBash installed."
+if (cd "$BUTTERBASH_SRC" && bash install.sh --yes); then
+	log_ok "ButterBash installed."
 else
-    log_err "ButterBash installation failed."; exit 1
+	log_err "ButterBash installation failed."
+	exit 1
 fi
 
 log_head "3/3  XFCE-specific additions"
@@ -70,9 +69,9 @@ log_head "3/3  XFCE-specific additions"
 # same "base + additions" pattern as 16-firefox.sh's Betterfox setup.
 MARKER="# BEGIN XFCE ADDITIONS"
 if grep -qF "$MARKER" "$HOME/.bashrc" 2>/dev/null; then
-    log_ok "XFCE additions already present in ~/.bashrc, skipping."
+	log_ok "XFCE additions already present in ~/.bashrc, skipping."
 else
-    cat >> "$HOME/.bashrc" << 'BASHRC_EOF'
+	cat >>"$HOME/.bashrc" <<'BASHRC_EOF'
 
 # BEGIN XFCE ADDITIONS — not covered by ButterBash itself
 
@@ -105,7 +104,29 @@ alias touchpad-toggle="synclient TouchpadOff=\$(synclient -l | grep -q 'Touchpad
 
 # END XFCE ADDITIONS
 BASHRC_EOF
-    log_ok "XFCE-specific additions appended to ~/.bashrc"
+	log_ok "XFCE-specific additions appended to ~/.bashrc"
+fi
+
+# -- tmux: deploy the Darkmatter tmux.conf (Ctrl+b prefix, base-index 1) --
+TMUX_SRC="$SCRIPT_DIR/../configs/tmux.conf"
+TMUX_DST="$HOME/.config/tmux/tmux.conf"
+if [[ -f "$TMUX_SRC" ]]; then
+	mkdir -p "$(dirname "$TMUX_DST")"
+	if [[ -f "$TMUX_DST" ]] && ! grep -q '^# devuan-xfce-setup' "$TMUX_DST" 2>/dev/null; then
+		cp "$TMUX_DST" "$TMUX_DST.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+	fi
+	cp -f "$TMUX_SRC" "$TMUX_DST"
+	log_ok "tmux.conf deployed to $TMUX_DST (Ctrl+b prefix, base-index 1, Darkmatter status bar)"
+fi
+
+# -- git-delta as the git pager (only claims core.pager if nothing is set) --
+if command -v delta >/dev/null 2>&1; then
+	git config --global --get core.pager >/dev/null 2>&1 || git config --global core.pager delta
+	git config --global interactive.diffFilter "delta --color-only" 2>/dev/null || true
+	git config --global delta.features "decorations" 2>/dev/null || true
+	git config --global delta.line-numbers true 2>/dev/null || true
+	git config --global delta.syntax-theme "Catppuccin Mocha" 2>/dev/null || true
+	log_ok "git-delta wired as the git pager"
 fi
 
 log_warn "Run 'source ~/.bashrc' or open a new terminal to use it."

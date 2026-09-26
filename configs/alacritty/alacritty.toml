@@ -13,7 +13,9 @@ italic = { family = "JetBrainsMono Nerd Font", style = "Italic" }
 size = 10.0
 
 [terminal]
-shell = { program = "/bin/bash" }
+# Alacritty joins (or creates) the tmux "main" session on launch; falls
+# back to a plain interactive bash if tmux is not installed.
+shell = { program = "/bin/bash", args = ["-lc", "command -v tmux >/dev/null 2>&1 && exec tmux new -A -s main || exec bash"] }
 
 [colors]
 draw_bold_text_with_bright_colors = true
