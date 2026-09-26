@@ -160,7 +160,11 @@ if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortc
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>v" "xfce4-popup-clipman"
 	# -- cross-WM port (mango set): terminal, codium, lock, volume --
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>t" "exo-open --launch TerminalEmulator"
-	bind_force xfce4-keyboard-shortcuts "/commands/custom/<Super>e" "codium"
+	# focus-or-launch (xfce-raise) for the app keys: first press opens,
+	# later presses focus the existing window
+	bind_force xfce4-keyboard-shortcuts "/commands/custom/<Super>e" "xfce-raise VSCodium codium"
+	bind_force xfce4-keyboard-shortcuts "/commands/custom/<Super>f" "xfce-raise Thunar thunar"
+	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>w" "xfce-raise firefox firefox"
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Shift><Super>l" "xfce-lock"
 	if command -v pactl >/dev/null 2>&1; then
 		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>F10" "pactl set-sink-volume @DEFAULT_SINK@ -5%"
@@ -178,6 +182,9 @@ if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortc
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>q" "close_window_key"
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>Up" "tile_up_key"
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>Down" "tile_down_key"
+	# move the focused window to the previous / next workspace
+	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Shift><Super>Left" "move_window_prev_workspace_key"
+	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Shift><Super>Right" "move_window_next_workspace_key"
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>Left" "tile_left_key"
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>Right" "tile_right_key"
 	for n in 1 2 3 4 5 6 7 8 9 0; do

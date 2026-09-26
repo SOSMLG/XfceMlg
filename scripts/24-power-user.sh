@@ -44,7 +44,7 @@ fi
 # Shell launchers + CLI commands from configs/bin/
 BIN_DIR="$SCRIPT_DIR/../configs/bin"
 LAUNCHERS="xfce-menu xfce-update-gui xfce-record xfce-scratch"
-CLI_CMDS="xfce-update-check xfce-lock xfce-suspend xfce-battery-warn xfce-temp-warn"
+CLI_CMDS="xfce-update-check xfce-lock xfce-suspend xfce-battery-warn xfce-temp-warn xfce-raise"
 for f in $LAUNCHERS $CLI_CMDS; do
 	[[ -f "$BIN_DIR/$f" ]] || continue
 	[[ -f "$LOCAL_BIN/$f" ]] && cp "$LOCAL_BIN/$f" "$LOCAL_BIN/$f.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
