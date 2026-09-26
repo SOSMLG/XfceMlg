@@ -44,7 +44,7 @@ fi
 # Shell launchers + CLI commands from configs/bin/
 BIN_DIR="$SCRIPT_DIR/../configs/bin"
 LAUNCHERS="xfce-menu xfce-update-gui xfce-record xfce-scratch"
-CLI_CMDS="xfce-update-check xfce-lock xfce-suspend"
+CLI_CMDS="xfce-update-check xfce-lock xfce-suspend xfce-battery-warn xfce-temp-warn"
 for f in $LAUNCHERS $CLI_CMDS; do
 	[[ -f "$BIN_DIR/$f" ]] || continue
 	[[ -f "$LOCAL_BIN/$f" ]] && cp "$LOCAL_BIN/$f" "$LOCAL_BIN/$f.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
@@ -52,6 +52,23 @@ for f in $LAUNCHERS $CLI_CMDS; do
 	chmod +x "$LOCAL_BIN/$f"
 done
 log_ok "Shell launchers deployed to $LOCAL_BIN"
+
+# Battery + thermal warning daemons: autostart with the session
+WARN_DIR="$HOME/.config/autostart"
+for d in xfce-battery-warn xfce-temp-warn; do
+	[[ -f "$LOCAL_BIN/$d" ]] || continue
+	mkdir -p "$WARN_DIR"
+	{
+		echo "[Desktop Entry]"
+		echo "Type=Application"
+		echo "Name=$d"
+		echo "Comment=Darkmatter battery/thermal notifier (dunst)"
+		echo "Exec=$LOCAL_BIN/$d"
+		echo "X-GNOME-Autostart-enabled=true"
+		echo "NoDisplay=true"
+	} >"$WARN_DIR/$d.desktop"
+	log_ok "Autostarted $d ($WARN_DIR/$d.desktop)"
+done
 
 log_head "3/4  Cron update notifier (09:00 + 18:00)"
 CHECKER="$LOCAL_BIN/xfce-update-check"

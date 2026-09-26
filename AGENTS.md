@@ -76,9 +76,12 @@ Every step is idempotent and re-runnable.
 ## Power-user commands
 
 `scripts/24-power-user.sh` deploys `xfce-menu`, `xfce-update-check`,
-`xfce-update-gui`, `xfce-lock`, `xfce-suspend` (+ a cron-based update
-notifier). Python widgets (GTK/VTE) live in
-`configs/share/devuan-xfce-setup/` and read `picker.colors` for theming.
+`xfce-update-gui`, `xfce-lock`, `xfce-suspend`, `xfce-record`,
+`xfce-scratch` (+ a cron-based update notifier), and autostarts the
+`xfce-battery-warn` / `xfce-temp-warn` daemons (dunst warnings, each
+flock-guarded and env-overridable for headless tests). Python widgets
+(GTK/VTE) live in `configs/share/devuan-xfce-setup/` and read
+`picker.colors` for theming.
 
 ## Testing (mandatory before commit)
 

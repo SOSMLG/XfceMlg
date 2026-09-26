@@ -167,6 +167,11 @@ if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortc
 		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>F11" "pactl set-sink-mute @DEFAULT_SINK@ toggle"
 		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>F12" "pactl set-sink-volume @DEFAULT_SINK@ +5%"
 	fi
+	# -- notifications: Super+n mute toggle, Super+Shift+n re-show the last --
+	if command -v dunstctl >/dev/null 2>&1; then
+		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>n" "dunstctl set-paused toggle"
+		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Shift><Super>n" "dunstctl history-pop"
+	fi
 	# -- dropdown terminal: Super+grave (xfce-scratch, spawned by 24-power-user) --
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>grave" "xfce-scratch"
 	# -- window actions (xfwm4 channel) --
