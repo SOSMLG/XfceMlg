@@ -65,8 +65,9 @@ Every step is idempotent and re-runnable.
 - Palette: near-black `#121113` (`bg`/`dark`), `#1c1b1d` base, red accent
   `#e75353` (upstream orange `#e78a53` was remapped across all CSS + PNGs),
   teal `#5f8787`, cream `#fbcb97`, fg `#ffffff`.
-- Icons: bundled **Zafiro-icons-Dark** in `configs/icons/` (PNG variant only
-  — the SVG `apps/scalable` tree is intentionally trimmed). `22-theme-boot.sh`
+- Icons: bundled **Zafiro-icons-Dark** in `configs/icons/` (SVG variant,
+  trimmed from upstream v1.3; symlinks dereferenced for git portability).
+  `22-theme-boot.sh`
   and `verifySetup.sh` assume the `Darkmatter` / `Zafiro-icons-Dark` /
   `devuan-darkmatter` names — keep them in sync if you rename anything.
 - `scripts/22-theme-boot.sh` themes Plymouth/GRUB/LightDM to match
@@ -75,9 +76,12 @@ Every step is idempotent and re-runnable.
 ## Power-user commands
 
 `scripts/24-power-user.sh` deploys `xfce-menu`, `xfce-update-check`,
-`xfce-update-gui`, `xfce-lock`, `xfce-suspend` (+ a cron-based update
-notifier). Python widgets (GTK/VTE) live in
-`configs/share/devuan-xfce-setup/` and read `picker.colors` for theming.
+`xfce-update-gui`, `xfce-lock`, `xfce-suspend`, `xfce-record`,
+`xfce-scratch` (+ a cron-based update notifier), and autostarts the
+`xfce-battery-warn` / `xfce-temp-warn` daemons (dunst warnings, each
+flock-guarded and env-overridable for headless tests). Python widgets
+(GTK/VTE) live in `configs/share/devuan-xfce-setup/` and read
+`picker.colors` for theming.
 
 ## Testing (mandatory before commit)
 

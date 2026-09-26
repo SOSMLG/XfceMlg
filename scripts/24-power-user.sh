@@ -16,12 +16,11 @@ source "$SCRIPT_DIR/lib/common.sh"
 
 require_not_root
 
-
 apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
 log_head "1/4  Dependencies"
 install_pkgs "Power-user deps" \
-    python3-gi gir1.2-gtk-3.0 gir1.2-vte-2.91 libnotify-bin cron
+	python3-gi gir1.2-gtk-3.0 gir1.2-vte-2.91 libnotify-bin cron
 log_ok "Dependencies installed."
 
 log_head "2/4  Python apps + shell launchers"
@@ -32,42 +31,59 @@ mkdir -p "$LOCAL_BIN" "$TOOL_DIR"
 # Python apps from the toolkit's configs/share/
 APP_DIR="$SCRIPT_DIR/../configs/share/devuan-xfce-setup"
 if [[ -d "$APP_DIR" ]]; then
-    for py in "$APP_DIR"/*.py; do
-        [[ -f "$py" ]] || continue
-        cp -f "$py" "$TOOL_DIR/"
-    done
-    chmod 755 "$TOOL_DIR"/*.py 2>/dev/null || true
-    log_ok "Python apps deployed to $TOOL_DIR"
+	for py in "$APP_DIR"/*.py; do
+		[[ -f "$py" ]] || continue
+		cp -f "$py" "$TOOL_DIR/"
+	done
+	chmod 755 "$TOOL_DIR"/*.py 2>/dev/null || true
+	log_ok "Python apps deployed to $TOOL_DIR"
 else
-    log_warn "$APP_DIR not found — GUI commands will not work."
+	log_warn "$APP_DIR not found — GUI commands will not work."
 fi
 
 # Shell launchers + CLI commands from configs/bin/
 BIN_DIR="$SCRIPT_DIR/../configs/bin"
-LAUNCHERS="xfce-menu xfce-update-gui"
-CLI_CMDS="xfce-update-check xfce-lock xfce-suspend"
+LAUNCHERS="xfce-menu xfce-update-gui xfce-record xfce-scratch"
+CLI_CMDS="xfce-update-check xfce-lock xfce-suspend xfce-battery-warn xfce-temp-warn xfce-raise"
 for f in $LAUNCHERS $CLI_CMDS; do
-    [[ -f "$BIN_DIR/$f" ]] || continue
-    [[ -f "$LOCAL_BIN/$f" ]] && cp "$LOCAL_BIN/$f" "$LOCAL_BIN/$f.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-    cp -f "$BIN_DIR/$f" "$LOCAL_BIN/$f"
-    chmod +x "$LOCAL_BIN/$f"
+	[[ -f "$BIN_DIR/$f" ]] || continue
+	[[ -f "$LOCAL_BIN/$f" ]] && cp "$LOCAL_BIN/$f" "$LOCAL_BIN/$f.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+	cp -f "$BIN_DIR/$f" "$LOCAL_BIN/$f"
+	chmod +x "$LOCAL_BIN/$f"
 done
 log_ok "Shell launchers deployed to $LOCAL_BIN"
+
+# Battery + thermal warning daemons: autostart with the session
+WARN_DIR="$HOME/.config/autostart"
+for d in xfce-battery-warn xfce-temp-warn; do
+	[[ -f "$LOCAL_BIN/$d" ]] || continue
+	mkdir -p "$WARN_DIR"
+	{
+		echo "[Desktop Entry]"
+		echo "Type=Application"
+		echo "Name=$d"
+		echo "Comment=Darkmatter battery/thermal notifier (dunst)"
+		echo "Exec=$LOCAL_BIN/$d"
+		echo "X-GNOME-Autostart-enabled=true"
+		echo "NoDisplay=true"
+	} >"$WARN_DIR/$d.desktop"
+	log_ok "Autostarted $d ($WARN_DIR/$d.desktop)"
+done
 
 log_head "3/4  Cron update notifier (09:00 + 18:00)"
 CHECKER="$LOCAL_BIN/xfce-update-check"
 CRON_MARKER="# devuan-xfce-setup: update notifier"
 NEW_CRON=$(mktemp)
-( crontab -l 2>/dev/null | grep -vF "$CHECKER" | grep -vF "$CRON_MARKER" ) > "$NEW_CRON" || true
+(crontab -l 2>/dev/null | grep -vF "$CHECKER" | grep -vF "$CRON_MARKER") >"$NEW_CRON" || true
 {
-    echo "$CRON_MARKER"
-    echo "0 9,18 * * * $CHECKER >/dev/null 2>&1"
-} >> "$NEW_CRON"
+	echo "$CRON_MARKER"
+	echo "0 9,18 * * * $CHECKER >/dev/null 2>&1"
+} >>"$NEW_CRON"
 if crontab "$NEW_CRON"; then
-    log_ok "Cron job installed (runs at 09:00 and 18:00 daily)."
+	log_ok "Cron job installed (runs at 09:00 and 18:00 daily)."
 else
-    log_err "Failed to install the cron job — add manually: crontab -e"
-    echo "  0 9,18 * * * $CHECKER"
+	log_err "Failed to install the cron job — add manually: crontab -e"
+	echo "  0 9,18 * * * $CHECKER"
 fi
 rm -f "$NEW_CRON"
 
@@ -76,14 +92,14 @@ log_ok "cron enabled and started via init (verify with: rc-service cron status /
 
 log_head "4/4  Verify"
 if command -v xfce-menu >/dev/null 2>&1; then
-    log_ok "xfce-menu installed (Super+M or 'xfce-menu')"
+	log_ok "xfce-menu installed (Super+M or 'xfce-menu')"
 else
-    log_warn "xfce-menu not on PATH"
+	log_warn "xfce-menu not on PATH"
 fi
 if command -v xfce-update-gui >/dev/null 2>&1; then
-    log_ok "xfce-update-gui installed"
+	log_ok "xfce-update-gui installed"
 else
-    log_warn "xfce-update-gui not on PATH"
+	log_warn "xfce-update-gui not on PATH"
 fi
 log_ok "Power-user commands deployed."
 echo -e "  xfce-menu           searchable launcher (Apps / AI / System)"
