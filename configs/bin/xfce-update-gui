@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# xfce-update-gui wrapper — launches the themed VTE update window.
-set -euo pipefail
-exec python3 "$HOME/.local/share/devuan-xfce-setup/xfce-update-gui.py" "$@"
