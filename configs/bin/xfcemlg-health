@@ -1,0 +1,981 @@
+#!/usr/bin/env bash
+# xfcemlg-health — one command that answers: "is this machine still healthy?"
+#
+# DEPLOYED, NOT SOURCED. This file is installed to ~/.local/bin/ and is run
+# standalone by cron and by a human. It therefore:
+#   * cannot source scripts/lib/common.sh (not installed on the target),
+#   * cannot use $SCRIPT_DIR to find anything (the repo may be anywhere, or
+#     gone entirely),
+#   * must survive a bare cron environment: no DISPLAY, no DBUS, no USER,
+#     no XDG_*, PATH=/usr/bin:/bin.
+# Anything that needs the repo has to be discovered at run time, and a missing
+# dependency must be *reported*, never silently skipped.
+#
+# WHAT IT CHECKS (each report line is one of these)
+#   verify           runs scripts/verifySetup.sh (the toolkit's own end-state
+#                    audit) and reports its PASS/FAIL/WARN tally
+#   display-manager  exactly one DM enabled in a bootable runlevel
+#   init             OpenRC is the live init; service state comes from rc-status
+#   services         a small critical set of OpenRC services is started
+#   disk             root filesystem space + inode exhaustion
+#   notify           whether a desktop notification can be delivered at all
+#
+# EXIT CODES — this is the contract; cron and any monitor depend on it
+#   0  every check that could run, ran, and passed
+#   1  at least one check FAILED — a real fault on this machine
+#   2  the health check itself could not run — a tooling problem, NOT a
+#      machine problem: no verifySetup.sh found, verifySetup.sh produced no
+#      parseable verdict, a core utility is missing, or another run held the
+#      lock for the whole 20s wait (no check ran, so 0 would be a lie)
+#
+#   The "tooling problem" class is deliberately wider than just "no
+#   verifySetup.sh": a check that cannot run at all cannot honestly be
+#   reported as passing, so it has to be visible in the exit code. 1 and 2
+#   must never be confused — 1 means "fix the machine", 2 means "fix the
+#   check". When both happen, 2 wins and the other findings are still
+#   printed, listed and logged (never swallowed). An unknown command-line
+#   flag also exits 2: same class, nothing was checked.
+#
+#   WARN and non-core SKIP never change the exit code. The arguable case is a
+#   missing notify-send / absent session bus: that is a WARN, not an exit 2,
+#   because the report still reaches the operator on stdout and a headless or
+#   TTY-only box legitimately has no desktop to notify. Promote that WARN to a
+#   FAIL in check_notify() if you want the stricter contract.
+#
+# USAGE
+#   xfcemlg-health              readable report (default; for a human)
+#   xfcemlg-health --quiet      at most one summary line, and ONLY when
+#                               something is wrong, so an hourly cron does
+#                               not mail you a green line every hour
+#   xfcemlg-health --verbose    every check line + the full verifySetup.sh
+#                               output (the debug mode)
+#   xfcemlg-health --no-notify  never pop a desktop notification
+#   xfcemlg-health --help
+#
+# ENVIRONMENT
+#   XFCEMLG_VERIFY          explicit path to verifySetup.sh (or its deployed
+#                           equivalent). If set but unusable we do NOT fall
+#                           back to another copy: a wrong answer is worse
+#                           than a loud failure.
+#   XFCEMLG_REPO            repo root; $XFCEMLG_REPO/scripts/verifySetup.sh
+#   XFCEMLG_VERIFY_TIMEOUT  seconds allowed for verifySetup.sh (default 180)
+#   XFCEMLG_HEALTH_NO_NOTIFY=1  same as --no-notify
+#   XFCEMLG_RUNLEVEL_ROOT   testing hook: the runlevel directory to read
+#                           (default /etc/runlevels). Point it at a fixture
+#                           tree to exercise the 0/1/2-DM branches without
+#                           root; leave it alone on a real machine.
+#   NO_COLOR                disable colour
+#
+# A CRON ENTRY (the whole environment problem in one line)
+#   17 * * * * $HOME/.local/bin/xfcemlg-health --quiet
+#
+# READ-ONLY BY CONTRACT. This script changes nothing on the machine: no
+# packages, no services, no configs. The only files it writes are its own
+# lock file and its own state/log file, under $XDG_RUNTIME_DIR and
+# ${XDG_STATE_HOME:-$HOME/.local/state}. Not even a temp file: the child's
+# output is captured in a variable.
+#
+# Non-obvious facts about this box that are encoded below. Each was verified
+# against a live Devuan 6 (excalibur) / XFCE 4.20 install, and each one is a
+# trap that produces a *wrong* answer if you get it backwards:
+#
+#   * `rc-update show default` RIGHT-ALIGNS service names in a fixed column,
+#     so `rc-update show default | grep '^greetd'` matches nothing at all. An
+#     anchored grep reports "no rival display manager" on a machine that has
+#     one — a false PASS on a genuinely broken box. We read the runlevel
+#     symlinks directly instead, the same approach as dm_enabled_runlevel()
+#     in scripts/10-xfce-core.sh.
+#
+#   * `rc-update` lives in /sbin and /usr/sbin, which are NOT in cron's PATH
+#     (cron runs with PATH=/usr/bin:/bin). From cron the command is simply
+#     not found, so the padded-column problem is beside the point. Every
+#     OpenRC probe here either resolves an absolute path or reads
+#     /etc/runlevels directly.
+#
+#   * NEVER ask `rc-service chrony status` whether chrony is up. It answers
+#     "chronyd is not running ... failed!" and exits 3 on a box where chronyd
+#     is running perfectly well, because the daemon is started with `-F 1`
+#     and its pidfile does not match what rc-service expects. That is a false
+#     FAIL on a healthy machine. rc-status is authoritative; process names
+#     are cross-checked with pgrep.
+#
+#   * `notify-send` from a plain cron entry fails with rc=1 ("Cannot autolaunch
+#     D-Bus without X11 $DISPLAY"): cron has no session bus. Exporting
+#     XDG_RUNTIME_DIR is necessary but NOT sufficient on this box — the
+#     session bus is a /tmp socket, not /run/user/$UID/bus, so libnotify
+#     falls back to autolaunching and dies. DISPLAY and
+#     DBUS_SESSION_BUS_ADDRESS have to be harvested from
+#     /proc/<pid>/environ of the running session (the trick
+#     configs/bin/xfce-update-check uses). When that is impossible the report
+#     degrades to stdout, and a failed popup must never change the verdict.
+#
+#   * scripts/verifySetup.sh is NOT standalone: it sources
+#     scripts/lib/common.sh, which — with `set -u` — dereferences $USER at
+#     source time. Run from a bare cron environment (no USER) it dies
+#     instantly with "common.sh: line 107: USER: unbound variable" and prints
+#     nothing at all, which unchecked looks exactly like a clean run. Hence
+#     the export in normalise_env() and the "did the child actually produce
+#     a verdict?" guard in check_verify().
+#
+#   * verifySetup.sh is also mode 0644 (not executable) in git, so it must be
+#     invoked as `bash <path>`, exactly as run.sh --verify does.
+set -uo pipefail
+
+# ══════════════════════════════════════════════════════════════════════════
+# Constants
+# ══════════════════════════════════════════════════════════════════════════
+
+# Display managers that may own the console. Mirrors DM_RIVALS in
+# scripts/10-xfce-core.sh: if one is added there, add it here too, or this
+# reporter and the installer will disagree about what "healthy" means.
+DM_LIST="lightdm greetd slim sddm gdm3 gdm xdm lxdm"
+
+# Runlevels OpenRC actually starts at boot. `off` and `shutdown` are excluded
+# on purpose: parking a rival DM in `shutdown` is harmless, and counting it
+# would raise a false FAIL on a box that is fine.
+BOOT_RUNLEVELS="boot default nonetwork"
+
+# Where those runlevels live. XFCEMLG_RUNLEVEL_ROOT is a TESTING HOOK (point it
+# at a fixture tree to exercise the 0/1/2-DM branches without root); on a real
+# machine leave it alone — it defaults to the real OpenRC directory.
+RUNLEVEL_ROOT="${XFCEMLG_RUNLEVEL_ROOT:-/etc/runlevels}"
+
+# Services that should be up. critical = a real fault (FAIL), optional =
+# degraded/untidy (WARN only).
+#   network-manager  no network at all
+#   dbus             no session bus: no notifications, no polkit, no media keys
+#   cron             the hourly update notifier and this health check never run
+#   chrony           clock skew makes apt reject InRelease signatures — but a
+#                    box without NTP is not *broken*, hence optional. Its
+#                    state comes from rc-status, never from `rc-service
+#                    status`: see the `-F 1` / pidfile note in the header.
+#   elogind          owns logind on Devuan: suspend and the power menu
+#   tlp              battery charge cap (ThinkPad)
+#   cups             printing
+CRITICAL_SERVICES="network-manager dbus cron"
+OPTIONAL_SERVICES="chrony elogind tlp cups"
+
+DISK_WARN_PCT=85   # root filesystem usage, warn
+DISK_FAIL_PCT=95   # root filesystem usage, fail
+INODE_FAIL_PCT=95  # root inode usage, fail
+
+LOG_KEEP_LINES=200 # ring-buffer the state log so it cannot grow forever
+
+# ══════════════════════════════════════════════════════════════════════════
+# 1. Output plumbing
+# ══════════════════════════════════════════════════════════════════════════
+
+VERBOSITY=normal        # quiet | normal | verbose
+NOTIFY=1                # 0 disables the desktop notification
+N_OK=0
+N_FAIL=0
+N_WARN=0
+N_SKIP=0
+FAILED_ITEMS=()        # "check: detail" — summary, popup and log
+SKIPPED_ITEMS=()       # checks that could not run (see the exit-2 rule)
+SHORT=()               # "check=short" — the compact bracket in the summary
+TOOLING_PROBLEM=""     # non-empty => exit 2 (see the exit-code contract)
+UID_RUNTIME=""         # id -u, resolved once in normalise_env()
+RC_STATUS_BIN=""       # resolved absolute path, "" when unavailable
+RC_STATUS_OUT=""       # rc-status table, captured once
+VERIFY_PATH=""         # resolved verifySetup.sh
+VERIFY_KIND=""         # "source tree" | "deployed copy"
+VERIFY_PINNED=0        # 1 when XFCEMLG_VERIFY named it (then: not cached)
+STATE_DIR=""           # our own state dir (the only place we write)
+LOCK_FILE=""
+LOG_FILE=""
+CACHE_FILE=""
+VERIFY_TIMEOUT=180
+VERIFY_CACHE_READ=""
+
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+	C_OFF=$'\033[0m'
+	C_RED=$'\033[1;31m'
+	C_GREEN=$'\033[32m'
+	C_YELLOW=$'\033[1;33m'
+	C_CYAN=$'\033[36m'
+	C_BOLD=$'\033[1m'
+else
+	C_OFF=""
+	C_RED=""
+	C_GREEN=""
+	C_YELLOW=""
+	C_CYAN=""
+	C_BOLD=""
+fi
+
+# emit <text> — diagnostics, only while --verbose.
+emit() {
+	[ "$VERBOSITY" = verbose ] || return 0
+	printf '  %s\n' "$1"
+	return 0
+}
+
+# note <text> — shown by hand, suppressed by --quiet.
+note() {
+	[ "$VERBOSITY" = quiet ] && return 0
+	printf '  %s\n' "$1"
+	return 0
+}
+
+# join_array <array-name> [separator] — join the elements, no trailing separator.
+# Hand-rolled rather than `IFS=', ' ... "${arr[*]}"`: IFS uses only its FIRST
+# character as the separator, so a two-character separator is impossible that
+# way (it silently produced "a,b" instead of "a, b").
+join_array() {
+	local -n _arr="$1"
+	local sep="${2:-, }"
+	local i out=""
+	[ "${#_arr[@]}" -gt 0 ] || {
+		printf 'none'
+		return 0
+	}
+	for i in "${!_arr[@]}"; do
+		out="$out$sep${_arr[$i]}"
+	done
+	printf '%s' "${out#"$sep"}"
+	return 0
+}
+
+# report <check> <ok|fail|warn|skip> <detail> [short]
+# The single place a verdict is recorded, counted and printed, so no check can
+# ever be counted without a line that says so.
+report() {
+	local name="$1" status="$2" detail="${3:-}" short="${4:-}" color label
+	[ -n "$short" ] || short="$detail"
+	case "$status" in
+	ok)
+		N_OK=$((N_OK + 1))
+		color="$C_GREEN"
+		label="PASS"
+		;;
+	fail)
+		N_FAIL=$((N_FAIL + 1))
+		FAILED_ITEMS+=("$name: $detail")
+		color="$C_RED"
+		label="FAIL"
+		;;
+	warn)
+		N_WARN=$((N_WARN + 1))
+		color="$C_YELLOW"
+		label="WARN"
+		;;
+	skip)
+		N_SKIP=$((N_SKIP + 1))
+		SKIPPED_ITEMS+=("$name: $detail")
+		color="$C_YELLOW"
+		label="SKIP"
+		;;
+	*)
+		return 0
+		;;
+	esac
+	SHORT+=("$name=$short")
+	[ "$VERBOSITY" = quiet ] && return 0
+	printf '  %s%-5s %-16s %s%s\n' "$color" "$label" "$name" "$detail" "$C_OFF"
+	return 0
+}
+
+# tooling_problem <message> — this check cannot be trusted to have run.
+# Always printed, even in quiet mode: this is precisely the case where the
+# operator would otherwise see nothing and assume all-clear.
+tooling_problem() {
+	TOOLING_PROBLEM="$1"
+	printf '%sxfcemlg-health: cannot run the health check: %s%s\n' \
+		"$C_RED" "$1" "$C_OFF" >&2
+	return 0
+}
+
+# ══════════════════════════════════════════════════════════════════════════
+# 2. Environment normalisation (the cron problem, solved once)
+# ══════════════════════════════════════════════════════════════════════════
+
+normalise_env() {
+	# Resolve the uid once: it is needed for the runtime dir and for the
+	# session harvest, and `local x=$(id -u)` in one statement is exactly the
+	# kind of thing shellcheck (rightly) flags as masking a failure.
+	UID_RUNTIME="$(id -u)"
+
+	# verifySetup.sh -> lib/common.sh dereferences $USER while `set -u` is on
+	# (common.sh:107). cron has no USER, so the child would abort before
+	# printing a single line. See the header.
+	USER="${USER:-$(id -un)}"
+	export USER
+	LOGNAME="${LOGNAME:-$USER}"
+	export LOGNAME
+
+	# cron's PATH is /usr/bin:/bin and /sbin, /usr/sbin are missing (that is
+	# where rc-update and rc-service live). Appending them is safe for a
+	# read-only reporter and lets the child see the tools a login shell has.
+	case ":$PATH:" in
+	*:/sbin:*) ;;
+	*) PATH="$PATH:/usr/sbin:/sbin" ;;
+	esac
+	export PATH
+
+	# Minimum bar for any GUI/libnotify call. Not sufficient here (the bus is
+	# a /tmp socket) — see harvest_session_env() — but it is the documented
+	# contract and it costs nothing.
+	if [ -z "${XDG_RUNTIME_DIR:-}" ] && [ -d "/run/user/$UID_RUNTIME" ]; then
+		export XDG_RUNTIME_DIR="/run/user/$UID_RUNTIME"
+	fi
+
+	# The only places we may write: our own lock + state files.
+	if [ -n "${XDG_STATE_HOME:-}" ]; then
+		STATE_DIR="$XDG_STATE_HOME/xfcemlg-health"
+	elif [ -n "${HOME:-}" ]; then
+		STATE_DIR="$HOME/.local/state/xfcemlg-health"
+	else
+		STATE_DIR="${XDG_RUNTIME_DIR:-/tmp}/xfcemlg-health"
+	fi
+	# Same fallback shape as configs/bin/xfce-lock: prefer the runtime dir,
+	# drop to /tmp rather than fail when it is not there.
+	if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+		LOCK_FILE="$XDG_RUNTIME_DIR/xfcemlg-health.lock"
+	else
+		LOCK_FILE="/tmp/xfcemlg-health.lock"
+	fi
+	LOG_FILE="$STATE_DIR/health.log"
+	CACHE_FILE="$STATE_DIR/verify.path"
+	VERIFY_TIMEOUT="${XFCEMLG_VERIFY_TIMEOUT:-180}"
+	return 0
+}
+
+# ══════════════════════════════════════════════════════════════════════════
+# 3. Small read-only probes
+# ══════════════════════════════════════════════════════════════════════════
+
+# rc_status_state <svc> — started|stopped|crashed|absent, from rc-status only.
+#
+# `rc-status --servicelist <svc>` looks like the obvious way to ask, but the
+# OpenRC on excalibur ignores the argument and dumps the whole table, so we
+# parse rc-status's own table. The last field is "]" (the state is
+# right-aligned inside "[  started  ]"), hence the scan for a known state word
+# instead of $(NF). Reads the table captured once in check_init.
+rc_status_state() {
+	local out
+	out="$(printf '%s\n' "$RC_STATUS_OUT" | awk -v s="$1" '
+		$1 == s {
+			for (i = 1; i <= NF; i++)
+				if ($i ~ /^(started|stopped|crashed|conditional|manual|scheduled)$/) {
+					print $i
+					found = 1
+					exit
+				}
+		}
+		END { if (!found) print "absent" }')"
+	printf '%s\n' "${out:-absent}"
+	return 0
+}
+
+# dm_runlevel <svc> — the bootable runlevel that has <svc> enabled, or "".
+#
+# Reads /etc/runlevels/<rl>/<svc> symlinks directly. Two verified reasons:
+#   (a) `rc-update show` right-aligns names, so an anchored `^svc` grep finds
+#       nothing — the naive version silently reports "no rival DM" on a box
+#       that has one;
+#   (b) `rc-update` is in /sbin, absent from cron's PATH.
+# Same approach as dm_enabled_runlevel() in scripts/10-xfce-core.sh.
+dm_runlevel() {
+	local svc="$1" rl
+	for rl in $BOOT_RUNLEVELS; do
+		if [ -e "$RUNLEVEL_ROOT/$rl/$svc" ]; then
+			printf '%s\n' "$rl"
+			return 0
+		fi
+	done
+	return 1
+}
+
+# ══════════════════════════════════════════════════════════════════════════
+# 4. Checks
+# ══════════════════════════════════════════════════════════════════════════
+
+# --- 4.0 which verifySetup.sh are we running? -----------------------------
+# A deployed copy has no $SCRIPT_DIR to lean on, so candidates are probed in
+# a fixed order and the winner is cached in our own state dir. That cache is
+# what lets "run it by hand from anywhere" and the hourly cron agree.
+# A candidate inside a checkout must still be *runnable*; if it turns out not
+# to be (e.g. lib/common.sh was moved), check_verify() catches the missing
+# verdict and reports it as a tooling problem rather than as a clean run.
+verify_candidate_ok() {
+	local p="${1:-}"
+	[ -n "$p" ] || return 1
+	[ -f "$p" ] && [ -r "$p" ] || return 1
+	return 0
+}
+
+resolve_verify() {
+	local cand dir
+	if [ -n "${XFCEMLG_VERIFY:-}" ]; then
+		if verify_candidate_ok "$XFCEMLG_VERIFY"; then
+			VERIFY_PATH="$XFCEMLG_VERIFY"
+			# Pinned for THIS run only. It must not be written to the cache:
+			# a one-off XFCEMLG_VERIFY=… (a test stub, a temporary checkout)
+			# would otherwise silently become the default for every later
+			# cron run — and quietly stop auditing the real tree.
+			VERIFY_PINNED=1
+		else
+			tooling_problem "XFCEMLG_VERIFY=$XFCEMLG_VERIFY is not a readable verifySetup.sh"
+			return 1
+		fi
+	else
+		for cand in \
+			"${XFCEMLG_REPO:+$XFCEMLG_REPO/scripts/verifySetup.sh}" \
+			"${HOME:+$HOME/.local/bin/xfce-verify}" \
+			"/usr/local/bin/xfce-verify" \
+			"/usr/bin/xfce-verify" \
+			"$VERIFY_CACHE_READ"; do
+			if verify_candidate_ok "$cand"; then
+				VERIFY_PATH="$cand"
+				break
+			fi
+		done
+		# Neither deployed nor hinted: look for a checkout at or above $PWD,
+		# so a hand run from inside the repo (or from configs/bin) just works.
+		if [ -z "$VERIFY_PATH" ]; then
+			dir="$PWD"
+			for _ in 1 2 3; do
+				if verify_candidate_ok "$dir/scripts/verifySetup.sh"; then
+					VERIFY_PATH="$dir/scripts/verifySetup.sh"
+					break
+				fi
+				dir="$(dirname "$dir")"
+			done
+		fi
+	fi
+
+	if [ -z "$VERIFY_PATH" ]; then
+		tooling_problem "verifySetup.sh not found (deployed name is ~/.local/bin/xfce-verify). Run xfcemlg-health from a checkout, or set XFCEMLG_VERIFY=/path/to/scripts/verifySetup.sh"
+		return 1
+	fi
+
+	if [ -f "$(dirname "$VERIFY_PATH")/lib/common.sh" ]; then
+		VERIFY_KIND="source tree"
+	else
+		VERIFY_KIND="deployed copy"
+	fi
+	# Cache for the next (cron) run — our own state file, never the repo's.
+	# Only a *discovered* path is cached; see VERIFY_PINNED above.
+	if [ "$VERIFY_PINNED" -eq 0 ]; then
+		mkdir -p "$STATE_DIR" 2>/dev/null || true
+		if [ -d "$STATE_DIR" ] 2>/dev/null; then
+			printf '%s\n' "$VERIFY_PATH" >"$CACHE_FILE" 2>/dev/null || true
+		fi
+	fi
+	return 0
+}
+
+# --- 4.1 the core check: scripts/verifySetup.sh ---------------------------
+check_verify() {
+	local raw clean summary child_rc passes fails warns fail_names head_tail
+	local short line
+	local -a fail_lines=()
+
+	# `bash` explicitly: in git verifySetup.sh is mode 0644 (not executable),
+	# and it must be run under bash rather than exec'd — as run.sh --verify does.
+	if command -v timeout >/dev/null 2>&1; then
+		raw="$(timeout "$VERIFY_TIMEOUT" bash "$VERIFY_PATH" 2>&1)"
+	else
+		raw="$(bash "$VERIFY_PATH" 2>&1)"
+	fi
+	child_rc=$?
+
+	# Strip colour so parsing does not depend on the child being attached to
+	# a terminal.
+	clean="$(printf '%s\n' "$raw" | sed 's/\x1b\[[0-9;]*m//g')"
+
+	if [ "$VERBOSITY" = verbose ]; then
+		printf '%s\n' "$clean"
+		emit "verifySetup.sh exit=$child_rc (timeout ${VERIFY_TIMEOUT}s)"
+	fi
+
+	# The child must have produced its own tally line. If it did not, it died
+	# (no $USER, no lib/common.sh, syntax error, timeout). Reporting that as
+	# "all good" would be the single worst bug this script could have.
+	summary="$(printf '%s\n' "$clean" |
+		sed -n 's/.*[^0-9]\([0-9][0-9]*\) passed, *\([0-9][0-9]*\) failed, *\([0-9][0-9]*\) warnings.*/\1 \2 \3/p' |
+		tail -n1)"
+	if [ -z "$summary" ]; then
+		head_tail="$(printf '%s\n' "$clean" | head -3 | tr '\n' ';')"
+		tooling_problem "verifySetup.sh produced no verdict (exit $child_rc): ${head_tail:-<no output>}"
+		return 1
+	fi
+	# shellcheck disable=SC2086 # summary is exactly three integers; split them
+	set -- $summary
+	passes="$1"
+	fails="$2"
+	warns="$3"
+	short="${passes}p/${fails}f/${warns}w"
+
+	# The FAIL lines, so the popup and the summary name the actual fault
+	# instead of just a count.
+	while IFS= read -r line; do
+		[ -n "$line" ] && fail_lines+=("$line")
+	done < <(printf '%s\n' "$clean" | awk '
+		/^[[:space:]]*FAIL/ {
+			sub(/^[[:space:]]*FAIL[[:space:]]+/, "")
+			sub(/[[:space:]][[:space:]].*$/, "")
+			print
+		}' | head -5)
+	if [ "$fails" -gt 0 ]; then
+		if [ "${#fail_lines[@]}" -gt 0 ]; then
+			fail_names="$(join_array fail_lines)"
+			if [ "$fails" -gt "${#fail_lines[@]}" ]; then
+				fail_names="$fail_names (+$((fails - ${#fail_lines[@]})) more — see --verbose)"
+			fi
+		else
+			fail_names="(names not parsed — see --verbose)"
+		fi
+		report verify fail "$fails failed: $fail_names" "$short"
+	else
+		report verify ok "$passes passed, $warns warnings ($VERIFY_KIND)" "$short"
+	fi
+	return 0
+}
+
+# --- 4.2 exactly one display manager may own the console -------------------
+check_display_manager() {
+	local svc enabled first_runlevel count rl
+	enabled=""
+	first_runlevel=""
+	for svc in $DM_LIST; do
+		# NB: `first_runlevel="$(dm_runlevel "$svc")" || continue` would be a
+		# bug — bash assigns the empty string *before* the exit status is
+		# examined, so a later, non-enabled DM would clobber the runlevel of
+		# the one that is enabled. Assign to a scratch var first.
+		rl="$(dm_runlevel "$svc")" || continue
+		first_runlevel="$rl"
+		if [ -n "$enabled" ]; then
+			enabled="$enabled $svc"
+		else
+			enabled="$svc"
+		fi
+		if [ -x "/etc/init.d/$svc" ]; then
+			emit "DM $svc enabled in runlevel $rl (init script present)"
+		else
+			emit "DM $svc enabled in runlevel $rl — NO /etc/init.d/$svc, OpenRC will error at boot"
+		fi
+	done
+	# shellcheck disable=SC2086 # deliberate: count the enabled names
+	set -- $enabled
+	count="$#"
+
+	if [ "$count" -gt 1 ]; then
+		report display-manager fail \
+			"$count enabled ($enabled) racing for the console — fix each one you do not want with: /usr/sbin/rc-update del <name> default" \
+			"$count: $enabled"
+	elif [ "$count" -eq 1 ]; then
+		if [ -x "/etc/init.d/$enabled" ]; then
+			report display-manager ok "$enabled (runlevel $first_runlevel)" "$enabled"
+		else
+			report display-manager warn \
+				"$enabled is enabled in runlevel $first_runlevel but /etc/init.d/$enabled is missing — the next boot may fall back to a TTY" \
+				"$enabled, no init.d"
+		fi
+	else
+		# Zero DMs is not a fault by itself: a headless / TTY-only box is a
+		# legitimate setup and the toolkit only fixes this interactively. So a
+		# WARN with the exact repair, not a FAIL that would page forever.
+		report display-manager warn \
+			"none enabled in [$BOOT_RUNLEVELS] — intentional for a headless box? otherwise: /usr/sbin/rc-update add lightdm default" \
+			"none"
+	fi
+	return 0
+}
+
+# --- 4.3 the live init ---------------------------------------------------
+check_init() {
+	local cand
+	# A live systemd would be a genuine deviation: this toolkit assumes OpenRC
+	# on sysvinit. Detected here, never invoked.
+	if [ -d /run/systemd/system ]; then
+		report init fail "/run/systemd/system exists — this box booted with systemd; the toolkit targets OpenRC/sysvinit" \
+			"systemd"
+		RC_STATUS_BIN=""
+		return 1
+	fi
+	# `command -v` first, then absolute paths: rc-status lives in /usr/bin on
+	# excalibur but the sbin lesson from the header applies to any rc tool.
+	for cand in "$(command -v rc-status 2>/dev/null)" \
+		/usr/bin/rc-status /bin/rc-status /sbin/rc-status /usr/sbin/rc-status; do
+		if [ -n "$cand" ] && [ -x "$cand" ]; then
+			RC_STATUS_BIN="$cand"
+			break
+		fi
+	done
+	if [ -z "$RC_STATUS_BIN" ]; then
+		tooling_problem "rc-status not found or not executable — service state cannot be reported (package: openrc)"
+		return 1
+	fi
+	RC_STATUS_OUT="$("$RC_STATUS_BIN" 2>/dev/null)"
+	emit "rc-status: $RC_STATUS_BIN ($(printf '%s\n' "$RC_STATUS_OUT" | grep -c .) lines)"
+	report init ok "OpenRC via $RC_STATUS_BIN" "OpenRC"
+	return 0
+}
+
+# --- 4.4 the service table ----------------------------------------------
+check_services() {
+	local svc state down_crit down_opt up total
+	if [ -z "$RC_STATUS_BIN" ]; then
+		report services skip "rc-status unavailable — see the init check" "not checked"
+		return 1
+	fi
+	down_crit=""
+	down_opt=""
+	up=0
+	total=0
+	for svc in $CRITICAL_SERVICES $OPTIONAL_SERVICES; do
+		state="$(rc_status_state "$svc")"
+		total=$((total + 1))
+		emit "service $svc: $state"
+		if [ "$state" = started ]; then
+			up=$((up + 1))
+			continue
+		fi
+		case " $CRITICAL_SERVICES " in
+		*" $svc "*) down_crit="$down_crit $svc=$state" ;;
+		*) down_opt="$down_opt $svc=$state" ;;
+		esac
+	done
+
+	if [ -n "$down_crit" ]; then
+		report services fail "not running:$down_crit — fix with: /usr/sbin/rc-service <name> start" \
+			"$((total - up))/$total down"
+	elif [ -n "$down_opt" ]; then
+		report services warn "not running:$down_opt" "$((total - up))/$total down"
+	else
+		report services ok "$up/$total started" "$up/$total up"
+	fi
+	return 0
+}
+
+# --- 4.5 disk: space AND inodes ------------------------------------------
+check_disk() {
+	local usage inodes short
+	usage="$(df -P / 2>/dev/null | awk 'NR == 2 { gsub(/%/, "", $5); print $5 }')"
+	inodes="$(df -Pi / 2>/dev/null | awk 'NR == 2 { gsub(/%/, "", $5); print $5 }')"
+	if [ -z "$usage" ] || [ -z "$inodes" ]; then
+		tooling_problem "df produced no usable output for /"
+		return 1
+	fi
+	short="space ${usage}%, inodes ${inodes}%"
+
+	# Inodes are checked even when space is fine: a filesystem can be "30%
+	# free" and still be unusable because the inode table is full.
+	if [ "$inodes" -ge "$INODE_FAIL_PCT" ]; then
+		report disk fail "root inode table ${inodes}% used (>= ${INODE_FAIL_PCT}%) — free space but no free inodes" \
+			"inodes ${inodes}%"
+	elif [ "$usage" -ge "$DISK_FAIL_PCT" ]; then
+		report disk fail "root filesystem ${usage}% full (>= ${DISK_FAIL_PCT}%)" "space ${usage}%"
+	elif [ "$usage" -ge "$DISK_WARN_PCT" ]; then
+		report disk warn "root filesystem ${usage}% used (>= ${DISK_WARN_PCT}%)" "space ${usage}%"
+	else
+		report disk ok "root ${usage}% used, inodes ${inodes}%" "space ${usage}%"
+	fi
+	return 0
+}
+
+# --- 4.6 can we even tell the user? ---------------------------------------
+# WARN, never exit-affecting (see the header). The point is honesty: a FAIL
+# that could not be announced has to say so.
+check_notify() {
+	local bus="${DBUS_SESSION_BUS_ADDRESS:-}"
+	if ! command -v notify-send >/dev/null 2>&1; then
+		report notify warn "notify-send not installed (package: libnotify-bin) — problems are reported on stdout only" \
+			"stdout only"
+		return 0
+	fi
+	if [ -z "$bus" ]; then
+		report notify warn "no session bus (DISPLAY/DBUS not found) — problems are reported on stdout only" \
+			"stdout only"
+		return 0
+	fi
+	report notify ok "notify-send via ${bus%%,*}" "session bus"
+	return 0
+}
+
+# ══════════════════════════════════════════════════════════════════════════
+# 5. Notification (best effort, never affects the exit code)
+# ══════════════════════════════════════════════════════════════════════════
+
+# harvest_session_env — borrow DISPLAY and the session bus from the running
+# desktop session. This is the only thing that makes notify-send work from
+# cron on this box: XDG_RUNTIME_DIR alone is not enough (the bus is a /tmp
+# socket here, not /run/user/$UID/bus) and libnotify's autolaunch fallback
+# dies with "Cannot autolaunch D-Bus without X11 $DISPLAY".
+# Same trick as configs/bin/xfce-update-check, widened to sway/Xorg.
+harvest_session_env() {
+	local uid want pid line val
+	uid="$UID_RUNTIME"
+	for want in xfce4-session sway Xorg; do
+		pid="$(pgrep -u "$uid" "$want" 2>/dev/null | head -n1)"
+		[ -n "$pid" ] || continue
+		[ -r "/proc/$pid/environ" ] || continue
+		while IFS= read -r line; do
+			case "$line" in
+			DISPLAY=*)
+				val="${line#DISPLAY=}"
+				[ -n "$val" ] && export DISPLAY="$val"
+				;;
+			DBUS_SESSION_BUS_ADDRESS=*)
+				val="${line#DBUS_SESSION_BUS_ADDRESS=}"
+				[ -n "$val" ] && export DBUS_SESSION_BUS_ADDRESS="$val"
+				;;
+			XDG_RUNTIME_DIR=*)
+				val="${line#XDG_RUNTIME_DIR=}"
+				[ -n "$val" ] && export XDG_RUNTIME_DIR="$val"
+				;;
+			esac
+		done < <(tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null)
+		[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && return 0
+	done
+	# Last resort: the conventional bus socket. Only if it really exists —
+	# pointing libnotify at a missing socket is worse than stdout.
+	if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] && [ -S "/run/user/$uid/bus" ]; then
+		export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$uid/bus"
+	fi
+	return 0
+}
+
+# notify_problem <urgency> <title> <body>
+notify_problem() {
+	local urgency="$1" title="$2" body="$3"
+	[ "$NOTIFY" -eq 1 ] || return 0
+	command -v notify-send >/dev/null 2>&1 || return 1
+	[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] || return 1
+	# -i dialog-warning: these are faults, not FYIs.
+	if notify-send --app-name="xfcemlg-health" -i dialog-warning \
+		-u "$urgency" -t 20000 "$title" "$body" >/dev/null 2>&1; then
+		return 0
+	fi
+	return 1
+}
+
+# ══════════════════════════════════════════════════════════════════════════
+# 6. Lock + state log
+# ══════════════════════════════════════════════════════════════════════════
+
+# Single instance: a human running it while cron runs it must not interleave.
+# flock -n first, then a bounded wait, so an ordinary overlap still produces a
+# verdict from both runs instead of one silently vanishing.
+acquire_lock() {
+	if ! command -v flock >/dev/null 2>&1; then
+		note "flock not found — running without a lock (concurrent runs may interleave)"
+		return 0
+	fi
+	# Probe writability FIRST. `exec 9>"$LOCK" 2>/dev/null` looks like the tidy
+	# one-liner but is a trap: a bare `exec` with a redirect applies that
+	# redirect to the *whole script*, so stderr would be /dev/null from here
+	# on and every later message (including this function's own "no verdict"
+	# warning and tooling_problem's explanation) would vanish — a silent exit
+	# 0 that reads exactly like "healthy".
+	if ! { : >>"$LOCK_FILE"; } 2>/dev/null; then
+		note "cannot write lock file $LOCK_FILE — running without a lock"
+		return 0
+	fi
+	exec 9>>"$LOCK_FILE"
+	if flock -n 9; then
+		return 0
+	fi
+	emit "another run holds $LOCK_FILE — waiting up to 20s"
+	if flock -w 20 9; then
+		return 0
+	fi
+	# A wedged previous run means NO check ran, and 0 must mean "checks
+	# passed" — so this is the exit-2 class (the health check could not run),
+	# not a silent 0 that a monitor would read as healthy.
+	printf 'xfcemlg-health: another run has held %s for 20s — skipped, no verdict\n' \
+		"$LOCK_FILE" >&2
+	exit 2
+}
+
+log_run() {
+	local line="$1"
+	[ -n "$LOG_FILE" ] || return 0
+	mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+	if ! printf '%s\n' "$line" >>"$LOG_FILE" 2>/dev/null; then
+		return 0
+	fi
+	# Ring-buffer: keep only the last LOG_KEEP_LINES lines, in place.
+	if tail -n "$LOG_KEEP_LINES" "$LOG_FILE" >"$LOG_FILE.trim" 2>/dev/null; then
+		mv -f "$LOG_FILE.trim" "$LOG_FILE" 2>/dev/null || rm -f "$LOG_FILE.trim" 2>/dev/null
+	else
+		rm -f "$LOG_FILE.trim" 2>/dev/null
+	fi
+	return 0
+}
+
+# ══════════════════════════════════════════════════════════════════════════
+# 7. main
+# ══════════════════════════════════════════════════════════════════════════
+
+usage() {
+	cat <<'EOF'
+xfcemlg-health — is this machine still healthy? (read-only)
+
+  xfcemlg-health              readable report (default)
+  xfcemlg-health --quiet      one summary line, only when something is wrong
+  xfcemlg-health --verbose    everything, incl. the full verifySetup.sh output
+  xfcemlg-health --no-notify  never pop a desktop notification
+  xfcemlg-health --help
+
+Exit codes: 0 all checks passed, 1 at least one FAIL (real fault),
+2 the health check itself could not run (tooling problem, not a machine fault).
+
+Checks: verify (scripts/verifySetup.sh), display-manager (exactly one DM),
+init (OpenRC/rc-status), services (network-manager dbus cron chrony elogind
+tlp cups), disk (root space + inodes), notify (can we pop a notification?).
+
+Environment: XFCEMLG_VERIFY, XFCEMLG_REPO, XFCEMLG_VERIFY_TIMEOUT,
+XFCEMLG_HEALTH_NO_NOTIFY, NO_COLOR.
+
+A cron entry:  17 * * * * $HOME/.local/bin/xfcemlg-health --quiet
+EOF
+}
+
+parse_args() {
+	while [ "$#" -gt 0 ]; do
+		case "$1" in
+		-q | --quiet)
+			VERBOSITY=quiet
+			;;
+		-v | --verbose)
+			VERBOSITY=verbose
+			;;
+		--no-notify)
+			NOTIFY=0
+			;;
+		-h | --help)
+			usage
+			exit 0
+			;;
+		*)
+			printf 'xfcemlg-health: unknown argument: %s\n' "$1" >&2
+			usage >&2
+			exit 2
+			;;
+		esac
+		shift
+	done
+	[ "${XFCEMLG_HEALTH_NO_NOTIFY:-0}" = 1 ] && NOTIFY=0
+	return 0
+}
+
+verdict() {
+	if [ -n "$TOOLING_PROBLEM" ]; then
+		printf 'TOOLING'
+	elif [ "$N_FAIL" -gt 0 ]; then
+		printf 'FAIL'
+	else
+		printf 'OK'
+	fi
+}
+
+main() {
+	local stamp bracket body rc notify_rc
+
+	normalise_env
+	parse_args "$@"
+	acquire_lock
+
+	if [ -r "$CACHE_FILE" ]; then
+		VERIFY_CACHE_READ="$(head -n1 "$CACHE_FILE" 2>/dev/null)"
+	fi
+
+	if [ "$VERBOSITY" != quiet ]; then
+		printf '%sxfcemlg-health%s  Devuan 6 / XFCE 4.20 end-state health check (read-only)\n' \
+			"$C_BOLD" "$C_OFF"
+	fi
+
+	# --- the checks, most important first --------------------------------
+	if resolve_verify; then
+		note "core: $VERIFY_PATH ($VERIFY_KIND)"
+		check_verify
+	fi
+	check_display_manager
+	check_init
+	check_services
+	check_disk
+	harvest_session_env
+	check_notify
+
+	# --- verdict + summary ----------------------------------------------
+	stamp="$(date '+%Y-%m-%dT%H:%M:%S%z')"
+	# " | " as the bracket separator: several check details contain spaces of
+	# their own (e.g. "space 24%"), so a comma would be ambiguous.
+	bracket="$(join_array SHORT ' | ')"
+	if [ -n "$TOOLING_PROBLEM" ]; then
+		rc=2
+	elif [ "$N_FAIL" -gt 0 ]; then
+		rc=1
+	else
+		rc=0
+	fi
+
+	if [ "$VERBOSITY" != quiet ]; then
+		printf '\n'
+		if [ "$rc" -eq 2 ]; then
+			printf '  %s%s%s — the machine was NOT assessed: %s\n' \
+				"$C_RED" "$(verdict)" "$C_OFF" "$TOOLING_PROBLEM"
+		elif [ "$rc" -eq 1 ]; then
+			printf '  %s%d failed%s, %d warn, %d skipped, %d passed\n' \
+				"$C_RED" "$N_FAIL" "$C_OFF" "$N_WARN" "$N_SKIP" "$N_OK"
+		else
+			printf '  %sall checks passed%s (%d passed, %d warn, %d skipped)\n' \
+				"$C_GREEN" "$C_OFF" "$N_OK" "$N_WARN" "$N_SKIP"
+		fi
+		# Whatever the verdict, a real fault is never swallowed: on exit 2 the
+		# other checks still ran and their failures are listed here.
+		if [ "${#FAILED_ITEMS[@]}" -gt 0 ]; then
+			note "  $(join_array FAILED_ITEMS)"
+		fi
+		if [ "${#SKIPPED_ITEMS[@]}" -gt 0 ]; then
+			note "  skipped: $(join_array SKIPPED_ITEMS)"
+		fi
+		printf '  %s%s%s\n' "$C_CYAN" "$bracket" "$C_OFF"
+		printf '  %s\n' "$stamp"
+	fi
+
+	# Quiet mode is deliberately silent on success: an hourly cron must not
+	# mail a green line every hour. The verdict still lives in the exit code
+	# and in the state log. The pretty block above already says it, so the
+	# one-liner is only printed for --quiet.
+	if [ "$VERBOSITY" = quiet ] && [ "$rc" -ne 0 ]; then
+		printf 'xfcemlg-health: %s  %d failed / %d warn / %d skipped  [%s]  %s\n' \
+			"$(verdict)" "$N_FAIL" "$N_WARN" "$N_SKIP" "$bracket" "$stamp"
+	fi
+
+	log_run "$stamp exit=$rc $(verdict) $N_FAIL-fail $N_WARN-warn $N_SKIP-skip |$bracket"
+
+	# --- tell the desktop, if we can -------------------------------------
+	if [ "$rc" -ne 0 ] && [ "$NOTIFY" -eq 1 ]; then
+		if [ "$rc" -eq 2 ]; then
+			body="xfcemlg-health could not run:
+$TOOLING_PROBLEM"
+			if [ "${#FAILED_ITEMS[@]}" -gt 0 ]; then
+				body="$body
+
+Also found: $(join_array FAILED_ITEMS)"
+			fi
+			notify_problem critical "Health check could not run" "$body"
+			notify_rc=$?
+		else
+			notify_problem critical "Health check: $N_FAIL problem(s)" \
+				"$(join_array FAILED_ITEMS)
+
+Run: xfcemlg-health --verbose"
+			notify_rc=$?
+		fi
+		if [ "$notify_rc" -ne 0 ]; then
+			# A failed popup must never change the machine verdict — and must
+			# say so, because silence after a FAIL looks like "no news".
+			note "  (no desktop notification: no session bus or notify-send failed — this report is the only delivery)"
+			log_run "$stamp note=notification-failed"
+		fi
+	fi
+
+	return "$rc"
+}
+
+main "$@"

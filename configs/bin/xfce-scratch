@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# xfce-scratch — Super+grave drop-down terminal for XFCE (sway scratchpad
+# pattern). Spawns ONE dedicated alacritty (class xfce-ddown, undecorated,
+# themed by the Darkmatter ~/.config/alacritty/alacritty.toml), docks it
+# top-center at 60% width / 45% height on all workspaces, then toggles its
+# visibility on every press. Hide = windowunmap (also removes the taskbar
+# entry), show = windowmap + activate. Pure xdotool — no extra packages.
+set -uo pipefail
+
+CLASS=xfce-ddown
+W_PCT=60
+H_PCT=45
+LOCKFILE="/tmp/xfce-scratch.lock"
+
+exec 9>"$LOCKFILE"
+flock -n 9 || exit 0
+
+command -v xdotool >/dev/null 2>&1 || exit 1
+command -v alacritty >/dev/null 2>&1 || exit 1
+
+scratch_id() { xdotool search --class "$CLASS" 2>/dev/null | head -1; }
+
+ID="$(scratch_id)"
+FIRST=0
+if [ -z "$ID" ]; then
+    # Drop the flock fd in the child (9>&-) and detach (disown): otherwise the
+    # long-lived alacritty would inherit fd 9 and hold the toggle lock forever.
+    alacritty --class "$CLASS" -T scratchpad --option window.decorations=none >/dev/null 2>&1 9>&- &
+    disown
+    for _ in $(seq 1 50); do
+        ID="$(scratch_id)"
+        [ -n "$ID" ] && break
+        sleep 0.05
+    done
+    [ -z "$ID" ] && { notify-send -u critical "xfce-scratch" "alacritty did not start in time." 2>/dev/null; exit 1; }
+    FIRST=1
+fi
+
+# Dock top-center; re-applied on every show so a stray manual move can't stick.
+read -r SW SH < <(xdotool getdisplaygeometry)
+W=$((SW * W_PCT / 100))
+H=$((SH * H_PCT / 100))
+X=$(((SW - W) / 2))
+xdotool windowsize --sync "$ID" "$W" "$H" 2>/dev/null
+xdotool windowmove --sync "$ID" "$X" 0 2>/dev/null
+# All-desktops (sticky): every workspace sees the dropdown.
+xdotool set_desktop_for_window "$ID" -1 2>/dev/null
+
+VISIBLE="$(xdotool search --onlyvisible --class "$CLASS" 2>/dev/null | head -1)"
+if [ "${FIRST:-0}" = 1 ] || [ -z "$VISIBLE" ]; then
+    # spawn (first press) or hidden -> show + focus
+    xdotool windowmap "$ID" 2>/dev/null
+    xdotool windowactivate --sync "$ID" 2>/dev/null
+else
+    xdotool windowunmap "$ID" 2>/dev/null
+fi
+exit 0

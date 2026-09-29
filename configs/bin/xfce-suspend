@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# xfce-suspend — suspend the system.
+#
+# Devuan has no systemd, but it DOES have elogind, which owns
+# org.freedesktop.login1 on the system bus. So suspend does not need
+# pm-utils and does not need root: it is a D-Bus call.
+#
+# Two routes, in order:
+#   1. xfce4-session-logout --suspend
+#      The canonical XFCE path. It asks the session manager to checkpoint
+#      first, which is what you want from a graphical session, and elogind's
+#      org.freedesktop.login1.suspend polkit action allows an *active* local
+#      session with no authentication — so it never prompts for a password.
+#   2. busctl ... login1.Manager Suspend b false
+#      The same D-Bus call libxfce4util makes, for when there is no usable
+#      session manager (a TTY, or a session manager not in the IDLE state).
+#      'b' is the interactive flag; false means never prompt.
+#
+# Deliberately NOT used:
+#   pm-suspend   — pm-utils is not in trixie/excalibur at all, so this never
+#                  existed on a current install. An earlier version of this
+#                  script branched on `command -v pm-suspend` and suggested
+#                  `install pm-utils`; if that branch had ever been reached
+#                  it would have put a doas password prompt on a keypress.
+#   loginctl     — `loginctl can-suspend` exits 1 here: elogind answers the
+#                  Can* verbs with a string ("yes") where systemd sends a bool,
+#                  and loginctl parses the systemd shape. It is a false
+#                  negative, not a real "cannot suspend".
+set -uo pipefail
+
+if command -v xfce4-session-logout >/dev/null 2>&1; then
+    exec xfce4-session-logout --suspend
+fi
+
+if command -v busctl >/dev/null 2>&1; then
+    exec busctl call org.freedesktop.login1 /org/freedesktop/login1 \
+        org.freedesktop.login1.Manager Suspend b false
+fi
+
+cat >&2 <<'EOF'
+xfce-suspend: no suspend mechanism found.
+  Needs either xfce4-session-logout (package: xfce4-session) or busctl
+  (package: elogind), plus a running elogind.
+
+  Note the busctl provider is elogind, NOT systemd. On Devuan there is no
+  systemd at all — `dpkg-query -W systemd` reports not-installed — and busctl
+  ships in elogind. Installing "systemd" here would drag in an entire second
+  init system to get one 30 KB binary that you already have.
+
+  On a normal XFCE install both mechanisms are present. Check that elogind is
+  alive: pgrep -a elogind-daemon
+EOF
+exit 1

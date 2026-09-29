@@ -1,0 +1,32 @@
+<?xml version="1.1" encoding="UTF-8"?>
+
+<channel name="xfce4-power-manager" version="1.0">
+  <property name="xfce4-power-manager" type="empty">
+    <property name="power-button-action" type="empty"/>
+    <property name="brightness-switch-restore-on-exit" type="int" value="1"/>
+    <property name="brightness-switch" type="int" value="0"/>
+    <property name="show-tray-icon" type="bool" value="false"/>
+    <property name="show-panel-label" type="int" value="0"/>
+    <property name="presentation-mode" type="bool" value="false"/>
+    <property name="dpms-enabled" type="bool" value="true"/>
+    <property name="logind-handle-lid-switch" type="bool" value="false"/>
+    <property name="inactivity-on-ac" type="uint" value="10"/>
+    <property name="inactivity-on-battery" type="uint" value="3"/>
+    <property name="dpms-on-ac-off" type="uint" value="10"/>
+    <property name="dpms-on-ac-sleep" type="uint" value="0"/>
+    <property name="dpms-on-battery-off" type="uint" value="3"/>
+    <property name="dpms-on-battery-sleep" type="uint" value="30"/>
+    <!-- lid-action integers are XfpmLidTriggerAction (common/xfpm-enum-glib.h,
+         xfce4-power-manager 4.20.0): 0=DPMS 1=SUSPEND 2=HIBERNATE
+         3=LOCK_SCREEN 4=NOTHING 5=HYBRID_SLEEP 6=SHUTDOWN. This file used to
+         carry battery=3 / AC=0 with a comment claiming "3=suspend, 0=do
+         nothing", so closing the lid LOCKED on battery and BLANKED the screen
+         on AC. Correct values are 1 (suspend) and 4 (nothing). -->
+    <property name="lid-action-on-battery" type="uint" value="1"/>
+    <property name="lid-action-on-ac" type="uint" value="4"/>
+    <!-- brightness-level-on-{ac,battery}, NOT brightness-on-{ac,battery}: the
+         latter do not exist in xfce4-power-manager and are silently ignored. -->
+    <property name="brightness-level-on-ac" type="uint" value="100"/>
+    <property name="brightness-level-on-battery" type="uint" value="55"/>
+  </property>
+</channel>

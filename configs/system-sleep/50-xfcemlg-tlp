@@ -1,0 +1,72 @@
+#!/bin/sh
+# 50-xfcemlg-tlp — elogind sleep hook: re-apply TLP policy around suspend.
+#
+# WHY THIS FILE EXISTS
+#
+# TLP ships two sleep hooks and BOTH are dead on this system:
+#   /usr/lib/elogind/system-sleep/49-tlp-sleep   <- not read by elogind 255.17-2
+#   /usr/lib/systemd/system-sleep/tlp            <- no systemd here
+# Neither directory is scanned. elogind 255.17-2 executes sleep hooks from
+# exactly two places (verified by dumping every path string in the binary):
+#   /etc/elogind/system-sleep
+#   /usr/libexec/system-sleep
+# /etc/elogind/system-sleep does not exist out of the box and elogind will not
+# create it, so on a stock install NOTHING runs on resume.
+#
+# The consequence is not cosmetic: `tlp resume` never ran, so after every
+# resume the 80% charge cap, the CPU governor/EPP policy and wifi.powersave
+# were all left as the pre-suspend kernel left them. An s2idle resume restores
+# kernel power state but not userspace policy.
+#
+# /etc/elogind/system-sleep/ is used rather than /usr/libexec/system-sleep/
+# because /etc is configuration we own: a TLP package upgrade cannot clobber
+# it, and it is obvious at a glance that the file is locally provided.
+#
+# Contract: elogind passes "pre" before the transition and "post" after — the
+# same contract systemd uses, which is why the argument handling here mirrors
+# TLP's own hook.
+#
+# A hook must never fail loudly or block the transition: elogind runs these
+# synchronously, and a non-zero exit is only logged. So every failure path
+# below exits 0 after saying what went wrong on stderr.
+
+# elogind runs hooks with a minimal environment (no /usr/sbin on PATH), so
+# resolve the binary by absolute path and only fall back to PATH.
+TLP_BIN=""
+for _c in /usr/sbin/tlp /sbin/tlp; do
+    if [ -x "$_c" ]; then
+        TLP_BIN="$_c"
+        break
+    fi
+done
+if [ -z "$TLP_BIN" ]; then
+    _c=$(command -v tlp 2>/dev/null) && TLP_BIN="$_c"
+fi
+
+if [ -z "$TLP_BIN" ]; then
+    echo "50-xfcemlg-tlp: tlp not found — nothing to re-apply" >&2
+    exit 0
+fi
+
+case "${1-}" in
+pre)
+    # Quiesce devices on the way down. No exec: let the script still reach
+    # its own exit 0 so elogind never records a hook failure.
+    "$TLP_BIN" suspend >/dev/null 2>&1 \
+        || echo "50-xfcemlg-tlp: 'tlp suspend' returned $? (continuing)" >&2
+    ;;
+post)
+    # Re-apply the full policy. If `tlp resume` fails, fall back to a full
+    # `tlp start`, which re-applies everything from the config files.
+    if ! "$TLP_BIN" resume >/dev/null 2>&1; then
+        echo "50-xfcemlg-tlp: 'tlp resume' failed — falling back to 'tlp start'" >&2
+        "$TLP_BIN" start >/dev/null 2>&1 \
+            || echo "50-xfcemlg-tlp: 'tlp start' also failed — run: doas tlp-stat -c" >&2
+    fi
+    ;;
+*)
+    echo "50-xfcemlg-tlp: expected 'pre' or 'post', got '${1-}'" >&2
+    ;;
+esac
+
+exit 0

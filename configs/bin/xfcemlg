@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# xfcemlg — toolkit self-management (self-update).
+#
+#   xfcemlg selfupdate            check the latest GitHub release and apply it
+#                                 automatically (unattended install.sh run)
+#   xfcemlg selfupdate --check    report only — never download or apply
+#   xfcemlg help | --help         show usage
+#
+# Exit codes:
+#   0  up to date, or --check just reported
+#   1  an update was applied but the re-install ended with failures
+#   2  could not determine or fetch state (no deb version, no VERSION file to
+#      fall back to, offline, or a download/extract/verify failure) — never
+#      reported as "up to date" when an update couldn't actually be checked
+#
+# ENVIRONMENT
+#   XFCEMLG_REPO             repo root with a VERSION file (fallback source
+#                            for the installed version when the xfcemlg-assets
+#                            content deb isn't installed)
+#   XMLG_SELFUPDATE_NOAPPLY=1 behave like `--check`
+set -uo pipefail
+
+REPO="SOSMLG/XfceMlg"
+API="https://api.github.com/repos/$REPO/releases/latest"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/xfcemlg/selfupdate"
+
+usage() {
+	cat <<'EOF'
+xfcemlg — toolkit self-management
+
+Usage:
+  xfcemlg selfupdate            check the latest release; if newer, apply it
+                                automatically with an unattended install.sh run
+  xfcemlg selfupdate --check    report only — never download or apply
+  xfcemlg help | --help         show this help
+
+Environment:
+  XFCEMLG_REPO            repo root with VERSION (fallback installed-version
+                          source when the xfcemlg-assets deb isn't installed)
+  XMLG_SELFUPDATE_NOAPPLY=1   behave like --check
+EOF
+}
+
+# installed_version — prefer the content deb's version; fall back to a known
+# checkout's VERSION file; exit non-zero if neither exists.
+installed_version() {
+	local v
+	v="$(dpkg-query -W -f='${Version}' xfcemlg-assets 2>/dev/null | tr -d '[:space:]')"
+	if [ -n "$v" ]; then
+		printf '%s\n' "$v"
+		return 0
+	fi
+	if [ -n "${XFCEMLG_REPO:-}" ] && [ -f "$XFCEMLG_REPO/VERSION" ]; then
+		v="$(tr -d '[:space:]' < "$XFCEMLG_REPO/VERSION")"
+		[ -n "$v" ] && { printf '%s\n' "$v"; return 0; }
+	fi
+	return 1
+}
+
+latest_version() {
+	curl -fsSL --max-time 20 "$API" 2>/dev/null |
+		sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"v\([0-9][^"]*\)".*/\1/p' |
+		head -1
+}
+
+# ver_gte a b — numeric dot-separated compare; exits 0 when a >= b.
+ver_gte() {
+	local -a a=() b=()
+	local i
+	IFS=. read -r -a a <<< "$1"
+	IFS=. read -r -a b <<< "$2"
+	for i in "${!a[@]}"; do
+		if [ -z "${b[$i]:-}" ]; then return 0; fi   # a has more fields → newer
+		if [ "${a[$i]}" -gt "${b[$i]}" ] 2>/dev/null; then return 0; fi
+		if [ "${a[$i]}" -lt "${b[$i]}" ] 2>/dev/null; then return 1; fi
+	done
+	for i in "${!b[@]}"; do
+		if [ "${b[$i]}" -gt 0 ] 2>/dev/null && [ -z "${a[$i]:-}" ]; then return 1; fi
+	done
+	return 0
+}
+
+apply_update() {
+	local latest="$1" tarball dir rc
+	mkdir -p "$CACHE"
+	tarball="$CACHE/xfcemlg-$latest.tar.gz"
+	dir="$CACHE/xfcemlg-$latest"
+
+	if [ -f "$tarball" ]; then
+		printf 'xfcemlg: using cached tarball %s\n' "$tarball"
+	else
+		printf 'xfcemlg: downloading v%s ...\n' "$latest"
+		curl -fsSL --max-time 120 "https://codeload.github.com/$REPO/tar.gz/refs/tags/v$latest" \
+			-o "$tarball" || {
+			printf 'xfcemlg: download failed — retry later (cache: %s)\n' "$tarball" >&2
+			return 2
+		}
+	fi
+
+	rm -rf "$dir"
+	mkdir -p "$dir"
+	tar -xzf "$tarball" -C "$dir" --strip-components=1 || {
+		printf 'xfcemlg: extract failed\n' >&2
+		return 2
+	}
+	# sanity: the tarball really is the version we asked for
+	if [ "$(tr -d '[:space:]' < "$dir/VERSION" 2>/dev/null)" != "$latest" ]; then
+		printf 'xfcemlg: downloaded tarball version mismatch (wanted %s) — not applying\n' "$latest" >&2
+		return 2
+	fi
+
+	printf 'xfcemlg: applying v%s (unattended install.sh --full --verify)\n' "$latest"
+	(
+		cd "$dir" || return 2
+		./install.sh
+	)
+	rc=$?
+	if [ "$rc" -eq 0 ]; then
+		printf 'xfcemlg: updated to v%s.\n' "$latest"
+		if command -v notify-send >/dev/null 2>&1; then
+			notify-send "xfcemlg updated" "Toolkit updated to v$latest automatically." >/dev/null 2>&1 || true
+		fi
+	else
+		printf 'xfcemlg: install of v%s finished with exit %d — re-run \047xfcemlg selfupdate\047 later\n' "$latest" "$rc" >&2
+	fi
+	return "$rc"
+}
+
+main() {
+	local mode="apply" arg
+	for arg in "$@"; do
+		case "$arg" in
+		selfupdate) : ;;
+		--apply) mode="apply" ;;
+		--check) mode="check" ;;
+		help | --help | -h) usage; exit 0 ;;
+		*)
+			printf 'xfcemlg: unknown option: %s (see: xfcemlg help)\n' "$arg" >&2
+			exit 2
+			;;
+		esac
+	done
+	[ "${XMLG_SELFUPDATE_NOAPPLY:-0}" = 1 ] && mode="check"
+
+	local installed latest
+	installed="$(installed_version)" || {
+		printf 'xfcemlg: cannot determine the installed version (no xfcemlg-assets deb, no XFCEMLG_REPO/VERSION)\n' >&2
+		exit 2
+	}
+	latest="$(latest_version)" || latest=""
+	if [ -z "$latest" ]; then
+		printf 'xfcemlg: cannot reach %s (offline?) — update not checkable\n' "$API" >&2
+		exit 2
+	fi
+
+	if ver_gte "$installed" "$latest"; then
+		printf 'xfcemlg: up to date (installed %s, latest %s)\n' "$installed" "$latest"
+		exit 0
+	fi
+
+	printf 'xfcemlg: update available: %s -> %s\n' "$installed" "$latest"
+	if [ "$mode" = "check" ]; then
+		printf 'xfcemlg: to apply automatically, run \047xfcemlg selfupdate\047 (or --apply)\n'
+		exit 0
+	fi
+	apply_update "$latest"
+}
+
+main "$@"

@@ -1,0 +1,145 @@
+#!/bin/sh
+# xfcemlg-fwupd-refresh — periodic LVFS firmware-metadata refresh.
+#
+# Installed to /etc/cron.daily/ by scripts/53-longrun.sh.
+#
+# WHY THIS EXISTS
+#   fwupd ships only systemd units: fwupd.service and fwupd-refresh.timer.
+#   Neither can fire here — this is Devuan on OpenRC/sysvinit, and
+#   `systemctl` does not even exist. So the timer is inert, and with nothing
+#   else refreshing, /var/lib/fwupd/metadata/ stays empty. That makes
+#   `fwupdmgr get-updates` a guaranteed "no updates" on a machine that has
+#   never once asked the vendor what it offers. A false negative is worse
+#   than no output, because it looks like an answer.
+#
+# WHAT IT DOES / DELIBERATELY DOES NOT DO
+#   It refreshes the *metadata* only. It never installs firmware. Firmware
+#   flashing is a hardware-touching, reboot-requiring action that the user
+#   must choose to do; a maintenance job that silently flashes a BIOS or a
+#   Thunderbolt controller is exactly the kind of surprise that gets a
+#   toolkit uninstalled. Report the count, install nothing.
+#
+# THROTTLE
+#   cron.daily runs 24x/day and the metadata is ~1.9 MB compressed / ~4400
+#   entries. A stamp file under /var/lib/xfcemlg/ keeps the actual download
+#   to once a week, while the cheap part (are there pending updates?) still
+#   runs daily so an available update is reported within a day.
+#
+# EXIT STATUS
+#   Always 0. cron.daily output is mailed; a non-zero here produces a daily
+#   failure mail for a condition the user cannot act on unattended. Real
+#   problems are reported through the log file, which is the place to look.
+
+set -u
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+STAMP_DIR=/var/lib/xfcemlg
+STAMP="$STAMP_DIR/fwupd-refresh.stamp"
+LOG=/var/log/xfcemlg-fwupd.log
+REFRESH_DAYS=7
+
+# Cron gives us a very small environment; do not assume a writable /tmp.
+log() {
+	printf '%s %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >>"$LOG" 2>/dev/null || true
+}
+
+# Trim the log so a daily-append file cannot grow without bound. A rotation
+# scheme is overkill; keeping the last 200 lines is enough to see a trend.
+if [ -f "$LOG" ]; then
+	tail -n 200 "$LOG" >"$LOG.trim" 2>/dev/null && mv -f "$LOG.trim" "$LOG" 2>/dev/null
+fi
+
+# Not installed, or this kernel has no firmware class (some VMs) — nothing to
+# do. Stay silent rather than mailing about it.
+if ! command -v fwupdmgr >/dev/null 2>&1; then
+	exit 0
+fi
+if ! fwupdmgr --version >/dev/null 2>&1; then
+	log "fwupdmgr is present but not usable; skipping."
+	exit 0
+fi
+
+# Do we have any enabled remote at all? With none, a refresh can only fail.
+if ! grep -rqs '^Enabled=true' /etc/fwupd/remotes.d/ 2>/dev/null; then
+	log "No enabled fwupd remote; skipping refresh."
+	exit 0
+fi
+
+# ── Throttled metadata refresh ─────────────────────────────────────────────
+now=$(date +%s)
+do_refresh=0
+if [ ! -f "$STAMP" ]; then
+	do_refresh=1
+else
+	read -r last <"$STAMP" 2>/dev/null || last=0
+	case "$last" in
+	'' | *[!0-9]*) last=0 ;;
+	esac
+	[ $((now - last)) -ge $((REFRESH_DAYS * 86400)) ] && do_refresh=1
+fi
+
+if [ "$do_refresh" -eq 1 ]; then
+	if mkdir -p "$STAMP_DIR" 2>/dev/null; then
+		if fwupdmgr refresh --force --quiet >/dev/null 2>&1; then
+			printf '%s\n' "$now" >"$STAMP" 2>/dev/null
+			log "fwupd metadata refreshed (lvfs)."
+		else
+			# Not fatal: an offline refresh must not turn into a daily
+			# failure mail, and the check below still works off whatever
+			# metadata we already have.
+			log "fwupd metadata refresh failed (offline or remote error)."
+		fi
+	else
+		log "Cannot create $STAMP_DIR; skipping refresh."
+	fi
+fi
+
+# ── Report only, install nothing ────────────────────────────────────────────
+# Detecting "are there updates?" from fwupdmgr is genuinely awkward on the
+# version this box runs (1.9.x): there is no `get-count` subcommand ("Command
+# not found"), and `get-updates` returns 0 whether or not anything is
+# available. Its output is prose:
+#
+#     Devices with no available firmware updates:
+#      │ EM120R GL
+#      │ System Firmware
+#
+#     Devices with available firmware updates:
+#      │ System Firmware
+#      │   → 1.45
+#
+# So: read the header, count the device lines under it, and — this is the
+# important part — report UNKNOWN when the output matches neither header. A
+# maintenance job that logs "no pending updates" from output it did not
+# understand is exactly the false negative this script was written to stop.
+# Silence would be bad; a confident wrong answer is worse.
+raw=$(fwupdmgr get-updates 2>/dev/null || true)
+
+# fwupdmgr draws a progress meter ("Idle…: 0%") which is noise here.
+raw=$(printf '%s\n' "$raw" | grep -v '^Idle' || true)
+
+case "$raw" in
+*'Devices with no available firmware updates'*)
+	log "No pending firmware updates."
+	;;
+*'Devices with available firmware updates'*)
+	# Deliberately NOT counting the device rows here. They are prefixed with
+	# U+2502 BOX DRAWINGS LIGHT VERTICAL, and matching a multi-byte character
+	# out of POSIX sh + grep is locale-dependent — it silently counted zero
+	# under a C locale. A count that can report "0 updates available" is
+	# worse than no count at all, and the exact number is not what the user
+	# needs: the useful signal is "there is something, go look".
+	log "Firmware updates ARE available — run 'fwupdmgr get-updates' to review them."
+	;;
+*)
+	if [ -z "$raw" ]; then
+		log "Could not determine firmware status (fwupdmgr produced no output)."
+	else
+		log "Could not determine firmware status (unrecognised fwupdmgr output); run 'fwupdmgr get-updates' by hand."
+	fi
+	;;
+esac
+
+exit 0

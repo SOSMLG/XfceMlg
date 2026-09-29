@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# xfce-first-run — welcome + first update + Timeshift check, once per user.
+# Deployed by scripts/35-first-run.sh as ~/.local/bin/xfce-first-run with an
+# autostart entry. Idempotent via a done-file; never touches user choices.
+set -uo pipefail
+
+DONE_FILE="$HOME/.config/xfcemlg/first-run-complete"
+LOCK_FILE="${XDG_RUNTIME_DIR:-/tmp}/xfcemlg-first-run.lock"
+
+# Single instance: two sessions autostarting this at once would interleave
+# two `apt upgrade` runs and fight over the dpkg lock.
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"$LOCK_FILE" 2>/dev/null || true
+    flock -n 9 || exit 0
+fi
+
+[[ -f "$DONE_FILE" ]] && exit 0
+
+# Only makes sense inside a graphical XFCE session.
+[[ -z "${DISPLAY:-}" ]] && exit 0
+
+# priv() — doas first, sudo fallback, matching the toolkit's convention.
+# This binary is deployed standalone, so it cannot source lib/common.sh.
+priv() {
+    if command -v doas >/dev/null 2>&1; then
+        doas "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo "$@"
+    else
+        echo "xfce-first-run: no doas or sudo available." >&2
+        return 127
+    fi
+}
+
+# ask_yn <prompt> [default:y|n] — returns 0 for yes. A closed stdin (EOF,
+# Ctrl-D, or a non-interactive autostart) is treated as NO. Without this,
+# `read` leaves the answer empty and the empty string does not match ^[Nn]$,
+# so an unattended run would sail into `apt upgrade -y`.
+ask_yn() {
+    local prompt="$1" default="${2:-y}" hint reply
+    [ "$default" = "n" ] && hint="(y/N)" || hint="(Y/n)"
+    printf '  %s %s ' "$prompt" "$hint"
+    if ! IFS= read -r reply; then
+        echo ""
+        echo "  (no input available — treating as no)"
+        return 1
+    fi
+    reply="${reply:-$default}"
+    [[ "$reply" =~ ^[Yy]$ ]]
+}
+
+mkdir -p "$HOME/.config/xfcemlg" "$HOME/Screenshots"
+
+BOLD="\e[1m"
+GREEN="\e[32m"
+CYAN="\e[36m"
+YELLOW="\e[33m"
+RED="\e[31m"
+RESET="\e[0m"
+
+clear
+echo ""
+echo -e "${BOLD}${CYAN}  ========================================${RESET}"
+echo -e "${BOLD}${CYAN}    Welcome — first-run setup${RESET}"
+echo -e "${BOLD}${CYAN}  ========================================${RESET}"
+echo ""
+echo -e "  A couple of things to get you started.\n"
+
+# ── Task 1: system update ─────────────────────────────────────────────
+echo -e "${BOLD}  [ 1/2 ] System update${RESET}"
+echo -e "  Running an update pulls the latest fixes since this setup ran.\n"
+if ask_yn "Run system update now?" y; then
+    # Skewed clocks make apt reject InRelease signatures; chrony (32-*)
+    # usually already fixed it, but a fresh box may still be syncing.
+    if command -v chronyc &>/dev/null; then
+        for _ in $(seq 1 15); do
+            chronyc tracking 2>/dev/null | grep -q "Leap status.*Normal" && break
+            sleep 1
+        done
+    fi
+    echo -e "\n${YELLOW}  Running: apt update && apt upgrade${RESET}\n"
+    # Report what actually happened. The old version printed "complete"
+    # unconditionally, so a failed or half-finished upgrade looked clean.
+    if priv apt update && priv apt upgrade -y; then
+        echo -e "\n${GREEN}  System update complete.${RESET}\n"
+    else
+        rc=$?
+        echo -e "\n${RED}  System update did NOT complete (exit $rc).${RESET}"
+        echo -e "  ${YELLOW}Nothing was changed by this script. Re-run it from a"
+        echo -e "  terminal to see the error: ${RESET}doas apt update && doas apt upgrade${RESET}\n"
+    fi
+else
+    echo -e "  ${YELLOW}Skipped. Update when ready from the panel indicator.${RESET}\n"
+fi
+
+echo ""
+
+# ── Task 2: Timeshift ─────────────────────────────────────────────────
+echo -e "${BOLD}  [ 2/2 ] Timeshift snapshots${RESET}"
+echo -e "  Timeshift is installed by 31-*. Opening it once lets you verify"
+echo -e "  the schedule and take your first manual snapshot.\n"
+if ask_yn "Open Timeshift now?" y; then
+    echo -e "\n${YELLOW}  Launching Timeshift (needs privilege)...${RESET}"
+    if priv timeshift-gtk 2>/dev/null || priv timeshift-launcher 2>/dev/null; then
+        :
+    else
+        echo -e "  ${YELLOW}Could not launch Timeshift — start it from the menu.${RESET}"
+    fi
+else
+    echo -e "  ${YELLOW}Skipped. Launch Timeshift from the menu when ready.${RESET}\n"
+fi
+
+echo ""
+echo -e "${GREEN}${BOLD}  Setup complete. Enjoy your desktop!${RESET}"
+echo ""
+
+# Done-file only after the tasks finished: Ctrl+C mid-run must NOT leave
+# the wizard permanently suppressed (a stale done-file would re-run nothing).
+mkdir -p "$(dirname "$DONE_FILE")"
+touch "$DONE_FILE"
+
+printf '  Press Enter to close... '
+IFS= read -r _ || true
