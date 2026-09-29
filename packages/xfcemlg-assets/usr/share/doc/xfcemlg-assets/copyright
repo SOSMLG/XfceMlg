@@ -1,0 +1,46 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: xfcemlg-assets
+Source: https://github.com/example-invalid/xfcemlg
+
+Files: *
+Copyright: 2024-2026 xfcemlg contributors
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation the rights to use, copy, modify, merge, publish,
+ distribute, sublicense, and/or sell copies of the Software, and to
+ permit persons to whom the Software is furnished to do so, subject to
+ the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included
+ in all copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTTRACT,
+ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Files: configs/*
+Copyright: 2024-2026 xfcemlg contributors
+License: MIT
+ (same MIT terms as the Files: * stanza above)
+
+Files: configs/wallpapers/*
+Copyright: 2024-2026 individual wallpaper authors
+License: CC0-1.0 / GPL-3.0-or-later
+ See per-image metadata or the source wallpapers repo.
+
+Files: configs/vesktop/* configs/vscodium/*
+Copyright: 2024-2026 theme authors
+License: GPL-3.0-or-later
+ See the theme files for full license text.
+
+# The Darkmatter GTK/xfwm4 themes and Zafiro icons are NOT shipped in this
+# package anymore: they are fetched at install time from
+#   https://github.com/stevedylandev/darkmatter-linux   (GPL-3.0)
+#   https://github.com/zayronxio/Zafiro-icons           (GPL-3.0)
+# by scripts/lib/darkmatter-fetch.sh.

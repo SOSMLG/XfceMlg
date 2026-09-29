@@ -1,6 +1,298 @@
-# devuan-xfce-setup — Release Notes
+# xfcemlg — Release Notes
 
 Tag a release with: `git tag -a "v$(cat VERSION)" -m "v$(cat VERSION)" && git push --tags`
+
+## 0.8.2 — Self-update, login health, and a runtime test tier
+
+0.8.2 is the closing release: after the 0.8.1 freeze, the toolkit can now
+update itself, chips in a silent login health check that only speaks up when
+something is wrong, gains a machine-readable verification reporter, and gets
+a brand-new test tier that runs the toolkit for real inside a Devuan chroot —
+the failure class that static lint and sandboxed units cannot see (the class
+that shipped two broken steps in 0.8.0). Everything stays non-interactive:
+`--full`/`install.sh` remain zero-keypress.
+
+### What's New
+- **Toolkit self-update** (`configs/bin/xfcemlg`, deployed by 24-power-user):
+  `xfcemlg selfupdate` compares the installed version against the latest
+  GitHub release and applies it automatically with an unattended `install.sh`
+  run; `--check` reports only. Exit 2 never claims "up to date" when an
+  update couldn't be checked.
+- **Login-time health check**: 24-power-user.sh now autostarts
+  `xfcemlg-health --quiet` at login — silent on success, notifies only on
+  problems — joining the battery/thermal guards that already autostart.
+- **`verifySetup.sh --json`**: one machine-readable JSON object
+  (`passed/failed/warned` + `checks[]`) as the final line, same exit-code
+  contract — so the end-state audit can gate scripts.
+- **Tier-4 runtime tests** (`make check-live`, new `tests/live/run.sh`):
+  opt-in — bootstraps a real Devuan excalibur chroot and runs a curated,
+  headless-safe step slice as a normal user with `permit nopass` doas. This
+  is the tier that exercises real apt installs, `run.sh` orchestration, doas
+  escalation and file deploys — the failure class static lint and sandboxed
+  units cannot see (the class that shipped two broken steps in 0.8.0).
+- **`docs/TROUBLESHOOTING.md`**: a run-book of the real failure modes —
+  theme-fetch hashes, DM races, polkit duplicates, debconf, apt components,
+  and the health/verify exit-code contracts.
+
+## 0.8.1 — The run-day release
+
+0.8.1 is the release meant to be taken to a fresh ThinkPad and run with one
+command. The theme fetch is pinned to immutable commits, installs are fully
+unattended with no keypresses, every optional step is defaulted or guarded so
+`--full` is actually safe to run, and the claims the README makes are backed
+by a widening unit-test tier. It closes the last gap the 0.8.0
+de-integration left: the vendored butterbash framework was removed with
+nothing in its place. Step 18 is now `18-shell-config.sh` and does two jobs —
+it still retires butterbash leftovers, and it deploys the toolkit's own shell
+config, written from scratch: aliases, a Nerd-Font two-line prompt in the
+Darkmatter palette, and fzf/zoxide/keybind hooks that only activate when
+those tools are installed. No third-party framework is vendored; fzf and
+zoxide load their own distro-shipped integration files.
+
+### What's New
+- **18-shell-config.sh** (was `18-shell-reset.sh`): keeps the retirement
+  audit, then deploys `configs/bash/` (rc loader + aliases + prompt + hooks)
+  to `~/.config/xfcemlg/bash/` with a guarded, append-only `xfcemlg-shell`
+  block in `~/.bashrc`. `deploy_seed_file` discipline: user edits are the
+  truth and are never clobbered; re-runs are idempotent.
+- **Prompt**: pure-bash two-line PS1, Darkmatter palette, Nerd Font glyphs
+  (JetBrainsMono Nerd Font from 17-fonts; `XFCONF_PLAIN_PROMPT=1` for
+  glyph-free), git branch + dirty marker, last-command exit status, trimmed
+  cwd.
+- **Aliases**: navigation, eza ls-family with ls fallback, file safety
+  (non-root), `extract()`, `term`/`screenshot`/`update-check`/`menu`,
+  git shortcuts.
+- **Hooks**: fzf key-bindings/completion + Darkmatter `FZF_DEFAULT_OPTS`
+  when fzf is installed, `zoxide init bash` when zoxide is present, PgUp/PgDn
+  history search.
+- **CLI ergonomics packages** (bat, eza, fzf, zoxide, ripgrep, ncdu, tree,
+  unar) are installed unconditionally by the step — the README's "CLI stack"
+  claim is a promise the step now keeps (btop stays with 19-fastfetch.sh).
+- **52-skel-export.sh** exports `~/.config/xfcemlg/bash` and appends the
+  same guarded hook to `/etc/skel/.bashrc`, so fresh accounts start with the
+  config too.
+- **Native-over-Flatpak Heroic** (`44-gaming.sh`, new lib
+  `lib/gaming-flatpak.sh`): when the toolkit's native Heroic .deb is
+  installed but a Flatpak copy also exists, the step offers to purge the
+  Flatpak (a duplicate app + re-downloadable runtimes). Default N, so
+  `--full` and `--yes` never auto-fire it; never offered when the native
+  Heroic is missing. New unit tier: `tests/unit/test-gaming-flatpak.sh`.
+- `make check` + `make release-preflight` stay green; new unit tier:
+  `tests/unit/test-shell-config.sh` (step end-to-end in a scratch HOME,
+  deploy idempotency, interactive/non-interactive behaviour).
+- **Zero-keypress, debconf-proof installs**: `install.sh` exports
+  `DEBIAN_FRONTEND=noninteractive` and `install_pkgs` passes
+  `--force-confdef/--force-confold`, so a scripted run never hangs on a
+  config prompt and never clobbers an admin's edited conffiles.
+- **ThinkPad extras default-on** (`13-hardware.sh`): thinkfan and powertop
+  now install automatically under `--full`; the other guarded steps
+  (unattended security updates, PhotoGIMP Flatpak) stay default-N opt-ins.
+- **Single polkit auth agent** (`10-xfce-core.sh` + new lib guard + new
+  `tests/unit/test-polkit-guard.sh`): polkitd accepts exactly one agent per
+  subject, so foreign agents (lxpolkit, mate-polkit, …) that hand-built
+  installs commonly stack next to xfce-polkit are masked with user-level
+  `Hidden=true` overrides — package files are never touched, so the fix
+  survives upgrades, and `verifySetup.sh` now asserts the single-agent state.
+- **Repo hygiene**: CI (`.github/workflows/check.yml`) runs the test suite +
+  release-preflight on push/PR, a fast `make hooks` / `.githooks/pre-commit`
+  lint hook guards every commit, and `.gitattributes`/`.editorconfig` pin
+  LF/tab conventions.
+
+## 0.8.0 — De-branded, de-integrated, and the long-run hardening tier
+
+0.8.0 is the recovery release: this repository absorbed the tree of another
+project early in its life, and every trace of that other project — its names,
+its vendored parts, its false claims, and the plausible but wrong advice that
+came with them — is now out. On top of that, seven long-run maintenance gaps
+are closed with a new hardening tier: a scheduled fstrim, SMART health, apt
+archive upkeep, aged Trash/`~/.cache` trims, tmpfiles drop-ins, stale xfwm4
+window-state pruning, and a one-command read-only end-state health reporter.
+
+Delivered as **0.8.0**, not 0.7.1, because half of the changes are breaking
+by design: the namespace is renamed, the committed config paths moved, one
+whole step was retired, and the theme fetch now pins immutable commits.
+
+### De-branding and de-integration (breaking)
+
+- **The namespace is now `XMLG_` / `xfcemlg`, everywhere.** The `DEBSWAY*`
+  prefix (the parent project's name), the `DEVX_` prefix, `devuan-xfce-setup`
+  paths, the vendored `butterbash` tree, the Catppuccin palette, and the
+  "ohmydebn-style" test-harness claim are gone. `run.sh` prepares the rename
+  live: old on-disk paths (`~/.config/devuan-xfce-setup`, the apt component
+  snippet, `/usr/share/devuan-xfce-assets` …) move to their `xfcemlg`
+  equivalents when present, content-preserving, never clobbering — an upgrade
+  finds its state where it left it. Two guards now keep the lineage out,
+  including from a stale-allowlist rotation (C16, C17 in
+  `tests/consistency.sh`).
+- **The vendored `butterbash` prompt framework is removed** (12 files,
+  ~56 KB, GPL-2.0 code under a claim of MIT). Step 18 is now
+  `18-shell-reset.sh`, a retirement audit that installs nothing. `docs/
+  PROVENANCE.md` records each integration that was retired and where it went.
+- **The false ohmydebn affiliation is corrected.** `scripts/34-opencode-agent.sh`
+  previously claimed to be "cherry-picked wholesale" from another toolkit;
+  the file was rewritten from first principles on this repo, the skill file
+  was renamed to `xfcemlg-SKILL.md`, and the test suite wording dropped the
+  foreign label.
+
+### Long-run hardening tier (five in 53-longrun.sh, one health reporter, one fwupd job)
+
+1. **fstrim weekly** — a one-time pass plus a `/etc/cron.d` job (marker-grep
+   idempotent install, the step-24 discipline). `fstrim` lives in
+   `/usr/sbin` and the job calls it absolutely; the `/etc/fstrim` allowlist is
+   honoured, with an explicit fstype test as fallback.
+2. **SMART** — `smartmontools` installed, a one-time `smartctl -H -A` per
+   whole disk, the verdict parsed from the tool's own words.
+3. **apt archive upkeep** — a measured sweep (this machine: 1692 `.deb`,
+   1.5 GB), a `99xfcemlg-autoclean` `apt.conf.d` key wired into the apt
+   scheduler that already runs daily, and a *user-opted* one-time autoclean.
+   Zero new schedulers.
+4. **Aged Trash + `~/.cache` trim** — bounded, top-level, age-limited; a
+   running app's cache tree is never recursed into.
+5. **tmpfiles drop-ins** — `e`-type rules for the toolkit's own litter only,
+   with the honest disclosure that this box has no `systemd-tmpfiles` to run
+   them (the §4 trims are what actually reclaim here; the drop-ins are
+   forward-compatible configuration).
+6. **Stale `xfwm4-*.state` pruning** — only files *older* than the threshold
+   *and* dead are removed. The liveness gate proves the X connection first,
+   because a missing `DISPLAY` makes `xdotool` exit exactly like a dead
+   window — without the gate, a cron run could delete live session state.
+7. **`xfcemlg-health`** — a one-command, read-only end-state report:
+   `verifySetup.sh` result, dual-display-manager detection (reads the
+   `/etc/runlevels/*/` symlinks, not `rc-update show` padding), live-systemd
+   detection, service states via `rc-status`, disk space *and* inodes, and a
+   notification only when something is wrong. Exit contract 0 / 1 / 2
+   (tooling problem, never a silent pass — a bare `env -i` crash in
+   `verifySetup.sh` that would have shown up as "fine" is now exit 2 and
+   the `USER`-unset crash itself is fixed in `common.sh`). `--quiet` for cron.
+- **fwupd metadata refresh** — fwupd ships only systemd units, so
+  `fwupd-refresh.timer` is inert under OpenRC and `/var/lib/fwupd/metadata/`
+  stays empty, making `fwupdmgr get-updates` a confident `no updates` on a
+  machine that never asked. A `cron.daily` job (weekly download throttle,
+  daily cheap check) refreshes LVFS metadata only, never flashes firmware, and
+  reports `unknown` rather than `no updates` when the output is unrecognised —
+  1.9.x has no `get-count`, and its prose output parses into false zeros.
+
+Everything that deletes is behind `ask_no_full` (default **No**, ignoring
+`XMLG_FULL`), and the whole step proves zero destructive changes under
+`XMLG_ASSUME_YES=1 XMLG_FULL=1` by snapshotting user crontab, `/etc/cron.d`,
+Trash, apt cache and xfwm4 state before/after.
+
+### Fixes (each verified against its failure mode)
+
+- **Suspend never ran after suspend.** The bundled `xfce-suspend` branched on
+  `command -v pm-suspend`, but pm-utils is not in excalibur at all — the
+  branch was dead and the fallback was a typo. Now: `xfce4-session-logout
+  --suspend` (elogind D-Bus) with a `busctl` fallback, and a resume hook
+  deployed to `/etc/elogind/system-sleep/` (the only scan path elogind reads)
+  that runs `tlp resume`. The help text no longer claims busctl comes from
+  "package: systemd" — it ships in elogind, and systemd is not installed.
+- **The lid action was inverted.** LOCK_SCREEN (3) was written for battery,
+  NOTHING (4) for AC; live settings therefore *never* suspended on battery and
+  *always* blanked on AC. Fixed to SUSPEND / NOTHING per the enum, mirrored in
+  the seed XML, with an allowlist guard (C15) against both the dead name
+  (`brightness-on-*`) and the argument-of-plausibility (the settings GUI's
+  widget id shares the name, so a substring search cannot see it).
+- **TLP's battery threshold could not raise a user's START**, and nothing
+  reported whether the *hardware* accepted the configured cap (this box: EC
+  ignored 60 and booted at 80/80). Writes now respect a lower START, and the
+  step reads the effect back from sysfs instead of assuming it.
+- **`pcie_aspm=force` and `runtime_pm=force=auto` removed from GRUB** — TLP
+  owns that policy; the kernel flags are what make the two fight.
+- **Seeds stopped clobbering.** The theme step overwrote hand-edited files.
+  `deploy_seed_file()` stamps every deployed seed with its sha256 and
+  distinguishes four cases: install / no-op / safe in-place update / refuse
+  and back the user's edit up as `*.user.<ts>` — 11 new unit assertions.
+- **Two display managers.** `dm_enabled_runlevel()` reads the runlevel
+  symlinks and lightdm is the single allowed owner of the console.
+- **Three silent data-loss paths** in debloat/VSCodium/first-run (a forced
+  purge, an overwritten onboarding file, a rewritten wizard) now back up and
+  ask on default-No.
+- **A `set -u` crash in `common.sh`** that made every script die at source
+  time with USER unset (scrubbed cron/CI environments) and made
+  `verifySetup.sh` produce no verdict at all.
+- **The package extractor harvested English words.** `log_info "Run:
+  apt-get install smartmontools (then re-run …)"` produced four "package not
+  found" errors for `re-run`, `this`, `for`, `the`. Quote-parity detection
+  now distinguishes prose from command position; verification rose from 155
+  to 167 real packages, zero non-packages.
+
+### Known issues (0.8.0)
+
+- **`systemd-tmpfiles` does not exist on Devuan excalibur** and `systemd` is
+  deliberately not installed, so the §5 tmpfiles drop-ins are inert text on a
+  live install. That is disclosed in the step's output and in the drop-in
+  comments; the actual reclaim comes from the script's own bounded trims. If a
+  tmpfiles runner ever appears, the drop-ins activate with no reinstall.
+- **`xfcemlg-health` wants the source checkout.** `verifySetup.sh` is not
+  deployed by 24-power-user.sh, so the deployed reporter is pointed at the
+  checkout and *says which copy it used*; with no checkout reachable it exits
+  2 (tooling problem) instead of reporting success. There is no silent green.
+- **The live box this release was tuned against still has two DMs enabled
+  (lightdm and greetd racing for the console)**, a legacy
+  `# devuan-xfce-setup: update notifier` crontab marker, and state under the
+  old `~/.local/state/devuan-xfce-setup/`. Those are live-machine conditions,
+  deliberately out of scope for the repo; the health reporter surfaces them
+  and the migration step moves the state when the toolkit next runs.
+- **fwupd refresh is silent to the user.** It refreshes metadata and writes
+  `/var/log/xfcemlg-fwupd.log`, but no notification is raised — a pending
+  firmware update is seen when the log is read or `fwupdmgr get-updates` runs.
+- **TLP AC power policy is left at the driver-appropriate stock defaults.**
+  The battery path is tuned; changing AC behaviour without a driver-level
+  reason would be guessing, so it was deliberately not touched.
+- **`docs/BUILDING.md` documents a `blend/` ISO tree that is not in this
+  repository** (it never was — `git log --diff-filter=D -- blend/` is empty).
+  It is kept as the specification upstream of the ISO, with a status banner
+  pointing at `make pkg-deb` as the thing a clone can actually build.
+
+### Upgrading from 0.7.x
+
+`run.sh` migrates your on-disk `devuan-xfce-setup*` paths the first time it
+runs — nothing is deleted, and nothing is moved without a backup-able write.
+The theme/icon fetch pins new commit SHAs; the recorded checksums changed only
+because the URL changed (the extracted tree is byte-identical) and codeload
+zeroes gzip mtime, so a one-time re-download is expected. Any `--only` name
+you used before still resolves through the step alias table, and any script
+referencing the old prefixes finds the legacy-path migration instead of a
+typo.
+
+## 0.7.0 — Themes/icons fetched at install (bundles deleted), rofi removed
+
+The delivery model for the rice changes: the ~29 MB of bundled themes and
+icons no longer live in git. `21-theme.sh` now fetches the Darkmatter GTK
+theme from `stevedylandev/darkmatter-linux` and the Zafiro icons from
+`zayronxio/Zafiro-icons` at install time, then applies the same tweaks that
+used to be applied by hand in 0.6.0 — all automated by
+`scripts/lib/darkmatter-fetch.sh`. Rofi and its config are gone entirely;
+stock `xfce4-appfinder` owns Super+space.
+
+### What's New
+- **No more bundles.** `configs/themes/` (7.7 MB), `configs/icons/` (21 MB)
+  and `configs/rofi/` are deleted. The repo payload drops ~29 MB (79 → 51 MB)
+  and so does the content deb.
+- **`scripts/lib/darkmatter-fetch.sh`** — the fetch+build+tweak engine:
+  - fetches `darkmatter-linux` (codeload tarball, sha256-pinned by default,
+    overridable via `DM_THEME_SHA256` / `DM_ICONS_SHA256`; `DM_SKIP_FETCH=1`
+    reuses a cached fetch for offline runs);
+  - assembles the three variants (`Darkmatter`, `Darkmatter-hdpi`,
+    `Darkmatter-xhdpi`) from the upstream root `gtk-3.0`/`gtk-4.0`/`assets`
+    plus its `xfwm4/Darkmatter{,-hdpi,-xhdpi}/xfwm4` decorations;
+  - rewrites `index.theme` per variant
+    (`Name=<variant>`, `IconTheme=Zafiro-icons-Dark`);
+  - remaps the upstream orange `#e78a53` → red `#e75353` in every text
+    asset (css/scss/svg) via sed and every PNG pixel via ImageMagick;
+  - builds `Zafiro-icons-Dark` from the upstream `Dark/` dir, dropping the
+    heavy `apps/scalable` SVG subtree (1553 files) + `previews/`.
+- **`21-theme.sh`** reworked: step 2 fetches+builds+deploys the themes to
+  `/usr/share/themes/` (purging earlier Darkmatter variants), step 4 does
+  the same for the icons (Papirus-Dark fallback if the fetch fails), the
+  rofi bonus block is removed, and `imagemagick` joins the theme deps.
+- **Full unit coverage of the pipeline** — `tests/unit/test-darkmatter.sh`
+  builds variants + runs the remap against an offline fixture (a 1x1
+  `#e78a53` PNG included as base64), asserts the orange is gone everywhere,
+  the PNG pixels changed, and the icon trim (no `apps/scalable`), still with
+  no root / no apt / no X / no network.
+- Dependencies of the fetch step: `curl` and `imagemagick` (both already
+  used elsewhere in the toolkit).
 
 ## 0.6.0 — Darkmatter rice (engine removed), VSCodium key fix, leaner desktop
 
@@ -32,7 +324,7 @@ default-Y so `install.sh` really does give you everything.
   (0.13+ TOML, no more YAML), seeds the rounded panel + the xfwm4 built-in
   compositor, deploys the
   wallpapers, writes the static `picker.colors`, and removes the old engine
-  leftovers (`~/.config/devuan-xfce-setup/lib|themes|current`,
+  leftovers (`~/.config/xfcemlg/lib|themes|current`,
   `xfce-theme-set/list`, per-user `~/.config/gtk-3.0/gtk.css`,
   `alacritty.yml`).
 - **`22-theme-boot.sh`** recolors the Plymouth spinner theme to the red
@@ -150,7 +442,7 @@ asset deb so the toolkit's configs/themes ship as a trackable package.
   with three commands (`theme_seed`, `theme_set`, `theme_list`,
   `theme_current`) invoked by every palette-applying script. Templates
   under `themes/_base/tpl/` carry `@TOKEN@` placeholders; the renderer
-  writes `~/.cache/devuan-xfce-assets/picker.colors` (bg0/bg1/bg3/fg0)
+  writes `~/.cache/xfcemlg-assets/picker.colors` (bg0/bg1/bg3/fg0)
   so the update GUI and menu stay palette-aware. Env overrides
   (`DEVX_SKIP_XFCONF`, `DEVX_THEME`, `DEVX_CONFIG`, etc.) make headless
   and ISO builds possible.
@@ -175,10 +467,10 @@ asset deb so the toolkit's configs/themes ship as a trackable package.
   `make apt-checks`; `make release-preflight` gates the VERSION/RELEASE.md
   agreement.
 - **Content deb** (`make pkg-deb`): single data-only
-  `devuan-xfce-assets_0.5.0_all.deb` (~6 MB) shipping the full versioned
-  asset bundle under `/usr/share/devuan-xfce-assets/` when installed.
+  `xfcemlg-assets_0.5.0_all.deb` (~6 MB) shipping the full versioned
+  asset bundle under `/usr/share/xfcemlg-assets/` when installed.
   `make check-deb` runs `dpkg-deb` info + lintian with zero errors.
-  `packages/devuan-xfce-assets/` holds the committed DEBIAN metadata;
+  `packages/xfcemlg-assets/` holds the committed DEBIAN metadata;
   the ~36 MB `configs/` (incl. the bundled Darkmatter themes + Zafiro
   icons) is staged from the repo at build time.
 - **AGENTS.md** (repo-root) and **docs/FIXES.md**: project instructions
@@ -225,7 +517,7 @@ baseline the toolkits 0.5.0+ build on.
 - **Shared service handling**: `13-hardware.sh`/`14-bluetooth.sh` replace
   hand-rolled enable/restart_service helpers with `start_service()` from
   `lib/common.sh` (no stray systemctl calls).
-- **Live ISO blend**: `blend/devuan-xfce-thinkpad/` (build-here.sh,
+- **Live ISO blend**: `blend/xfcemlg-thinkpad/` (build-here.sh,
   deploy.sh, sync-overlay.sh, blend lifecycle + excalibur rootfs overlay)
   targeting the Devuan live-sdk, documented in `docs/BUILDING.md`.
   `.gitignore` excludes the 5 GB `live-sdk/` tree and `live-build.log`.
@@ -328,7 +620,7 @@ is XFS on OpenRC):
 - Neovim retired: `46-neovim.sh` deleted, `40-vscodium.sh` purges the
   package + script-managed shims and moves `~/.config/nvim` aside;
   `v`/`vv`/`EDITOR` retargeted to `codium`
-- Automatic: `ask()` answers Yes under `DEBSWAY_FULL=1` (`install.sh`
+- Automatic: `ask()` answers Yes under `XMLG_FULL=1` (`install.sh`
   never stops); `ask_no_full()` shields `apt full-upgrade`, backup
   restore, battery cap, PhotoGIMP mismatch, Conky/Plank/graphs
 

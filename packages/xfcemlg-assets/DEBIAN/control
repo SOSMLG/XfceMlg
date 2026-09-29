@@ -1,0 +1,16 @@
+Package: xfcemlg-assets
+Version: @VERSION@
+Section: x11
+Priority: optional
+Architecture: all
+Maintainer: xfcemlg <xfcemlg@users.noreply.github.com>
+Depends: bash (>= 5.0), python3 (>= 3.9)
+Description: xfcemlg versioned asset bundle
+ Ships a system-wide snapshot of the toolkit's static assets
+ (configs/ - Darkmatter wallpapers, power-user bins, alacritty + panel
+ seeds, vesktop/vscodium themes, agent skill, Firefox policy) under
+ /usr/share/xfcemlg-assets/ so scripts and /etc/skel seeding can read
+ them without a git checkout. The Darkmatter themes + Zafiro icons are
+ fetched at install time (scripts/lib/darkmatter-fetch.sh), not shipped.
+ Data-only tweaks land here; the per-user deploy happens at install
+ time via the numbered scripts.

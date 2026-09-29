@@ -1,0 +1,9 @@
+xfcemlg-assets (@VERSION@) unstable; urgency=low
+
+  * 0.7.0: Darkmatter themes + Zafiro icons no longer bundled — the
+    payload drops from 36 MB to ~7 MB; 21-theme.sh fetches and auto-tweaks
+    them at install time via scripts/lib/darkmatter-fetch.sh.
+  * Data-only release of the xfcemlg versioned asset bundle.
+  * Wallpapers, power-user bins, alacritty + panel seeds, policies.json.
+
+ -- xfcemlg <xfcemlg@users.noreply.github.com>  Sun, 27 Sep 2026 00:00:00 +0000
