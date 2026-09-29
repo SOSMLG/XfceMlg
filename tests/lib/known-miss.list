@@ -1,0 +1,21 @@
+# known-miss.list — package names that fail apt-checks.sh because they live
+# in repos the toolkit adds at install time (contrib/non-free) but which
+# are NOT in the default Devuan Excalibur sources.list. Packages listed
+# here are real, verified against the Devuan Excalibur archive — they are
+# NOT typos. See: scripts/lib/common.sh (ensure_repo_component), 11-backports.sh.
+#
+# Format: one package name per line (lines starting with # are comments).
+libdvd-pkg
+winetricks
+# codium: from VSCodium's own APT repo (download.vscodium.com), added by
+# 40-vscodium.sh — never in the default Devuan Excalibur archive.
+codium
+# steam: lives in the contrib component, which only exists after
+# scripts/lib/common.sh ensure_repo_component appends contrib/non-free at install time.
+steam
+# heroic: not an archive package at all. Heroic Games Launcher is fetched as a
+# third-party .deb from its own GitHub release by 44-gaming.sh (it is not in
+# contrib), and on this machine it is in fact installed as the Flatpak
+# com.heroicgameslauncher.hgl. Nothing in Devuan Excalibur, contrib or
+# non-free can ever satisfy it, so an apt-cache lookup would always miss.
+heroic
