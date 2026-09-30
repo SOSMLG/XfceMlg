@@ -116,12 +116,12 @@ matters:
 | core | `15-codecs.sh` — audio/video codecs + DVD | Y |
 | core | `16-firefox.sh` — Firefox ESR + Betterfox hardening | Y |
 | core | `17-fonts.sh` — Noto, Font Awesome, JetBrainsMono Nerd Font | Y |
-| core | `18-shell-config.sh` — retires the vendored ButterBash leftovers + deploys the from-scratch xfcemlg shell config (aliases, Nerd-Font prompt, fzf/zoxide hooks) + CLI ergonomics tools (bat, eza, fzf, zoxide, ripgrep, ncdu, tree, unar) | Y |
-| core | `19-fastfetch.sh` — minimal fancy fastfetch config (anime ascii art) + btop | Y |
+| core | `18-shell-config.sh` — retires pre-0.8 shell leftovers, then deploys the shell config: the vendored ButterBash payload (GPL-2.0, verbatim) to ~/.config/bash, plus this toolkit's own parts (utility functions, aliases, Nerd-Font prompt, completion/fzf/zoxide/keybind hooks) to ~/.config/xfcemlg/bash, and an override layer fixing the payload's bare-sudo and netstat defects + CLI ergonomics tools (bat, eza, fzf, zoxide, ripgrep, fd, ncdu, tree, jq, xclip, unar) | Y |
+| core | `19-fastfetch.sh` — Darkmatter fastfetch config (Devuan ASCII logo in the accent red, curated module set), validated by fastfetch itself before it is accepted + btop | Y |
 | desktop | `20-xfce-debloat.sh` — trim task apps (Xfce Terminal, screenshooter), keep XFCE-native, silence beep | Y |
 | desktop | `21-theme.sh` — Darkmatter GTK/xfwm4 + Zafiro icons + xfwm4 compositor + panel/WM seed (items + fonts) + wallpapers | Y |
 | desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
-| desktop | `23-input-fix.sh` — input fixes + locker + cross-WM Super shortcuts (term/codium/lock/vol/screenshots) | Y |
+| desktop | `23-input-fix.sh` — input fixes + locker + cross-WM Super shortcuts (term/codium/lock/logout/app-finder/vol/brightness/screenshots, plus the keyboard's own XF86Audio + Fn-row brightness keys) | Y |
 | desktop | `24-power-user.sh` — power-user commands (menu, update-check/gui, lock, suspend, health, selfupdate) + cron + login health check | Y |
 | apps | `30-desktop-essentials.sh` — Flatpak, portal, geoclue, CUPS, firewall, Thunar full, Clipman, Redshift | Y |
 | apps | `31-timeshift.sh` — Timeshift snapshots | Y |

@@ -29,7 +29,34 @@
 #   wallpapers/      — curated dark/red wallpaper set, deployed by 21-theme.sh
 #                      to /usr/share/backgrounds/xfce/devuan-darkmatter/
 #   dunst/dunstrc    — Darkmatter-accented Dunst config (20-* opt-in)
-#   fastfetch/ascii_art_anime.txt — fastfetch logo art, deployed by 19-fastfetch.sh
+#   fastfetch/devuan.txt — the Devuan logo, deployed by 19-fastfetch.sh.
+#                      A *template*, not a picture: the leading `$1` on every
+#                      line is a fastfetch colour placeholder, swapped for the
+#                      red of the palette at render time (`cat`ing the file
+#                      shows the tokens), and every literal `$` in the logo is
+#                      escaped as `$$`. Single-coloured on purpose — the logo
+#                      is a solid mass of `$`, and a colour token after a run
+#                      of `$$` pairs is misread as a literal digit.
+#   bash/rc.sh        — loader: sources the parts below, then prints the fastfetch
+#                      summary once per interactive shell. Non-interactive shells
+#                      return immediately. Deployed by 18-shell-config.sh.
+#   bash/functions.sh — extract, mkcd, cfile, reload, ff, ports, json
+#   bash/aliases.sh   — navigation, eza/ls, ripgrep shortcuts, git, less/PAGER
+#   bash/prompt.sh    — two-line Nerd-Font prompt; branch read from .git/HEAD
+#                      without forking, one `git status` for the dirty marker
+#   bash/hooks.sh     — bash-completion, fzf/zoxide, readline keybinds
+#   bash/99-xfcemlg-overrides.sh — sourced LAST, after the vendored payload:
+#                      corrects its bare-`sudo` apt aliases (doas-first
+#                      `xfc_priv`) and its netstat-based `ports` alias.
+#                      The vendored tree itself is never edited.
+#   butterbash/       — vendored third-party shell framework, GPL-2.0
+#                      (JustAGuyLinux, Codeberg), restored verbatim in 0.9.0.
+#                      18-shell-config.sh installs bash/*.bash and
+#                      bash/functions/*.bash to ~/.config/bash/ (the path
+#                      upstream's own bashrc reads) plus its LICENSE. rc.sh
+#                      sources it after the xfcemlg parts, so its prompt and
+#                      aliases are what the user sees. Every file is
+#                      byte-identical to upstream — see docs/PROVENANCE.md.
 #   firefox/bookmarks.html — curated bookmarks imported by 35-first-run.sh
 #   bin/xfce-first-run      — welcome wizard (update + Timeshift), deployed by
 #                      35-first-run.sh to ~/.local/bin + autostart (once per user)

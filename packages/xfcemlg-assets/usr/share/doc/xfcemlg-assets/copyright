@@ -29,6 +29,17 @@ Copyright: 2024-2026 xfcemlg contributors
 License: MIT
  (same MIT terms as the Files: * stanza above)
 
+Files: configs/butterbash/*
+Copyright: 2024-2025 JustAGuyLinux <https://codeberg.org/justaguylinux/butterbash>
+License: GPL-2.0
+ Vendored verbatim from upstream (restored 0.9.0 from the tree commit
+ 59c4632 deleted); every file is byte-identical to that commit, verified
+ by sha256. The MIT terms in the "Files: *" stanza above do NOT apply to
+ these files. Full licence text ships as configs/butterbash/LICENSE and is
+ installed to ~/.config/bash/LICENSE by scripts/18-shell-config.sh. Not
+ modified in place: the two machine-specific corrections live in
+ configs/bash/99-xfcemlg-overrides.sh, outside this directory.
+
 Files: configs/wallpapers/*
 Copyright: 2024-2026 individual wallpaper authors
 License: CC0-1.0 / GPL-3.0-or-later

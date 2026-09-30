@@ -5,18 +5,58 @@ Where the code, assets and ideas in this toolkit come from.
 ## Self-contained
 
 xfcemlg is a set of post-install shell scripts for Devuan 6 (excalibur) +
-XFCE 4.20. As of **0.8.0 it vendors no third-party code**: there is no
-copied, forked or patched upstream source tree in git, and the content deb
-(`make pkg-deb`) ships only files written here. Everything installed from
-the network is downloaded at install time by the script that needs it, is
-verified where a digest is available, and stays under its own upstream
-licence.
+XFCE 4.20. It is **almost entirely self-contained** — with one exception,
+the vendored shell framework under `configs/butterbash/`, which is a
+**verbatim** copy of a third-party GPL-2.0 project, restored in 0.9.0 (see
+the table below). Apart from that, there is no copied, forked or patched
+upstream *source* tree in git, and the content deb (`make pkg-deb`) ships
+only files written here. Everything installed from the network is
+downloaded at install time by the script that needs it, is verified where a
+digest is available, and stays under its own upstream licence.
+
+## Vendored third-party code
+
+### `configs/butterbash/` — GPL-2.0, restored 0.9.0
+
+A third-party bash prompt/config framework by JustAGuyLinux (Codeberg),
+vendored **verbatim**: 12 files, 56 767 bytes, restored from the tree
+commit `59c4632` deleted. Every file is byte-identical to that commit
+(verified by sha256), so the copy is auditable against upstream rather
+than a fork that has drifted.
+
+- **Licence:** GPL-2.0, shipped verbatim as `configs/butterbash/LICENSE`
+  and copied to `~/.config/bash/LICENSE` at install time. The MIT licence
+  covering the rest of this repository does **not** extend to these files.
+  The content deb therefore carries a GPL-2.0 notice — see
+  `packages/xfcemlg-assets/usr/share/doc/xfcemlg-assets/copyright`.
+- **Installed to:** `~/.config/bash/` (the path upstream's own `bashrc`
+  expects), by `scripts/18-shell-config.sh`. `configs/bash/rc.sh` sources
+  it *after* the xfcemlg parts, so its prompt and aliases are what the
+  user sees — that is the point of shipping it.
+- **Never edited in place.** The upstream tree is kept pristine so its
+  diffability and licence provenance stay intact. The two defects that
+  are specific to *this* machine are corrected in a separate local layer,
+  `configs/bash/99-xfcemlg-overrides.sh`, sourced last:
+  1. the payload hardcodes bare `sudo` in its apt aliases, against this
+     project's doas-first `priv()` policy and non-functional on a
+     doas-only system — replaced with an `xfc_priv` helper that prefers
+     doas and falls back to sudo;
+  2. `alias ports='netstat -tulanp'` depends on `netstat`, gone from
+     Debian trixie — the `ss`-based `ports` function is restored.
+
+**History.** Removed in 0.8.0 because it is someone else's code and the
+repo had begun editing the copy in tree. 0.8.1 replaced it with
+`configs/bash/`, written from scratch. **0.9.0 restores it** at the
+owner's request: the framework's feel is wanted back, and the maintainer
+accepted the licence obligation rather than reimplementing it. The 0.8.0
+objections are recorded here rather than deleted, because the restored
+copy still carries the traits that prompted them.
 
 ## Retired integrations
 
 | Integration | What it was | Removed | Why |
 | --- | --- | --- | --- |
-| `butterbash/` | A third-party bash prompt/config framework (JustAGuyLinux, Codeberg) copied wholesale into git: 12 files, 56 767 bytes (88 KiB on disk), carrying its own GPL-2.0 `LICENSE`. Its installer wrote `~/.config/bash/`, replaced `~/.bashrc` and linked `~/.local/bin/{fd,bat}`. | 0.8.0 | Someone else's code, not ours — and the repo had already begun editing the copy in tree (`bashrc.example` carried a VSCodium-specific patch), which is the maintenance and licensing liability vendoring creates. Replaced by nothing at 0.8.0 (the default shell config was deemed sufficient) — but 0.8.1 reverses that: `scripts/18-shell-config.sh` (was `18-shell-reset.sh`, was `18-butterbash.sh`) now both clears what the old step left behind **and** deploys a from-scratch replacement — `configs/bash/` aliases, a Nerd-Font prompt, and fzf/zoxide hooks written for this toolkit, with none of the retired project's code. |
+
 | Catppuccin Mocha | An early colour palette. Its last programmatic use was a btop theme fetch in `19-fastfetch.sh`; a `delta.syntax-theme "Catppuccin Mocha"` value was written by the old step 18. | 0.8.0 | The project settled on the fixed Darkmatter theme (near-black + red). It was a leftover of the earlier palette, not a dependency. |
 | Butterbian-XFCE | A live-ISO builder for a XFCE-on-Debian flavour. Studied read-only; its BTRFS/systemd/Calamares parts were deliberately not ported. | never vendored | No code was copied. What was taken were notes: a never-overwrite rule for the first-run wallpaper seeder, a create-if-missing Super-shortcut set, a greeter `user-background = false` fix. Listed for the acknowledgement, not because anything is being taken back. |
 | ohmydebn | An earlier post-install toolkit. `scripts/34-opencode-agent.sh` previously claimed to be "cherry-picked wholesale from ohmydebn (MIT)". | 0.8.0 (claim corrected) | **That claim was false** — see below. A false attribution is worse than none. |

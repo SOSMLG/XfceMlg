@@ -114,7 +114,26 @@ Step highlights that matter on a pre-installed laptop:
 - **18-shell-config** — clears out leftovers of the previous shell setup,
   then appends the marked hook block to `~/.bashrc`
   (`# BEGIN xfcemlg-shell`), with a pre-append copy saved once to
-  `~/.bashrc.xfcemlg.bak`.
+  `~/.bashrc.xfcemlg.bak`. The config it deploys to
+  `~/.config/xfcemlg/bash/` is five files: `functions.sh`, `aliases.sh`,
+  `prompt.sh`, `hooks.sh`, and the `rc.sh` loader.
+  - a **new** terminal prints the fastfetch summary (step 19) once, on
+    top of the prompt. `XFCONF_FASTFETCH=0` in `~/.bashrc` turns that off;
+    it is already skipped for non-interactive shells, pipes, and `$TERM`
+    that cannot draw.
+  - the prompt is the only part with real tuning knobs:
+    `XFCONF_PLAIN_PROMPT=1` drops the Nerd Font glyphs, and
+    `XFCONF_PROMPT_GIT_UNTRACKED=1` makes untracked files count as dirty
+    (they are ignored by default, because scanning them is the expensive
+    part of `git status`).
+  - re-running the step upgrades the five files in place. If you have
+    edited one, it is backed up as `<file>.user.<timestamp>` and left
+    alone — `XMLG_FORCE_SEEDS=1` overrides that.
+- **19-fastfetch** — writes `~/.config/fastfetch/config.jsonc` and then
+  makes fastfetch itself parse it back. A config fastfetch rejects is
+  reported and rolled back to your previous one, because fastfetch exits 0
+  and prints *nothing* on a schema error, so a broken config looks like a
+  working one. Preview it with `fastfetch`.
 - **20-xfce-debloat** — the *only* step that removes preinstalled packages:
   mousepad/geany, parole/quodlibet, xfburn, xfce4-screenshooter,
   xfce4-genmon-plugin, xfce4-terminal(+data) → Alacritty, xfce4-notifyd →

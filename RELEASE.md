@@ -2,7 +2,62 @@
 
 Tag a release with: `git tag -a "v$(cat VERSION)" -m "v$(cat VERSION)" && git push --tags`
 
-## 0.8.2 — Self-update, login health, and a runtime test tier
+## 0.9.0 — ButterBash restored, Devuan logo, and a fuller keybind set
+
+**Licence change.** The shell framework by JustAGuyLinux is vendored again,
+verbatim, under `configs/butterbash/` — 12 files, 56 767 bytes, GPL-2.0,
+restored from the tree commit `59c4632` deleted. Every file is
+byte-identical to that commit (sha256-verified), so the copy is auditable
+against upstream rather than a fork that has drifted. The MIT licence does
+**not** extend to these files; the content deb now carries a GPL-2.0 notice
+and the licence ships to `~/.config/bash/LICENSE` at install time. This
+reverses the 0.8.0 de-integration at the owner's request. The reasoning
+that removed it is kept in `docs/PROVENANCE.md` rather than deleted,
+because the restored copy still carries the traits that prompted it.
+
+The vendored tree is **never edited in place**. Its two machine-specific
+defects are corrected by `configs/bash/99-xfcemlg-overrides.sh`, sourced
+last, so upstream stays pristine and diffable:
+
+- its apt aliases hardcode bare `sudo`, against this project's doas-first
+  `priv()` policy and non-functional on a doas-only system — replaced with
+  an `xfc_priv` helper that prefers doas and falls back to sudo;
+- `alias ports='netstat -tulanp'` depends on `netstat`, gone from Debian
+  trixie — the `ss`-based `ports` function is restored.
+
+`configs/bash/rc.sh` now loads the payload from `~/.config/bash/` after
+the xfcemlg parts. When it is present the xfcemlg `prompt.sh` is skipped
+on purpose: both files build a `PROMPT_COMMAND` chain, the payload
+prepends and ours appends, so loading both would leave ours winning and
+the payload's prompt would never be seen.
+
+**Devuan logo.** `19-fastfetch.sh` now ships the Devuan ASCII logo instead
+of the bundled braille face, in the palette accent red. fastfetch's
+built-in Devuan logo carries no colour placeholders and can therefore only
+be rendered in the palette magenta, so the art is deployed to
+`~/.config/fastfetch/devuan.txt` with each literal `$` escaped as `$$`. It
+is single-coloured deliberately: the logo is a solid mass of `$`, and a
+colour token placed after a run of `$$` pairs is misread as a literal
+digit. The old art name is retired on deploy so a stale file cannot linger.
+
+**Keybinds.** `23-input-fix.sh` gains Super+d and Super+Return (app
+finder), Super+l (lock), Super+Delete (logout dialog), Super+BackSpace
+(close window, alongside the existing Super+q), the keyboard's own
+XF86Audio mute/volume keys, and XF86Monotonicity up/down for brightness
+via `brightnessctl` — the ThinkPad Fn row, which xfce4-power-manager
+ignores. Super+Up/Down/Left/Right keep their tiling bindings; workspace
+switching stays on Super+1..0. Print is now `flameshot full` and
+Super+Print `flameshot gui`.
+
+**Also.** The `exited 0` claim about a fastfetch config fastfetch itself
+rejects is corrected to the real exit status, 221, in `18-shell-config.sh`
+and `docs/FIXES.md`. `.gitignore` is added with the patterns the
+consistency tier asserts, which clears the last 7 pre-existing
+`make check` failures: **78/78 consistency, and the suite is green for the
+first time.** `tests/unit/test-shell-config.sh` grows 14 → 28 checks
+covering the vendored payload, its licence, prompt ownership and the
+override layer.
+
 
 0.8.2 is the closing release: after the 0.8.1 freeze, the toolkit can now
 update itself, chips in a silent login health check that only speaks up when
