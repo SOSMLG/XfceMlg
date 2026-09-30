@@ -103,38 +103,63 @@ dm_enabled_runlevel() {
 	return 1
 }
 
+# dm_sysvinit_links — echo the /etc/rc[0-6].d start-links for a service, or
+# fail. A distro install of a DM (slim especially) leaves these behind even
+# when nothing enabled the service under OpenRC. On this box /etc/init.d/rc
+# is OpenRC's wrapper and OpenRC's /etc/runlevels/ is authoritative, so they
+# do not actually start anything — but they are a latent second boot path if
+# the box is ever booted as plain sysvinit, and they are what made slim look
+# enabled to every human reading /etc/rc2.d.
+dm_sysvinit_links() {
+	local svc="$1" l out=""
+	for l in /etc/rc[0-6].d/S[0-9][0-9]"$svc"; do
+		[ -e "$l" ] && out="$out $l"
+	done
+	[ -n "$out" ] || return 1
+	printf '%s\n' "${out# }"
+}
+
 if is_installed lightdm; then
 	start_service lightdm
 	normalize_display_manager
 
 	for dm in $DM_RIVALS; do
-		[ -x "/etc/init.d/$dm" ] || continue             # not installed: nothing to disable
-		dm_rl="$(dm_enabled_runlevel "$dm")" || continue # installed but not enabled: fine
+		is_installed "$dm" || continue            # not installed: nothing to do
+		dm_rl="$(dm_enabled_runlevel "$dm")" || dm_rl=""
 
-		log_warn "Display manager '$dm' is enabled in the '$dm_rl' runlevel alongside LightDM."
-		if ask_no_full "Disable $dm (remove it from $dm_rl) so only LightDM owns the console?" "Y"; then
-			if [ -x /usr/sbin/rc-update ]; then
-				priv /usr/sbin/rc-update del "$dm" >/dev/null 2>&1 || true
-			fi
-			if [ -x /usr/sbin/rc-service ]; then
-				priv /usr/sbin/rc-service "$dm" stop >/dev/null 2>&1 || true
-			fi
-			if [ -e "/etc/runlevels/$dm_rl/$dm" ]; then
-				log_err "Could not remove $dm from $dm_rl — do it by hand: rc-update del $dm"
+		if [ -n "$dm_rl" ]; then
+			log_warn "Display manager '$dm' is enabled in the '$dm_rl' runlevel alongside LightDM."
+			if ask_no_full "Disable $dm (remove it from $dm_rl) so only LightDM owns the console?" "Y"; then
+				if [ -x /usr/sbin/rc-update ]; then
+					priv /usr/sbin/rc-update del "$dm" >/dev/null 2>&1 || true
+				fi
+				if [ -x /usr/sbin/rc-service ]; then
+					priv /usr/sbin/rc-service "$dm" stop >/dev/null 2>&1 || true
+				fi
+				if [ -e "/etc/runlevels/$dm_rl/$dm" ]; then
+					log_err "Could not remove $dm from $dm_rl — do it by hand: rc-update del $dm"
+				else
+					log_ok "Disabled $dm (still installed — restore with: rc-update add $dm $dm_rl)"
+				fi
 			else
-				log_ok "Disabled $dm (still installed — restore with: rc-update add $dm $dm_rl)"
+				log_warn "Leaving $dm enabled — it will race LightDM for the console at boot."
 			fi
-		else
-			log_warn "Leaving $dm enabled — it will race LightDM for the console at boot."
+		elif dm_sysvinit_links "$dm" >/dev/null; then
+			log_warn "Display manager '$dm' is in no OpenRC runlevel, but its init script is still linked into $(dm_sysvinit_links "$dm") — dormant on this OpenRC-wraps-sysvinit box, a live conflict if it is ever booted as plain sysvinit."
 		fi
 
 		# Package removal is a distinct, destructive choice: the service
 		# may be wanted for something else, or kept for an easy rollback.
-		if is_installed "$dm"; then
-			if ask_no_full "Purge the $dm package too?" "N"; then
-				priv apt-get purge -y "$dm" || log_warn "$dm purge had issues (continuing)."
-				log_ok "$dm purged."
-			fi
+		#
+		# It is reached whether or not the service was ever enabled. The
+		# previous `|| continue` on an un-enabled rival skipped it entirely,
+		# so a DM that the distro installer merely *installed* (slim, via
+		# task-xfce-desktop) could never be purged by this script —
+		# verifySetup.sh then failed "slim absent" on every single run,
+		# and re-running this step never cleared it.
+		if ask_no_full "Purge the $dm package?" "N"; then
+			priv apt-get purge -y "$dm" || log_warn "$dm purge had issues (continuing)."
+			log_ok "$dm purged."
 		fi
 	done
 
@@ -154,6 +179,23 @@ if is_installed lightdm; then
 		log_err "More than one display manager is still enabled:$dm_left"
 		log_err "  Fix: for each one you do not want — rc-update del <name> default"
 	fi
+
+	# Tidy the second boot path. A purged DM normally takes its rc?.d links
+	# with it, but a rival that was kept installed leaves them behind and
+	# they are pure liability: dormant today, a console fight the day anyone
+	# boots this box as plain sysvinit. Report them either way.
+	for dm in lightdm $DM_RIVALS; do
+		dm_sysvinit_links "$dm" >/dev/null || continue
+		if is_installed "$dm" && [ "$dm" = "lightdm" ]; then
+			log_info "$dm also has sysvinit start-links ($(dm_sysvinit_links "$dm")) — harmless while /etc/init.d/rc is OpenRC's wrapper."
+		elif is_installed "$dm"; then
+			log_warn "$dm is installed and still linked into $(dm_sysvinit_links "$dm") — purge it, or these links will start it on a plain-sysvinit boot."
+		else
+			priv update-rc.d "$dm" disable >/dev/null 2>&1 || true
+			dm_sysvinit_links "$dm" >/dev/null &&
+				log_warn "Stale sysvinit links for absent $dm: $(dm_sysvinit_links "$dm") — remove them by hand."
+		fi
+	done
 else
 	log_err "LightDM is not installed after step 1 — re-run this script."
 	exit 1

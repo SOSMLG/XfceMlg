@@ -52,23 +52,20 @@ if ask "Install VLC (media player)?"; then
 	# Qt apps (VLC first among them) follow the active GTK theme when run
 	# with the gtk3 Qt platform theme — that is what makes VLC's chrome
 	# Darkmatter-dark instead of the bright default. Sessions pick up the
-	# env var via the XFCE session xinitrc (written below, self-guarding
-	# on the plugin's real .so path so it stays harmless pre-install).
+	# env var via the XFCE session xinitrc, appended through the shared
+	# helper so it is written once and the /etc/xdg/xfce4/xinitrc handoff
+	# that actually launches xfce4-session is preserved.
 	if is_installed qt5-gtk-platformtheme; then
-		XINITRC="$HOME/.config/xfce4/xinitrc"
-		if [[ -f "$XINITRC" ]]; then
-			cp "$XINITRC" "${XINITRC}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-		fi
-		mkdir -p "$(dirname "$XINITRC")"
-		if ! grep -q 'xfcemlg: Qt theme' "$XINITRC" 2>/dev/null; then
-			cat >>"$XINITRC" <<'EOF'
+		if xfce_xinitrc_append 'xfcemlg: Qt apps follow the Darkmatter GTK theme' <<'EOF'
 # -- xfcemlg: Qt apps follow the Darkmatter GTK theme --
 if [ -f /usr/lib/x86_64-linux-gnu/qt5/plugins/platformthemes/libqgtk3.so ]; then
     export QT_QPA_PLATFORMTHEME=gtk3
 fi
 EOF
-			chmod +x "$XINITRC"
-			log_ok "Qt platform theme seeded in $XINITRC (takes effect next login)."
+		then
+			log_ok "Qt platform theme seeded in $(xfce_xinitrc_path) (takes effect next login)."
+		else
+			log_info "Qt platform theme already present in $(xfce_xinitrc_path) — left as is."
 		fi
 	fi
 
@@ -110,6 +107,17 @@ if ask "Install GNOME Disks (ISO/IMG-to-USB writer, right-click a drive → Rest
 	install_pkgs "GNOME Disks" gnome-disk-utility
 	log_info "Open 'Disks', select the target USB drive, then use its menu → 'Restore Disk Image...' —"
 	log_info "the closest match to Mint's single-purpose USB Image Writer (mintstick)."
+fi
+
+# -- daily-use apps the owner actually runs (added 0.9.x) ---------------
+# Not a numbered phase and not in the step's XMLG_DESC: these are the
+# owner's own picks rather than part of the curated daily-use set, so they
+# are appended here and stay out of the README table and the phase count.
+# Kept in the step (rather than a one-off manual apt call) so they survive
+# a rebuild of the system and stay idempotent on re-run.
+if ask "Install qBittorrent (BitTorrent client) and Audacity (audio editor)?"; then
+	install_pkgs "qBittorrent" qbittorrent
+	install_pkgs "Audacity" audacity
 fi
 
 log_ok "Useful apps step complete."

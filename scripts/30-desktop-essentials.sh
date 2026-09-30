@@ -221,6 +221,7 @@ location-provider=geoclue2
 EOF
 
     mkdir -p "$HOME/.config/autostart"
+    redshift_autostart_written=0
     if [[ ! -f /etc/xdg/autostart/redshift-gtk.desktop && ! -f "$HOME/.config/autostart/redshift-gtk.desktop" ]]; then
         cat > "$HOME/.config/autostart/redshift-gtk.desktop" << 'EOF'
 [Desktop Entry]
@@ -231,8 +232,15 @@ Exec=redshift-gtk
 NoDisplay=true
 X-GNOME-Autostart-enabled=true
 EOF
+        redshift_autostart_written=1
     fi
-    (redshift-gtk &>/dev/null & disown) || true
+    # Never spawn a second daemon: the autostart entry above already starts
+    # redshift-gtk on every login, so launching here unconditionally left two
+    # redshift + redshift-gtk pairs fighting after each re-run. Only start one
+    # when the autostart entry did not exist yet, and only if none is running.
+    if [[ "$redshift_autostart_written" = "1" ]] && ! pgrep -x redshift >/dev/null 2>&1; then
+        (redshift-gtk &>/dev/null & disown) || true
+    fi
     log_ok "Redshift configured (~/.config/redshift.conf). If location detection fails, swap"
     log_ok "location-provider=geoclue2 for manual lat/lon — see 'man redshift.conf'."
 fi

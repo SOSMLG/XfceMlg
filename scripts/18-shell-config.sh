@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# XMLG_DESC: Retire butterbash leftovers + deploy the xfcemlg shell config
+# XMLG_DESC: Retire pre-0.8 shell leftovers, then deploy the vendored butterbash + xfcemlg shell config
 # XMLG_DEFAULT: Y
 #  18-shell-config.sh — the shell step. It does two jobs:
 #
@@ -7,17 +7,22 @@
 #      copied a third-party bash configuration framework into
 #      ~/.config/bash, let that project's own installer overwrite
 #      $HOME/.bashrc with its example rc, and then appended a marked
-#      "XFCE ADDITIONS" block to it. The vendored copy is gone as of 0.8.0
-#      (docs/PROVENANCE.md); all that remains from that era is to *notice*
-#      what the old step wrote into the user's HOME and offer, one
-#      question at a time, to take it back out.
+#      "XFCE ADDITIONS" block to it. The framework is vendored again as of
+#      0.9.0 (docs/PROVENANCE.md), but phases 1-6 still run first and
+#      unchanged: they clear what an old run wrote into the user's HOME,
+#      which is what makes phase 7 idempotent — it can install the current
+#      tree over a stale copy without the two ever fighting.
 #
-#  (2) Deploy this toolkit's own shell config (since 0.8.1): aliases, a
-#      Nerd-Font two-line prompt, and fzf/zoxide/keybind hooks, installed
-#      to ~/.config/xfcemlg/bash/ and sourced from a guarded block at the
-#      end of ~/.bashrc. Written from scratch — no third-party framework
-#      is vendored; fzf and zoxide integrate their own distro-shipped
-#      files when they are installed.
+#  (2) Deploy this toolkit's own shell config (since 0.8.1): utility
+#      functions, aliases, a Nerd-Font two-line prompt, and the
+#      completion/fzf/zoxide/keybind hooks, installed to
+#      ~/.config/xfcemlg/bash/ and sourced from a guarded block at the end
+#      of ~/.bashrc. On top of that it deploys the vendored upstream
+#      framework verbatim to ~/.config/bash (GPL-2.0, licence shipped with
+#      it) and loads it after the xfcemlg parts, so its prompt and aliases
+#      are what the user sees. The tree is never edited in place: the two
+#      machine-specific defects it carries are corrected by
+#      99-xfcemlg-overrides.sh, which is sourced last.
 #
 #  Rules this step holds itself to:
 #    * every retirement question is ask_no_full with a default of N, so
@@ -138,8 +143,15 @@ show_bashrc_block() {
 # Installed unconditionally (no ask) — this is the step's job. btop stays
 # with 19-fastfetch.sh; duf/git-delta/starship are not re-added (the
 # prompt is self-contained bash, see step 6 for what remains unpurged).
-log_head "1/7  CLI ergonomics packages (bat, eza, fzf, zoxide, ripgrep, ncdu, tree, unar)"
-install_pkgs "CLI ergonomics" bat eza fzf zoxide ripgrep ncdu tree unar ||
+#
+# fd-find is Debian's package name for `fd` (it installs /usr/bin/fdfind);
+# aliases.sh aliases the short name to it when nothing else provides one.
+# bash-completion is also in 33-useful-apps.sh, but that step runs later —
+# completion is part of *this* config, so it is owned here and the later
+# install is simply a no-op. xclip backs the cfile() clipboard function,
+# jq backs json().
+log_head "1/7  CLI ergonomics packages (bat, eza, fzf, zoxide, ripgrep, fd, ncdu, tree, jq, xclip, unar)"
+install_pkgs "CLI ergonomics" bat eza fzf zoxide ripgrep fd-find ncdu tree jq xclip bash-completion unar ||
 	log_warn "Some CLI packages failed — the aliases/prompt still deploy and degrade gracefully."
 
 # ── 2. Audit ───────────────────────────────────────────────────
@@ -394,15 +406,48 @@ fi
 # into ~/.bashrc with a guarded, append-only marker block. deploy_seed_file
 # keeps the repo's discipline: user edits are the truth (backed up and left
 # in place), and the shipped seed only wins when XMLG_FORCE_SEEDS=1.
-log_head "7/7  Deploy the xfcemlg shell config (from scratch — aliases, Nerd-Font prompt, fzf/zoxide hooks)"
+log_head "7/7  Deploy the shell config: vendored butterbash to ~/.config/bash, xfcemlg parts to ~/.config/xfcemlg/bash"
 
 SHELL_SEED_DIR="$SCRIPT_DIR/../configs/bash"
 SHELL_CONF_DIR="$HOME/.config/xfcemlg/bash"
 
 mkdir -p "$SHELL_CONF_DIR" || log_warn "Cannot create $SHELL_CONF_DIR"
-for seed in rc.sh aliases.sh prompt.sh hooks.sh; do
+for seed in rc.sh functions.sh aliases.sh prompt.sh hooks.sh 99-xfcemlg-overrides.sh; do
 	deploy_seed_file "$SHELL_SEED_DIR/$seed" "$SHELL_CONF_DIR/$seed"
 done
+
+# -- the vendored third-party payload, restored to ~/.config/bash ----
+# configs/butterbash/ is upstream-verbatim (GPL-2.0, its own LICENSE in
+# tree). It is deployed with deploy_seed_file like everything else, so a
+# user edit is preserved rather than stomped, and XMLG_FORCE_SEEDS=1
+# restores the shipped copy. Phase 4 above cleared whatever a pre-0.8.0
+# run left in this directory, so what lands now is exactly this tree.
+#
+# ~/.config/bash is where upstream's own bashrc looks for the payload, so
+# it is installed at that path rather than inside the xfcemlg dir.
+BB_SRC_DIR="$SCRIPT_DIR/../configs/butterbash"
+BB_CONF_DIR="$HOME/.config/bash"
+if [ -d "$BB_SRC_DIR/bash" ]; then
+	mkdir -p "$BB_CONF_DIR/functions" || log_warn "Cannot create $BB_CONF_DIR/functions"
+	bb_deployed=0
+	for seed in "$BB_SRC_DIR"/bash/*.bash; do
+		[ -f "$seed" ] || continue
+		deploy_seed_file "$seed" "$BB_CONF_DIR/$(basename "$seed")" && bb_deployed=$((bb_deployed + 1))
+	done
+	for seed in "$BB_SRC_DIR"/bash/functions/*.bash; do
+		[ -f "$seed" ] || continue
+		deploy_seed_file "$seed" "$BB_CONF_DIR/functions/$(basename "$seed")" && bb_deployed=$((bb_deployed + 1))
+	done
+	# The licence travels with the code, as it must.
+	for doc in LICENSE README.md DOCUMENTATION.md; do
+		[ -f "$BB_SRC_DIR/$doc" ] && deploy_seed_file "$BB_SRC_DIR/$doc" "$BB_CONF_DIR/$doc"
+	done
+	log_ok "Vendored shell framework deployed to $BB_CONF_DIR ($bb_deployed source files, GPL-2.0)."
+	log_info "rc.sh loads it after the xfcemlg parts, so its prompt and aliases win."
+	log_info "99-xfcemlg-overrides.sh then corrects its bare-sudo apt aliases and its netstat-based ports alias."
+else
+	log_warn "configs/butterbash/bash is missing — the vendored payload was not deployed."
+fi
 
 # Hook into ~/.bashrc: one append-only marker block, never rewrites any
 # other content of the file. Idempotent — a re-run is a no-op.
@@ -421,14 +466,16 @@ else
 fi
 
 log_ok "Shell config deployed to $SHELL_CONF_DIR — open a new terminal to see it."
+log_info "The new terminal also prints the fastfetch summary (19-fastfetch.sh);"
+log_info "XFCONF_FASTFETCH=0 in ~/.bashrc turns that off."
 
 # ── Summary ────────────────────────────────────────────────────
 log_head "Shell config summary"
 log_info "Leftovers found:   $N_FOUND"
 log_info "Removed:           $N_REMOVED"
 log_info "Left alone:        $N_LEFT"
-log_info "The vendored copy of the retired shell framework is gone from this"
-log_info "toolkit as of 0.8.0 (docs/PROVENANCE.md). What replaces it is this"
-log_info "step's own config at ~/.config/xfcemlg/bash/, authored in-tree and"
-log_info "deployed from configs/bash/ — the old audit will keep no-op'ing."
-log_ok "18-shell-config.sh done — aliases, prompt and hooks are live in new terminals."
+log_info "The shell framework is vendored again as of 0.9.0 (docs/PROVENANCE.md):"
+log_info "upstream-verbatim in configs/butterbash/ (GPL-2.0), deployed to"
+log_info "~/.config/bash/. The xfcemlg parts live at ~/.config/xfcemlg/bash/ and"
+log_info "load first; the audit phases keep no-op'ing on a clean tree."
+log_ok "18-shell-config.sh done — prompt, aliases and hooks are live in new terminals."

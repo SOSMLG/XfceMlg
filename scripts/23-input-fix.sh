@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# XMLG_DESC: Input fixes + locker + cross-WM Super shortcuts (terminal, codium, lock, volume, screenshots)
+# XMLG_DESC: Input fixes + locker + cross-WM Super shortcuts (terminal, codium, lock, logout, app finder, volume, brightness, screenshots)
 # XMLG_DEFAULT: Y
 #  23-input-fix.sh — USB HID polling + libinput tuning
 #  Core fix: raise the USB HID mouse polling rate, the classic
@@ -87,7 +87,7 @@ EOF
 	log_info "(paste in most apps). Fn+Esc toggles the BIOS FnLock for F1-F12 media keys."
 fi
 
-log_head "3/3  Screen locker + Super shortcuts (Butterbian set, adapted)"
+log_head "3/3  Screen locker + Super shortcuts (Butterbian set, adapted: app finder, lock, logout, media + brightness keys)"
 # Butterbian wires Ctrl+Alt+L to xflock4 but the locker itself must be
 # installed or the shortcut silently does nothing — ensure light-locker
 # here even if 10-xfce-core.sh was skipped.
@@ -128,7 +128,7 @@ bind_force() { # bind_force <channel> <property> <command>
 	fi
 }
 
-if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortcut set (terminal, codium, lock, volume, screenshots, tiling, workspaces) + Ctrl+Alt+L lock?"; then
+if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortcut set (terminal, codium, lock, logout, app finder, volume, brightness, screenshots, tiling, workspaces) + Ctrl+Alt+L lock?"; then
 	# -- Print Screen scheme (user-approved, cross-WM): Print=full,
 	#    Super+Print=area, Super+Ctrl+Print=record. The old Super+s /
 	#    Shift+Super+s aliases stay as secondary. First reclaim any stray
@@ -151,7 +151,12 @@ if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortc
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Primary><Super><Print>" "xfce-record"
 	# -- lock + launcher basics (commands channel) --
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Primary><Alt>l" "xflock4"
-	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>Return" "exo-open --launch TerminalEmulator"
+	# Super+Return and Super+d both raise the app finder (the GNOME muscle
+	# memory); the terminal keeps Super+t and Super+grave, so nothing that
+	# used to open a terminal here loses its binding.
+	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>Return" "xfce4-appfinder"
+	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>d" "xfce4-appfinder"
+	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>l" "xfce-lock"
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>f" "thunar"
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>space" "xfce4-appfinder"
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>s" "flameshot gui"
@@ -170,6 +175,19 @@ if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortc
 		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>F10" "pactl set-sink-volume @DEFAULT_SINK@ -5%"
 		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>F11" "pactl set-sink-mute @DEFAULT_SINK@ toggle"
 		bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>F12" "pactl set-sink-volume @DEFAULT_SINK@ +5%"
+		# The keyboard's own media keys, which no laptop ThinkPad binds to
+		# anything useful by default. Mute is checked before the two volume
+		# steps so one key press never lands on two handlers.
+		bind_key xfce4-keyboard-shortcuts "/commands/custom/XF86AudioMute" "pactl set-sink-mute @DEFAULT_SINK@ toggle"
+		bind_key xfce4-keyboard-shortcuts "/commands/custom/XF86AudioRaiseVolume" "pactl set-sink-volume @DEFAULT_SINK@ +5%"
+		bind_key xfce4-keyboard-shortcuts "/commands/custom/XF86AudioLowerVolume" "pactl set-sink-volume @DEFAULT_SINK@ -5%"
+	fi
+	# -- brightness: the ThinkPad Fn row sends XF86Monotonicity, which xfce4
+	# -- power manager ignores. brightnessctl talks to the sysfs backlight
+	# -- directly, so this needs no daemon and no root.
+	if command -v brightnessctl >/dev/null 2>&1 && brightnessctl list 2>/dev/null | grep -q .; then
+		bind_key xfce4-keyboard-shortcuts "/commands/custom/XF86MonotonicityUp" "brightnessctl set 5%+"
+		bind_key xfce4-keyboard-shortcuts "/commands/custom/XF86MonotonicityDown" "brightnessctl set 5%-"
 	fi
 	# -- notifications: Super+n mute toggle, Super+Shift+n re-show the last --
 	if command -v dunstctl >/dev/null 2>&1; then
@@ -180,8 +198,13 @@ if command -v xfconf-query &>/dev/null && ask "Install the cross-WM Super shortc
 	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>grave" "xfce-scratch"
 	# -- window actions (xfwm4 channel) --
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>q" "close_window_key"
+	# Super+Backspace is the GNOME-ism for "close this window"; it is a
+	# second route to the action Super+q already performs, not a new one.
+	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>BackSpace" "close_window_key"
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>Up" "tile_up_key"
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Super>Down" "tile_down_key"
+	# -- logout (commands channel): the dialog, not an instant kill --
+	bind_key xfce4-keyboard-shortcuts "/commands/custom/<Super>Delete" "xfce4-session-logout"
 	# move the focused window to the previous / next workspace
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Shift><Super>Left" "move_window_prev_workspace_key"
 	bind_key xfce4-keyboard-shortcuts "/xfwm4/custom/<Shift><Super>Right" "move_window_next_workspace_key"
@@ -218,17 +241,21 @@ else
 fi
 
 # -- persist the touchpad natural-scroll across sessions (self-guarding) --
-XINIT="$HOME/.config/xfce4/xinitrc"
-if [[ -n "$XINIT" ]] && ! grep -q 'xfcemlg: natural scroll' "$XINIT" 2>/dev/null; then
-	mkdir -p "$(dirname "$XINIT")"
-	cat >>"$XINIT" <<'XEOF'
+# Goes through xfce_xinitrc_append so the snippet is written once and the
+# /etc/xdg/xfce4/xinitrc handoff is guaranteed to follow it. Writing this file
+# directly (or without the handoff) leaves startxfce4 with nothing to run, and
+# the session dies on login.
+if xfce_xinitrc_append 'xfcemlg: touchpad natural scroll' <<'XEOF'
 # -- xfcemlg: touchpad natural scroll (libinput) --
 TC=$(xinput list --name-only 2>/dev/null | grep -i touchpad | head -1)
 if [ -n "$TC" ] && xinput list-props "$TC" 2>/dev/null | grep -q 'libinput Natural Scrolling Enabled'; then
     xinput set-prop "$TC" "libinput Natural Scrolling Enabled" 1
 fi
 XEOF
-	log_ok "Natural-scroll persistence seeded in $XINIT (takes effect next login)."
+then
+	log_ok "Natural-scroll persistence seeded in $(xfce_xinitrc_path) (takes effect next login)."
+else
+	log_info "Natural-scroll persistence already present in $(xfce_xinitrc_path) — left as is."
 fi
 
 log_ok "Touchpad/trackpoint fix complete."

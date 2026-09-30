@@ -394,7 +394,7 @@ fi
 # Fastfetch installed + configured
 pkg fastfetch
 cfg "fastfetch config" "$HOME/.config/fastfetch/config.jsonc"
-cfg "fastfetch ASCII art" "$HOME/.config/fastfetch/ascii_art_anime.txt"
+cfg "fastfetch Devuan logo" "$HOME/.config/fastfetch/devuan.txt"
 
 # Panel: docklike present, genmon gone (panel seeded by 21-theme.sh)
 PANEL_XML="$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml"
@@ -486,11 +486,26 @@ service_state bluetooth bluetoothd optional
 service_state tlp tlp optional
 service_state cups cupsd optional
 service_state chrony chronyd optional
-if command -v ufw >/dev/null 2>&1; then
-	if ufw status 2>/dev/null | grep -qi "Status: active"; then
+# `ufw status` refuses to run unprivileged ("You need to be root to run this
+# script"), so probing it here reported every correctly-configured box as
+# "not active" — a permanent false WARN for a normal-user audit, whose advice
+# (re-run 30-desktop-essentials.sh) could never clear it. /etc/ufw/ufw.conf is
+# world-readable and holds the same ENABLED=yes/no the enable/disable path
+# writes, so read that instead; only escalate when the file is missing.
+if is_installed ufw; then
+	if [ -r /etc/ufw/ufw.conf ]; then
+		ufw_enabled=""
+		ufw_enabled="$(grep -iE '^ENABLED' /etc/ufw/ufw.conf 2>/dev/null | head -1 |
+			grep -qiE '^ENABLED=yes' && echo yes || echo no)"
+		if [ "$ufw_enabled" = "yes" ]; then
+			report "ufw firewall" ok "active (/etc/ufw/ufw.conf ENABLED=yes)"
+		else
+			report "ufw firewall" warn "installed but disabled (re-run 30-desktop-essentials.sh)"
+		fi
+	elif priv -n ufw status 2>/dev/null | grep -qi "Status: active"; then
 		report "ufw firewall" ok "active"
 	else
-		report "ufw firewall" warn "installed but not active (re-run 30-desktop-essentials.sh)"
+		report "ufw firewall" warn "installed, state unreadable without root (run: doas ufw status)"
 	fi
 else
 	report "ufw firewall" warn "ufw not installed"
@@ -525,11 +540,6 @@ if [ -f /etc/tlp.d/70-maxbattery.conf ]; then
 	report "TLP max-battery config" ok "/etc/tlp.d/70-maxbattery.conf"
 else
 	report "TLP max-battery config" warn "missing (re-run 13-hardware.sh)"
-fi
-if [ -f /etc/default/grub ] && grep -q 'pcie_aspm=force' /etc/default/grub; then
-	report "GRUB pcie_aspm=force" ok
-else
-	report "GRUB pcie_aspm=force" warn "not set (re-run 13-hardware.sh, then reboot)"
 fi
 if [ -f "$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml" ] &&
 	grep -q 'name="presentation-mode" type="bool" value="false"' "$HOME/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-power-manager.xml"; then

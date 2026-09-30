@@ -747,6 +747,111 @@ deploy_seed_file() {
 	return 0
 }
 
+# xfce_xinitrc_path — the user xinitrc, i.e. the file startxfce4 prefers over
+# the stock /etc/xdg/xfce4/xinitrc.
+xfce_xinitrc_path() { printf '%s\n' "${HOME}/.config/xfce4/xinitrc"; }
+
+# xfce_xinitrc_handoff — true when the user xinitrc still hands control back
+# to the stock one. startxfce4 execs ~/.config/xfce4/xinitrc *instead of*
+# /etc/xdg/xfce4/xinitrc, and only the stock file runs `exec xfce4-session`.
+# A user xinitrc that reaches EOF without that handoff makes the session exit
+# immediately: LightDM starts it, it returns, and you land back on the
+# greeter with no panel, no wallpaper and no wm. Everything that writes to
+# this file must go through xfce_xinitrc_append so the handoff survives.
+xfce_xinitrc_handoff() {
+	local f; f="$(xfce_xinitrc_path)"
+	[[ -f "$f" ]] || return 1
+	grep -qE '^[[:space:]]*exec[[:space:]]+/etc/xdg/xfce4/xinitrc' "$f"
+}
+
+# xfce_xinitrc_repair — restore the handoff on a user xinitrc that lost it
+# (typically written by an older version of this toolkit). Backs up first, and
+# is a no-op when the handoff is present or there is no file yet.
+# Returns: 0 repaired / already fine, 1 nothing to do, 2 write failed
+xfce_xinitrc_repair() {
+	local f; f="$(xfce_xinitrc_path)"
+
+	[[ -f "$f" ]] || return 1
+	xfce_xinitrc_handoff && return 0
+
+	cp -a "$f" "${f}.nohandoff.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+	{
+		echo
+		echo "# -- xfcemlg: hand off to the stock xinitrc --"
+		echo "# Added by xfcemlg: without this, the XFCE session never starts."
+		echo "exec /etc/xdg/xfce4/xinitrc \"\$@\""
+	} >>"$f" || return 2
+
+	chmod +x "$f" 2>/dev/null || true
+	xfce_xinitrc_handoff || return 2
+	log_ok "Restored the missing xinitrc handoff in $f (a backup was kept)."
+	return 0
+}
+
+# xfce_xinitrc_append — append a snippet to the user xinitrc exactly once.
+#
+# The marker is a literal substring of what the caller writes, so the
+# idempotence check and the written text can never drift apart. That drift is
+# what shipped before: both snippets grepped for a string ("xfcemlg: natural
+# scroll", "xfcemlg: Qt theme") that the heredoc never wrote, so every re-run
+# appended a second copy.
+#
+# When the handoff is already present the snippet is spliced in *above* it.
+# A plain append would land after the `exec`, and an exec never returns, so
+# the snippet would be dead code.
+#
+# Usage: xfce_xinitrc_append <marker> <<'EOF' ... EOF
+# Returns: 0 appended, 1 already present, 2 write failed
+xfce_xinitrc_append() {
+	local marker="$1" f snippet ins
+	f="$(xfce_xinitrc_path)"
+
+	[[ -n "$marker" ]] || { log_err "xfce_xinitrc_append: empty marker."; return 2; }
+
+	if [[ -f "$f" ]] && grep -qF -- "$marker" "$f"; then
+		return 1
+	fi
+
+	mkdir -p "$(dirname "$f")" || return 2
+	snippet="$(mktemp)" || return 2
+	cat >"$snippet" || { rm -f "$snippet"; return 2; }
+
+	if [[ -f "$f" ]]; then
+		cp -a "$f" "${f}.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
+	fi
+
+	# First line of the handoff block: our own comment if we added it,
+	# otherwise the exec itself (a hand-written handoff may lack the comment).
+	ins="$(grep -nE \
+		'xfcemlg: hand off to the stock xinitrc|^[[:space:]]*exec[[:space:]]+/etc/xdg/xfce4/xinitrc' \
+		"$f" 2>/dev/null | head -1 | cut -d: -f1)"
+
+	if [[ -n "$ins" ]]; then
+		{
+			head -n "$((ins - 1))" "$f"
+			cat "$snippet"
+			echo
+			tail -n "+$ins" "$f"
+		} >"$f.new" || { rm -f "$snippet" "$f.new"; return 2; }
+		mv "$f.new" "$f" || { rm -f "$snippet"; return 2; }
+	else
+		cat "$snippet" >>"$f" || { rm -f "$snippet"; return 2; }
+		# The snippet landed; make sure the session can still start afterwards.
+		xfce_xinitrc_repair >/dev/null || true
+	fi
+
+	rm -f "$snippet"
+	chmod +x "$f" 2>/dev/null || true
+
+	# If the snippet landed below the handoff it is unreachable, which is the
+	# very failure this whole helper exists to prevent.
+	if ! grep -qE '^[[:space:]]*exec[[:space:]]+/etc/xdg/xfce4/xinitrc' "$f"; then
+		log_err "xinitrc has no /etc/xdg/xfce4/xinitrc handoff — XFCE will not start."
+		return 2
+	fi
+	return 0
+}
+
 # verify_download — structural sanity check for anything this toolkit
 # fetches: non-empty, and a valid archive/package/zip of its expected
 # kind. This is a *plausibility* check (catches truncation, HTML error
