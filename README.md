@@ -11,7 +11,7 @@ turns a fresh devuan 6 or debian 13 install into a lean xfce desktop with graphi
 | **starting point** | works with an existing xfce install or a minimal netinst. tasksel is not touched. |
 | **install** | `./install.sh` runs every step unattended. `./run.sh --list` shows the order before you run it. |
 | **theme** | graphite amber from boot splash to login screen. one palette, no wallpaper-derived colors. |
-| **verify** | the installer ends with a report. `./run.sh --verify` rechecks state without writing. |
+| **verify** | `bash scripts/verifySetup.sh` reads state without writing. `./run.sh --verify` runs the setup first, then audits. |
 
 ## Quick start
 
