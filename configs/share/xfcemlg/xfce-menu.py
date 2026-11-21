@@ -27,7 +27,7 @@ CONFIG_DIR = (
     or os.path.expanduser("~/.config/xfcemlg")
 )
 PICKER = os.path.join(CONFIG_DIR, "picker.colors")
-DEFAULTS = {"bg0": "#121113F2", "bg1": "#1c1b1d", "bg3": "#e75353F2", "fg0": "#ffffff"}
+DEFAULTS = {"bg0": "#16181DF2", "bg1": "#202329", "bg3": "#E8A33DF2", "fg0": "#D8D3C8"}
 
 CATEGORIES = {
     "Apps": [
@@ -92,7 +92,7 @@ def rgba(value, alpha=1.0):
     if len(value) == 9:
         value = value[:7]
     if not (value.startswith("#") and len(value) == 7):
-        value = "#121113"
+        value = "#16181D"
     return Gdk.RGBA(
         red=int(value[1:3], 16) / 255.0,
         green=int(value[3:5], 16) / 255.0,

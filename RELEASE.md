@@ -35,7 +35,7 @@ prepends and ours appends, so loading both would leave ours winning and
 the payload's prompt would never be seen.
 
 **Devuan logo.** `19-fastfetch.sh` now ships the Devuan ASCII logo instead
-of the bundled braille face, in the palette accent red. fastfetch's
+of the bundled braille face, in the palette accent amber. fastfetch's
 built-in Devuan logo carries no colour placeholders and can therefore only
 be rendered in the palette magenta, so the art is deployed to
 `~/.config/fastfetch/devuan.txt` with each literal `$` escaped as `$$`. It
@@ -103,7 +103,7 @@ de-integration left: the vendored butterbash framework was removed with
 nothing in its place. Step 18 is now `18-shell-config.sh` and does two jobs —
 it still retires butterbash leftovers, and it deploys the toolkit's own shell
 config, written from scratch: aliases, a Nerd-Font two-line prompt in the
-Darkmatter palette, and fzf/zoxide/keybind hooks that only activate when
+Graphite-Amber palette, and fzf/zoxide/keybind hooks that only activate when
 those tools are installed. No third-party framework is vendored; fzf and
 zoxide load their own distro-shipped integration files.
 
@@ -113,14 +113,14 @@ zoxide load their own distro-shipped integration files.
   to `~/.config/xfcemlg/bash/` with a guarded, append-only `xfcemlg-shell`
   block in `~/.bashrc`. `deploy_seed_file` discipline: user edits are the
   truth and are never clobbered; re-runs are idempotent.
-- **Prompt**: pure-bash two-line PS1, Darkmatter palette, Nerd Font glyphs
+- **Prompt**: pure-bash two-line PS1, Graphite-Amber palette, Nerd Font glyphs
   (JetBrainsMono Nerd Font from 17-fonts; `XFCONF_PLAIN_PROMPT=1` for
   glyph-free), git branch + dirty marker, last-command exit status, trimmed
   cwd.
 - **Aliases**: navigation, eza ls-family with ls fallback, file safety
   (non-root), `extract()`, `term`/`screenshot`/`update-check`/`menu`,
   git shortcuts.
-- **Hooks**: fzf key-bindings/completion + Darkmatter `FZF_DEFAULT_OPTS`
+- **Hooks**: fzf key-bindings/completion + Graphite-Amber `FZF_DEFAULT_OPTS`
   when fzf is installed, `zoxide init bash` when zoxide is present, PgUp/PgDn
   history search.
 - **CLI ergonomics packages** (bat, eza, fzf, zoxide, ripgrep, ncdu, tree,
@@ -174,7 +174,7 @@ whole step was retired, and the theme fetch now pins immutable commits.
 
 - **The namespace is now `XMLG_` / `xfcemlg`, everywhere.** The `DEBSWAY*`
   prefix (the parent project's name), the `DEVX_` prefix, `devuan-xfce-setup`
-  paths, the vendored `butterbash` tree, the Catppuccin palette, and the
+  paths, the vendored `butterbash` tree, the Graphite-Amber palette, and the
   "ohmydebn-style" test-harness claim are gone. `run.sh` prepares the rename
   live: old on-disk paths (`~/.config/devuan-xfce-setup`, the apt component
   snippet, `/usr/share/devuan-xfce-assets` …) move to their `xfcemlg`
@@ -316,35 +316,37 @@ typo.
 ## 0.7.0 — Themes/icons fetched at install (bundles deleted), rofi removed
 
 The delivery model for the rice changes: the ~29 MB of bundled themes and
-icons no longer live in git. `21-theme.sh` now fetches the Darkmatter GTK
-theme from `stevedylandev/darkmatter-linux` and the Zafiro icons from
-`zayronxio/Zafiro-icons` at install time, then applies the same tweaks that
-used to be applied by hand in 0.6.0 — all automated by
-`scripts/lib/darkmatter-fetch.sh`. Rofi and its config are gone entirely;
+icons no longer live in git. `21-theme.sh` now builds the Graphite-Amber GTK
+theme from a pinned **legacy upstream base** (`stevedylandev/darkmatter-linux`)
+and fetches the Zafiro icons from `zayronxio/Zafiro-icons` at install time, then
+applies the same tweaks that used to be applied by hand in 0.6.0 — all automated
+by `scripts/lib/graphite-amber-fetch.sh`. Darkmatter remains only as that
+optional fetch source, never as the default identity. Rofi and its config are
+gone entirely;
 stock `xfce4-appfinder` owns Super+space.
 
 ### What's New
 - **No more bundles.** `configs/themes/` (7.7 MB), `configs/icons/` (21 MB)
   and `configs/rofi/` are deleted. The repo payload drops ~29 MB (79 → 51 MB)
   and so does the content deb.
-- **`scripts/lib/darkmatter-fetch.sh`** — the fetch+build+tweak engine:
-  - fetches `darkmatter-linux` (codeload tarball, sha256-pinned by default,
-    overridable via `DM_THEME_SHA256` / `DM_ICONS_SHA256`; `DM_SKIP_FETCH=1`
-    reuses a cached fetch for offline runs);
-  - assembles the three variants (`Darkmatter`, `Darkmatter-hdpi`,
-    `Darkmatter-xhdpi`) from the upstream root `gtk-3.0`/`gtk-4.0`/`assets`
+- **`scripts/lib/graphite-amber-fetch.sh`** — the fetch+build+tweak engine:
+  - fetches the legacy `darkmatter-linux` base (codeload tarball, sha256-pinned
+    by default, overridable via `DM_THEME_SHA256` / `DM_ICONS_SHA256`;
+    `DM_SKIP_FETCH=1` reuses a cached fetch for offline runs);
+  - assembles the three variants (`Graphite-Amber`, `Graphite-Amber-hdpi`,
+    `Graphite-Amber-xhdpi`) from the upstream root `gtk-3.0`/`gtk-4.0`/`assets`
     plus its `xfwm4/Darkmatter{,-hdpi,-xhdpi}/xfwm4` decorations;
   - rewrites `index.theme` per variant
     (`Name=<variant>`, `IconTheme=Zafiro-icons-Dark`);
-  - remaps the upstream orange `#e78a53` → red `#e75353` in every text
+  - remaps the upstream orange `#e78a53` → amber `#E8A33D` in every text
     asset (css/scss/svg) via sed and every PNG pixel via ImageMagick;
   - builds `Zafiro-icons-Dark` from the upstream `Dark/` dir, dropping the
     heavy `apps/scalable` SVG subtree (1553 files) + `previews/`.
 - **`21-theme.sh`** reworked: step 2 fetches+builds+deploys the themes to
-  `/usr/share/themes/` (purging earlier Darkmatter variants), step 4 does
+  `/usr/share/themes/` (purging earlier Graphite-Amber variants), step 4 does
   the same for the icons (Papirus-Dark fallback if the fetch fails), the
   rofi bonus block is removed, and `imagemagick` joins the theme deps.
-- **Full unit coverage of the pipeline** — `tests/unit/test-darkmatter.sh`
+- **Full unit coverage of the pipeline** — `tests/unit/test-graphite-amber.sh`
   builds variants + runs the remap against an offline fixture (a 1x1
   `#e78a53` PNG included as base64), asserts the orange is gone everywhere,
   the PNG pixels changed, and the icon trim (no `apps/scalable`), still with
@@ -352,30 +354,30 @@ stock `xfce4-appfinder` owns Super+space.
 - Dependencies of the fetch step: `curl` and `imagemagick` (both already
   used elsewhere in the toolkit).
 
-## 0.6.0 — Darkmatter rice (engine removed), VSCodium key fix, leaner desktop
+## 0.6.0 — Graphite-Amber rice (engine removed), VSCodium key fix, leaner desktop
 
 The theme layer was replaced wholesale. The palette-driven engine is gone:
-Darkmatter ships **bundled** (offline, version-pinned) with a red accent, a
-matching Zafiro icon theme and a curated dark/red wallpaper set. This release
+Graphite-Amber ships **bundled** (offline, version-pinned) with an amber accent, a
+matching Zafiro icon theme and a curated graphite/amber wallpaper set. This release
 also hardens the VSCodium repo key path, removes xfce4-terminal /
 xfce4-screenshooter / genmon, and flips the "optional" groups and utils to
 default-Y so `install.sh` really does give you everything.
 
 ### What's New
-- **Darkmatter GTK + xfwm4 theme, bundled** in `configs/themes/` (plain,
+- **Graphite-Amber GTK + xfwm4 theme, bundled** in `configs/themes/` (plain,
   hdpi and xhdpi variants; `gtk-3.0`, `gtk-4.0`, `xfwm4`, `assets`,
   `index.theme`), deployed to `/usr/share/themes/` by the new
   `scripts/21-theme.sh`. The old Tokyo Night themes are purged on re-run.
-- **Red accent** — the upstream orange `#e78a53` is remapped to `#e75353`
+- **Amber accent** - the upstream orange `#e78a53` is remapped to `#E8A33D`
   across every bundled CSS/PNG asset (1548 CSS swaps + 143 429 pixels over
   366 images) and is the accent used by the theme, Dunst, rofi, the greeter
   shim and the widgets.
 - **Zafiro icons bundled** — `configs/icons/Zafiro-icons-Dark` (PNG variant,
   17 directories; the SVG `apps/scalable` subtree is trimmed), deployed to
   `/usr/share/icons/` and set as the active icon theme.
-- **Curated wallpapers** — `configs/wallpapers/darkmatter/` (5 dark/red
+- **Curated wallpapers** — `configs/wallpapers/graphite-amber/` (5 graphite/amber
   images) replaces the old numbered set, deployed to
-  `/usr/share/backgrounds/xfce/devuan-darkmatter/`; the greeter and GRUB
+  `/usr/share/backgrounds/xfce/devuan-graphite-amber/`; the greeter and GRUB
   backgrounds now come from this same directory.
 - **`21-theme.sh`** (renamed from `21-theme-tokyonight.sh`): deploys the
   themes/icons, writes a native **`~/.config/alacritty/alacritty.toml`**
@@ -385,9 +387,9 @@ default-Y so `install.sh` really does give you everything.
   leftovers (`~/.config/xfcemlg/lib|themes|current`,
   `xfce-theme-set/list`, per-user `~/.config/gtk-3.0/gtk.css`,
   `alacritty.yml`).
-- **`22-theme-boot.sh`** recolors the Plymouth spinner theme to the red
-  accent, points GRUB/LightDM at `devuan-darkmatter`, and writes a
-  Darkmatter greeter CSS (`#121113` / `#e75353`).
+- **`22-theme-boot.sh`** recolors the Plymouth spinner theme to the amber
+  accent, points GRUB/LightDM at `devuan-graphite-amber`, and writes a
+  Graphite-Amber greeter CSS (`#16181D` / `#E8A33D`).
 - **Defaults are now Y across the board**: `32`, `43`, `44`, `45`, `46`,
   `50`, `51`, `52` (and the network-manager, libinput, gaming and heavy
   opt-in sub-prompts) — a plain `run.sh --yes` installs the full stack.
@@ -414,15 +416,15 @@ default-Y so `install.sh` really does give you everything.
   `verifySetup.sh` checks `use_compositing` + picom absence.
 - **`xfce-scratch` — drop-down terminal** (`configs/bin/xfce-scratch`,
   Super+grave): one dedicated undecorated alacritty (class `xfce-ddown`,
-  Darkmatter-themed), docked top-center at 60%×45% on every workspace,
+  Graphite-Amber-themed), docked top-center at 60%×45% on every workspace,
   toggled via windowunmap/map so it never occupies the taskbar. Pure
   xdotool — no new packages. Deployed by `24-power-user.sh`.
 - **tmux auto-attach** — `configs/tmux.conf` (Ctrl+b, base-index 1, vi keys,
-  mouse, Darkmatter status bar) deployed by `18-butterbash.sh`, and
+  mouse, Graphite-Amber status bar) deployed by `18-butterbash.sh`, and
   alacritty now runs `tmux new -A -s main` on launch (plain bash fallback),
   so every terminal — dropdown included — is a tmux client. `18` also
   installs git-delta and wires it as the git pager (decorations,
-  line-numbers, Catppuccin-Mocha) without clobbering an existing
+  line-numbers, Graphite-Amber) without clobbering an existing
   `core.pager`.
 - **Battery + thermal watchdogs** — `xfce-battery-warn` / `xfce-temp-warn`
   (flock-guarded daemons reading sysfs, no acpi dependency): one dunst
@@ -447,17 +449,17 @@ default-Y so `install.sh` really does give you everything.
   Thunar view defaults create-only so per-folder settings and user choices
   are never clobbered.
 - **VSCodium defaults + VLC dark** — `40-vscodium.sh` merges additive
-  Darkmatter editor defaults (Nerd Font, minimap off, bracket pairs, trim
+  Graphite-Amber editor defaults (Nerd Font, minimap off, bracket pairs, trim
   whitespace — only keys the user hasn't set) and seeds keybindings
   (ctrl+alt+t new terminal, ctrl+alt+b sidebar) only when none exist. VLC
   installs alongside `qt5-gtk-platformtheme` and the session xinitrc exports
   `QT_QPA_PLATFORMTHEME=gtk3` (self-guarding on the plugin), so VLC's Qt
-  chrome renders in Darkmatter; the Thunar "Play with VLC" actions pair
+  chrome renders in Graphite-Amber; the Thunar "Play with VLC" actions pair
   with it.
 - **Autostart hygiene** — duplicate user-vs-system `.desktop` entries are
   deduplicated; both watchdog daemons are flock-guarded so a double spawn
   can never run twice.
-- **`verifySetup.sh`** now guards dunst (Darkmatter config) and alacritty
+- **`verifySetup.sh`** now guards dunst (Graphite-Amber config) and alacritty
   (default terminal helper).
 
 ### Removals
@@ -477,16 +479,16 @@ default-Y so `install.sh` really does give you everything.
 - `Makefile`: the content deb no longer stages the deleted `themes/` tree
   (the payload now travels inside `configs/`).
 - `xfce-menu` dropped its now-dead "Theme List" entry and both widgets'
-  fallback palettes are Darkmatter (even without `picker.colors`).
+  fallback palettes are Graphite-Amber (even without `picker.colors`).
 
 ### Docs & tests
-- Test suite reworked for the engine-free world: `tests/unit/test-darkmatter.sh`
-  replaces `test-theme-apply.sh`; consistency tier guards the Darkmatter
+- Test suite reworked for the engine-free world: `tests/unit/test-graphite-amber.sh`
+  replaces `test-theme-apply.sh`; consistency tier guards the Graphite-Amber
   bundle/icon/remap and the absence of engine references instead of palette
   tokens.
 - README, AGENTS.md, `configs/README.md`, `docs/BUILDING.md`,
   `scripts/skills/xfce-setup-SKILL.md` and `verifySetup.sh` all describe the
-  Darkmatter end state.
+  Graphite-Amber end state.
 
 ## 0.5.0 — Theme engine + power-user commands + test suite + Makefile + content deb
 
@@ -504,7 +506,7 @@ asset deb so the toolkit's configs/themes ship as a trackable package.
   so the update GUI and menu stay palette-aware. Env overrides
   (`DEVX_SKIP_XFCONF`, `DEVX_THEME`, `DEVX_CONFIG`, etc.) make headless
   and ISO builds possible.
-- **Three themes seeded**: `tokyonight` (default), `catppuccin-mocha`,
+- **Three themes seeded**: `tokyonight` (default), `graphite-amber`,
   `nord`; each palette declared in `themes/<id>/palette.sh` and rendered
   through the shared `_base/tpl/` templates. Test suite enforces palette
   completeness and hex validity.
@@ -529,7 +531,7 @@ asset deb so the toolkit's configs/themes ship as a trackable package.
   asset bundle under `/usr/share/xfcemlg-assets/` when installed.
   `make check-deb` runs `dpkg-deb` info + lintian with zero errors.
   `packages/xfcemlg-assets/` holds the committed DEBIAN metadata;
-  the ~36 MB `configs/` (incl. the bundled Darkmatter themes + Zafiro
+  the ~36 MB `configs/` (incl. the bundled Graphite-Amber themes + Zafiro
   icons) is staged from the repo at build time.
 - **AGENTS.md** (repo-root) and **docs/FIXES.md**: project instructions
   for coding agents and a running issue/resolution record.
@@ -542,7 +544,7 @@ asset deb so the toolkit's configs/themes ship as a trackable package.
 - `verifySetup.sh`: dropped the phantom `pkg xfce4-pager` line.
 - `.gitignore`: now covers `blend/*/excalibur/rootfs-overlay/`,
   `__pycache__/`, and `*.pyc`.
-- `README.md`: palette list updated to `tokyonight/catppuccin-mocha/nord`.
+- `README.md`: palette list updated to `tokyonight/graphite-amber/nord`.
 
 Packing check-in of the post-0.3.0 working tree: the default tool swaps
 (xfce4-terminal→Alacritty everywhere, xfce4-screenshooter→Flameshot), picom
@@ -589,11 +591,11 @@ baseline the toolkits 0.5.0+ build on.
 
 ## 0.3.0 — Tokyo Night rice
 
-Whole-project re-theme from the old Catppuccin/KDE borrowings to a Tokyo Night
-XFCE rice (dark `#1a1b26`, accent `#bf616a`), plus a packing/robustness batch.
+Whole-project re-theme from the old Graphite-Amber/KDE borrowings to a Tokyo Night
+XFCE rice (dark `#16181D`, accent `#E8A33D`), plus a packing/robustness batch.
 
 ### What's New
-- **Tokyo Night theme end-to-end**: `21-theme-catppuccin.sh` renamed to
+- **Tokyo Night theme end-to-end**: `21-theme-graphite-amber.sh` renamed to
   `21-theme-tokyonight.sh`; GTK/xfwm4 relabeled ("Tokyo Night - Bordered"),
   Plymouth + GRUB + LightDM greeter all re-themed, bundled wallpapers +
   genmon wiring, rounded single bottom panel rice, Alacritty becomes the
@@ -632,7 +634,7 @@ is XFS on OpenRC):
   screenshots, clipman, tiling, workspaces) — create-if-missing, never
   overwrites existing bindings
 - Greeter hardening: `user-background = false` (their branded-art fix),
-  xft trio, Catppuccin Red login-box CSS shim (`configs/lightdm/gtk.css`,
+  xft trio, Graphite-Amber amber login-box CSS shim (`configs/lightdm/gtk.css`,
   lightdm-owned under `/var/lib/lightdm`)
 - First-run welcome wizard + wallpaper seeder that only fills monitors with
   no backdrop yet (their 0.4.1 never-overwrite rule)
@@ -690,8 +692,8 @@ is XFS on OpenRC):
   no other instances. `16` now also ensures `curl` before the Betterfox
   fetch instead of dying on minimal systems
 - `19-fastfetch.sh` rewritten minimal: one locally-written fancy
-  `config.jsonc` (small logo, red keys, essentials only, JSON-validated),
-  Mocha-only btop theme, zero hard exits (fetch failures warn and continue)
+  `config.jsonc` (small logo, amber keys, essentials only, JSON-validated),
+  Graphite-Amber-only btop theme, zero hard exits (fetch failures warn and continue)
 
 ## Unreleased — doas keeps asking? fixed
 

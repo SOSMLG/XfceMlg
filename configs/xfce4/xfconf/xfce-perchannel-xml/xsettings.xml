@@ -2,7 +2,7 @@
 
 <channel name="xsettings" version="1.0">
   <property name="Net" type="empty">
-    <property name="ThemeName" type="string" value="Darkmatter"/>
+    <property name="ThemeName" type="string" value="Graphite-Amber"/>
     <property name="IconThemeName" type="string" value="Zafiro-icons-Dark"/>
     <property name="DoubleClickTime" type="empty"/>
     <property name="SoundThemeName" type="empty"/>

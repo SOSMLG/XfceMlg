@@ -7,8 +7,9 @@ script before guessing.
 ## Install-time
 
 ### The theme fetch fails with a sha256 mismatch
-`scripts/lib/darkmatter-fetch.sh` pins Darkmatter-linux `822d163c` and
-Zafiro-icons `5c7f38ca` at **immutable commit SHAs** and verifies each
+`scripts/lib/graphite-amber-fetch.sh` pins the legacy upstream base
+`darkmatter-linux` `822d163c` and Zafiro-icons `5c7f38ca` at **immutable commit
+SHAs** and verifies each
 tarball against `DM_THEME_SHA256` / `DM_ICONS_SHA256`. A mismatch means the
 archive changed (either the commit moved — it can't, it's immutable — or the
 download was corrupted/truncated).
@@ -18,7 +19,7 @@ download was corrupted/truncated).
   - `DM_SKIP_FETCH=1 bash scripts/21-theme.sh` — reuse the cache as-is.
   - Delete the cache dir to force a fresh fetch.
 - If the *hash itself* is stale (upstream repacked), update the two
-  `DM_*_SHA256` values in `scripts/lib/darkmatter-fetch.sh` together with the
+  `DM_*_SHA256` values in `scripts/lib/graphite-amber-fetch.sh` together with the
   pinned commit — the consistency guard C18 keeps each URL and its hash from
   drifting apart, and both must change in the same commit.
 

@@ -8,7 +8,7 @@ Follow these conventions when extending, debugging, or reviewing this repo.
 
 Ten-ish numbered, independently runnable shell scripts (`scripts/01?.sh`
 …) that turn a bare Devuan Excalibur XFCE install into a themed, powered-up
-desktop: Darkmatter theme (fetched at install, engine-free), ThinkPad extras, Power-user
+desktop: Graphite-Amber theme (fetched at install, engine-free), ThinkPad extras, Power-user
 commands (menu/update GUI), update notifier, CLI stack + xfcemlg shell config, Firefox ESR
 hardening, first-run wizard, dev toolchains, AI agents + VSCodium.
 
@@ -48,42 +48,45 @@ Every step is idempotent and re-runnable.
   `11-backports.sh`) — so a bare sources.list may legitimately miss
   `libdvd-pkg`, `winetricks`, etc.
 
-## Theme (Darkmatter — fetched at install, engine-free, fixed)
+## Theme (Graphite-Amber — fetched at install, engine-free, fixed)
 
 - The look is **fixed**, not swappable. There is **no palette engine** and no
   `themes/<id>/palette.sh` / `theme-apply.sh` / `xfce-theme-set|list`
   anything — those were removed in 0.6.0. Do not reintroduce them.
-- The Darkmatter GTK3/GTK4 + xfwm4 theme and the Zafiro icons are **not
-  bundled in git** (that was ~29 MB of payload). `scripts/lib/darkmatter-fetch.sh`
-  fetches them at install time from `stevedylandev/darkmatter-linux` (root
-  `gtk-3.0`/`gtk-4.0`/`assets` + `xfwm4/Darkmatter{,-hdpi,-xhdpi}/xfwm4`)
-  and `zayronxio/Zafiro-icons` (`Dark/` dir), then auto-tweaks:
-  red-accent remap `#e78a53`→`#e75353` (text + PNG), per-variant
+- The Graphite-Amber GTK3/GTK4 + xfwm4 theme and the Zafiro icons are **not
+  bundled in git** (that was ~29 MB of payload). `scripts/lib/graphite-amber-fetch.sh`
+  fetches them at install time from a pinned **legacy upstream base**,
+  `stevedylandev/darkmatter-linux` (root `gtk-3.0`/`gtk-4.0`/`assets` +
+  `xfwm4/Darkmatter{,-hdpi,-xhdpi}/xfwm4`), and `zayronxio/Zafiro-icons`
+  (`Dark/` dir), then auto-tweaks:
+  amber-accent remap `#e78a53`→`#E8A33D` (text + PNG), per-variant
   `index.theme` (`IconTheme=Zafiro-icons-Dark`), `Dark/`→`Zafiro-icons-Dark`
   rename + `apps/scalable` + `previews/` trim.
     Fetch backends: codeload tarballs at **immutable commit SHAs**, never
-    `refs/heads/...` — darkmatter-linux `822d163c` (2026-08-22) and
+    `refs/heads/...` - the legacy darkmatter-linux base `822d163c` (2026-08-22) and
     Zafiro-icons `5c7f38ca`. A branch ref is a moving target that either
     changes the theme under the user silently or trips the sha256 and fails
     the install outright, and those two failure modes look alike. The sha256
     is a second layer (`DM_THEME_SHA256` / `DM_ICONS_SHA256`, env overridable;
     `DM_SKIP_FETCH=1` reuses whatever `~/.cache/xfcemlg/` already holds).
     Consistency guard C18 keeps each URL and its recorded hash from drifting
-    apart, which is the failure that would break a fresh install.
+    apart, which is the failure that would break a fresh install. The
+    Darkmatter name survives only as this optional legacy fetch source; the
+    installed theme and every user-facing identity are Graphite-Amber.
 - `scripts/21-theme.sh` deploys the assembled variants to `/usr/share/themes/`
-  (purging stale `Darkmatter*` and the old Tokyo Night themes first), writes
+  (purging stale `Graphite-Amber*` and the old Tokyo Night themes first), writes
   the native `~/.config/alacritty/alacritty.toml`, seeds the panel + the
-  built-in xfwm4 compositor, deploys `configs/wallpapers/darkmatter/` to
-  `/usr/share/backgrounds/xfce/devuan-darkmatter/`, and writes the static
+  built-in xfwm4 compositor, deploys `configs/wallpapers/graphite-amber/` to
+  `/usr/share/backgrounds/xfce/devuan-graphite-amber/`, and writes the static
   `~/.config/xfcemlg/picker.colors` (bg0/bg1/bg3/fg0).
-- Palette: near-black `#121113` (`bg`/`dark`), `#1c1b1d` base, red accent
-  `#e75353` (upstream orange `#e78a53` was remapped across all CSS + PNGs),
-  teal `#5f8787`, cream `#fbcb97`, fg `#ffffff`.
+- Palette: near-black `#16181D` (`bg`/`dark`), `#202329` base, amber accent
+  `#E8A33D` (upstream orange `#e78a53` was remapped across all CSS + PNGs),
+  teal `#79A9A6`, cream `#D2992F`, fg `#D8D3C8`.
 - Icons: **Zafiro-icons-Dark** (fetched, trimmed). `22-theme-boot.sh` and
-  `verifySetup.sh` assume the `Darkmatter` / `Zafiro-icons-Dark` /
-  `devuan-darkmatter` names — keep them in sync if you rename anything.
+  `verifySetup.sh` assume the `Graphite-Amber` / `Zafiro-icons-Dark` /
+  `devuan-graphite-amber` names — keep them in sync if you rename anything.
 - `scripts/22-theme-boot.sh` themes Plymouth/GRUB/LightDM to match
-  (near-black + red; see `configs/lightdm/gtk.css`).
+  (graphite + amber; see `configs/lightdm/gtk.css`).
 
 ## Power-user commands
 
@@ -122,7 +125,7 @@ flock-guarded and env-overridable for headless tests). Python widgets
   DEBIAN metadata (control/postinst) and `usr/share/doc/` copyright +
   changelog are committed there; the full `configs/` payload (~7 MB:
   wallpapers, power-user bins, agent skill, Firefox policy, vesktop/vscodium
-  themes; the Darkmatter themes + Zafiro icons are fetched at install time,
+  themes; the Graphite-Amber themes + Zafiro icons are fetched at install time,
   not shipped in the deb) is staged with
   `cp -a` at build time, never duplicated in git. `@VERSION@` in the
   control/copyright/changelog templates is substituted from `VERSION`.
@@ -136,6 +139,6 @@ flock-guarded and env-overridable for headless tests). Python widgets
 - `blend/xfcemlg-thinkpad/sync-overlay.sh` regenerates the overlay
   (and its own HOME rendering) by copying the `configs/` assets
   (wallpapers, alacritty.toml, panel seed and dunst/vesktop/vscodium configs
-  — the Darkmatter themes/icons are fetched at install time by
-  `scripts/lib/darkmatter-fetch.sh`, not copied from a bundle), with
+  — the Graphite-Amber themes/icons are fetched at install time by
+  `scripts/lib/graphite-amber-fetch.sh`, not copied from a bundle), with
   `XMLG_SKIP_XFCONF=1`. The overlay tree is derived — never hand-edit it.

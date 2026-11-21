@@ -1,12 +1,12 @@
 # shellcheck shell=bash
-# prompt.sh — the xfcemlg two-line prompt. Pure bash: no binary, no
-# framework. Uses the Darkmatter palette (red #e75353, teal #5f8787,
-# cream #fbcb97) and Nerd Font glyphs (JetBrainsMono Nerd Font is shipped
+# prompt.sh - the xfcemlg two-line prompt. Pure bash: no binary, no
+# framework. Uses the Graphite-Amber palette (amber #E8A33D, cyan #79A9A6,
+# muted amber #D2992F) and Nerd Font glyphs (JetBrainsMono Nerd Font is shipped
 # by 17-fonts.sh). Set XFCONF_PLAIN_PROMPT=1 for a glyph-free variant.
 #
-# ── on the git segment's cost ──────────────────────────────────────────
+# -- on the git segment's cost ------------------------------------------
 # 0.8.x resolved the branch with `git symbolic-ref`, then `git rev-parse`
-# as a fallback, then `git status --porcelain` — up to three forks on
+# as a fallback, then `git status --porcelain` - up to three forks on
 # *every* prompt. Two of them fail outside a repository, and the third
 # walks the whole worktree inside one. Measured here, 50 prompts:
 #
@@ -24,10 +24,10 @@
 #
 # The helpers hand results back through globals and the prompt is built by
 # assignment, because `x="$(f)"` and `PS1=$(printf ...)` are each a fork
-# too — an earlier draft of this file was slower than the git calls it was
+# too - an earlier draft of this file was slower than the git calls it was
 # replacing for exactly that reason.
 #
-# A backgrounded, cached `git status` — what oh-my-posh does — would get
+# A backgrounded, cached `git status` - what oh-my-posh does - would get
 # the prompt to ~0.1 ms even inside a repository. It is deliberately NOT
 # done here: bash prints "[1]+ Done ( trap ... )" into the terminal for
 # every background job it reaps, and the only way to stop that is
@@ -59,16 +59,18 @@ else
 	_ic_end=$'\ue0b0'  # nf-ple-right_half_circle
 fi
 
-# 24-bit ANSI for the Darkmatter palette.
-_CREAM=$'\e[38;2;251;203;151m'
-_TEAL=$'\e[38;2;95;135;135m'
-_RED=$'\e[38;2;231;83;83m'
-_FG=$'\e[38;2;255;255;255m'
+# 24-bit ANSI for the Graphite-Amber palette.
+_AMBER_MUTED=$'\e[38;2;210;153;47m'
+_CYAN=$'\e[38;2;121;169;166m'
+_AMBER=$'\e[38;2;232;163;61m'
+_RED=$'\e[38;2;201;112;100m'
+_SUCCESS=$'\e[38;2;143;181;122m'
+_TEXT=$'\e[38;2;216;211;200m'
 _RESET=$'\e[0m'
 
 PROMPT_DIRTRIM=2
 
-# __xfc_gitdir — the repository's git dir, found without forking.
+# __xfc_gitdir - the repository's git dir, found without forking.
 #
 # Walks up from $PWD looking for .git. A .git *directory* is the normal
 # case; a .git *file* holding "gitdir: <path>" is a linked worktree or a
@@ -110,7 +112,7 @@ __xfc_gitdir() {
 	done
 }
 
-# __xfc_branch <gitdir> — sets _XFC_BRANCH to the branch name, or to a
+# __xfc_branch <gitdir> - sets _XFC_BRANCH to the branch name, or to a
 # 7-character SHA when HEAD is detached.
 __xfc_branch() {
 	local head=""
@@ -127,7 +129,7 @@ __xfc_branch() {
 	return 0
 }
 
-# __xfc_git_prompt — set _XFC_GITSEG to the branch/dirty segment, or to
+# __xfc_git_prompt - set _XFC_GITSEG to the branch/dirty segment, or to
 # the empty string outside a repository. Prints nothing.
 _XFC_GITSEG=""
 __xfc_git_prompt() {
@@ -144,12 +146,12 @@ __xfc_git_prompt() {
 	# build tree with tens of thousands of objects pays for that on every
 	# single prompt to learn nothing. Opt in to see them.
 	#
-	# GIT_OPTIONAL_LOCKS=0 keeps this from blocking on — or invalidating —
+	# GIT_OPTIONAL_LOCKS=0 keeps this from blocking on - or invalidating -
 	# another git process's index refresh.
 	#
 	# Run it in $PWD, not in the git dir: `git -C <gitdir> status` has no
 	# worktree to compare against and reports an empty tree, which reads
-	# as "clean" forever. $PWD is inside the worktree by construction —
+	# as "clean" forever. $PWD is inside the worktree by construction -
 	# __xfc_gitdir only succeeds when walking up from it found this repo.
 	if [ "$XFCONF_PROMPT_GIT_UNTRACKED" = "1" ]; then
 		untracked=--untracked-files=all
@@ -161,11 +163,11 @@ __xfc_git_prompt() {
 		dirty="*"
 	fi
 
-	_XFC_GITSEG=" ${_RED}${_ic_git}${_XFC_BRANCH}${_FG}${dirty}${_RESET}"
+	_XFC_GITSEG=" ${_AMBER}${_ic_git}${_XFC_BRANCH}${_TEXT}${dirty}${_RESET}"
 	return 0
 }
 
-# __xfc_title — set the terminal/tab title. A printf builtin, no fork.
+# __xfc_title - set the terminal/tab title. A printf builtin, no fork.
 # Skipped where the terminal cannot show it. $HOSTNAME is a bash builtin
 # variable, so this does not need a `hostname` fork either; note that
 # printf would eat "\u"/"\h" as escape sequences, so the real values go in.
@@ -184,10 +186,10 @@ __xfc_ps1() {
 	local rc=$?
 	local st caret seg1
 	__xfc_git_prompt
-	# Last-exit segment: teal check on success, red cross + code on failure.
+	# Last-exit segment: green check on success, red cross + code on failure.
 	if [ "$rc" -eq 0 ]; then
-		st="${_TEAL}${_ic_ok}${_RESET}"
-		caret="${_TEAL}${_ic_end}${_RESET}"
+		st="${_SUCCESS}${_ic_ok}${_RESET}"
+		caret="${_CYAN}${_ic_end}${_RESET}"
 	else
 		st="${_RED}${_ic_err}[${rc}]${_RESET}"
 		caret="${_RED}${_ic_end}${_RESET}"
@@ -200,7 +202,7 @@ __xfc_ps1() {
 	# Built by assignment rather than `PS1=$(printf ...)`, and with
 	# __xfc_git_prompt called directly: command substitution forks, and two
 	# invisible forks per prompt cost more than the git call they wrapped.
-	seg1="${_CREAM}${_ic_user}"'\u@\h'"${_RESET} ${_TEAL}${_ic_dir}"'\w'"${_RESET}${_XFC_GITSEG} $st"
+	seg1="${_AMBER_MUTED}${_ic_user}"'\u@\h'"${_RESET} ${_CYAN}${_ic_dir}"'\w'"${_RESET}${_XFC_GITSEG} $st"
 	PS1=$'\n'"$seg1"$'\n'"$caret"' '
 	__xfc_title
 }

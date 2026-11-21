@@ -1,13 +1,13 @@
 # xfcemlg
 
-![Debian 13](https://img.shields.io/badge/Debian-13-A81D33?logo=debian&logoColor=white)
-![Devuan 6](https://img.shields.io/badge/Devuan-6-9B183E?logo=devuan&logoColor=white)
-![XFCE 4.20](https://img.shields.io/badge/XFCE-4.20-3B8EE9?logo=xfce&logoColor=white)
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Debian 13](https://img.shields.io/badge/Debian-13-202329?logo=debian&logoColor=E8A33D)
+![Devuan 6](https://img.shields.io/badge/Devuan-6-202329?logo=devuan&logoColor=E8A33D)
+![XFCE 4.20](https://img.shields.io/badge/XFCE-4.20-202329?logo=xfce&logoColor=E8A33D)
+![License: MIT](https://img.shields.io/badge/License-MIT-8FB57A.svg)
 
 A post-install toolkit that turns a fresh **Devuan 6 (Excalibur)** install
 (binary-compatible with **Debian 13 (Trixie)**) into a lean, finished
-**XFCE** desktop — **Darkmatter** themed (dark `#121113`, red accent `#e75353`)
+**XFCE** desktop — **Graphite-Amber** themed (dark `#16181D`, amber accent `#E8A33D`)
 from boot splash to login screen to terminal, **Alacritty** as the default
 terminal, Firefox ESR hardened, TLP battery-capped, Thunar fully plugged in,
 and installable with **one command, fully unattended**.
@@ -88,8 +88,8 @@ matters:
 | Layer | Choice |
 |---|---|
 | Desktop | **XFCE 4.20 on X11** (floating, single panel) via **LightDM + gtk-greeter** login, themed to match |
-| Theme | **Darkmatter** (dark `#121113`, red accent `#e75353`): GTK + xfwm4 fetched at install (engine-free, all three variants) from `stevedylandev/darkmatter-linux`, **Zafiro** dark icons fetched from `zayronxio/Zafiro-icons`, single bottom panel seed (items + JetBrainsMono Nerd Font clock/WM title fonts), matching Plymouth + GRUB + LightDM, curated dark/red wallpapers |
-| Terminal | **Alacritty** (GPU terminal) themed Darkmatter (TOML config), wired as THE terminal via `x-terminal-emulator` + exo `helpers.rc` |
+| Theme | **Graphite-Amber** (dark `#16181D`, amber accent `#E8A33D`): GTK + xfwm4 built at install from a pinned legacy upstream base (engine-free, all three variants), **Zafiro** dark icons fetched from `zayronxio/Zafiro-icons`, single bottom panel seed (items + JetBrainsMono Nerd Font clock/WM title fonts), matching Plymouth + GRUB + LightDM, curated graphite/amber wallpapers |
+| Terminal | **Alacritty** (GPU terminal) themed Graphite-Amber (TOML config), wired as THE terminal via `x-terminal-emulator` + exo `helpers.rc` |
 | Shortcuts | Super-based set (terminal, files, appfinder, screenshots, clipman, tiling, workspaces) + `Ctrl+Alt+L` lock via **light-locker** |
 | First login | Welcome wizard (update + Timeshift check, once) + wallpaper seeder (new monitors only, never overwrites) |
 | Files | **Thunar, full set**: volman automount, archive-plugin + xarchiver, media-tags, vcs, gtkhash, font-manager, `gvfs-backends` (Trash/MTP), tumbler thumbnails, custom actions (Terminal Here, Open as Root) |
@@ -120,9 +120,9 @@ matters:
 | core | `16-firefox.sh` — Firefox ESR + Betterfox hardening | Y |
 | core | `17-fonts.sh` — Noto, Font Awesome, JetBrainsMono Nerd Font | Y |
 | core | `18-shell-config.sh` — retires pre-0.8 shell leftovers, then deploys the shell config: the vendored ButterBash payload (GPL-2.0, verbatim) to ~/.config/bash, plus this toolkit's own parts (utility functions, aliases, Nerd-Font prompt, completion/fzf/zoxide/keybind hooks) to ~/.config/xfcemlg/bash, and an override layer fixing the payload's bare-sudo and netstat defects + CLI ergonomics tools (bat, eza, fzf, zoxide, ripgrep, fd, ncdu, tree, jq, xclip, unar) | Y |
-| core | `19-fastfetch.sh` — Darkmatter fastfetch config (Devuan ASCII logo in the accent red, curated module set), validated by fastfetch itself before it is accepted + btop | Y |
+| core | `19-fastfetch.sh` — Graphite-Amber fastfetch config (Devuan ASCII logo in the accent amber, curated module set), validated by fastfetch itself before it is accepted + btop | Y |
 | desktop | `20-xfce-debloat.sh` — trim task apps (Xfce Terminal, screenshooter), keep XFCE-native, silence beep | Y |
-| desktop | `21-theme.sh` — Darkmatter GTK/xfwm4 + Zafiro icons + xfwm4 compositor + panel/WM seed (items + fonts) + wallpapers | Y |
+| desktop | `21-theme.sh` — Graphite-Amber GTK/xfwm4 + Zafiro icons + xfwm4 compositor + panel/WM seed (items + fonts) + wallpapers | Y |
 | desktop | `22-theme-boot.sh` — Plymouth + GRUB + LightDM greeter theming | Y |
 | desktop | `23-input-fix.sh` — input fixes + locker + cross-WM Super shortcuts (term/codium/lock/logout/app-finder/vol/brightness/screenshots, plus the keyboard's own XF86Audio + Fn-row brightness keys) | Y |
 | desktop | `24-power-user.sh` — power-user commands (menu, update-check/gui, lock, suspend, health, selfupdate) + cron + login health check | Y |
@@ -132,11 +132,11 @@ matters:
 | apps | `33-useful-apps.sh` — base tools, Python stack, Ristretto, Atril, Disks | Y |
 | apps | `34-opencode-agent.sh` — OpenCode AI agent + Super+A hotkey + skill file | Y |
 | apps | `35-first-run.sh` — welcome wizard + wallpaper seeder (autostart) | Y |
-| optional | `40-vscodium.sh` — VSCodium (primary editor, bundled Darkmatter theme) + Neovim purge | Y |
+| optional | `40-vscodium.sh` — VSCodium (primary editor, bundled Graphite-Amber theme) + Neovim purge | Y |
 | optional | `41-dev-essentials.sh` — C/C++ + Python toolchains | Y |
 | optional | `43-photogimp.sh` — GIMP + PhotoGIMP layout | Y |
 | optional | `44-gaming.sh` — Heroic/Steam/Wine | Y |
-| optional | `45-chat.sh` — Vesktop (Discord, bundled Darkmatter system24 theme) / Telegram | Y |
+| optional | `45-chat.sh` — Vesktop (Discord, bundled Graphite-Amber system24 theme) / Telegram | Y |
 | optional | `46-heavy-optins.sh` — Thunderbird / LibreOffice / OBS Studio | Y |
 | utils | `50-maintenance.sh` — apt cleanup + dead symlink tidy | Y |
 | utils | `51-backup.sh` — timestamped HOME config backup/restore | Y |
@@ -154,7 +154,7 @@ bash scripts/verifySetup.sh --json   # machine-readable, for scripting
 ```
 
 Prints PASS/FAIL/WARN for groups, lean-core packages, Thunar plugins,
-fonts, Firefox policy, Darkmatter markers (GTK/icons/Alacritty/picker), the
+fonts, Firefox policy, Graphite-Amber markers (GTK/icons/Alacritty/picker), the
 LightDM greeter conf, SLiM absence, single polkit agent, and services
 (LightDM, TLP, Bluetooth, CUPS, chrony…). Exits non-zero on any FAIL — so it
 can gate CI. `xfcemlg-health` (deployed by 24-power-user) wraps it with a
@@ -163,7 +163,7 @@ can gate CI. `xfcemlg-health` (deployed by 24-power-user) wraps it with a
 ### Asset bundle (content deb)
 
 `make pkg-deb` builds a single data-only package with all versioned static
-assets (configs — wallpapers, power-user bins, agent skill; the Darkmatter
+assets (configs — wallpapers, power-user bins, agent skill; the Graphite-Amber
 themes/icons are fetched at install, not shipped)
 as `build/xfcemlg-assets_$(cat VERSION)_all.deb`; when installed it
 lands under `/usr/share/xfcemlg-assets/`. `make check-deb` inspects it
@@ -231,18 +231,20 @@ scripts/
   skills/xfcemlg-SKILL.md   system context for AI agents
 configs/         versioned static config (Thunar/uca.xml — deployed by 30-*)
   xfce4/         panel + window-manager seed (items, decorations, fonts) — 21-*
-  wallpapers/    curated dark/red set (deployed to devuan-darkmatter/)
-  dunst/         opt-in matching Darkmatter dunstrc (optional)
-  vesktop/       Darkmatter system24 theme (system24-darkmatter.theme.css) — 45-*
-  vscodium/      bundled Darkmatter color-theme extension — 40-*
+  wallpapers/    curated graphite/amber set (deployed to devuan-graphite-amber/)
+  dunst/         opt-in matching Graphite-Amber dunstrc (optional)
+  vesktop/       Graphite-Amber system24 theme (system24-graphite-amber.theme.css) — 45-*
+  vscodium/      bundled Graphite-Amber color-theme extension — 40-*
   share/         power-user widgets (xfce-menu, xfce-update-gui)
 
-The Darkmatter GTK/xfwm4 themes and Zafiro icons are **not** in the repo —
-`21-theme.sh` fetches them at install time from
-`stevedylandev/darkmatter-linux` and `zayronxio/Zafiro-icons` and auto-tweaks
-them via `scripts/lib/darkmatter-fetch.sh` (red-accent remap #e78a53→#e75353,
-variant assembly, Zafiro-icons-Dark rename + trim), so the git payload stays
-~29 MB lighter. Cached builds live in `~/.cache/xfcemlg/`.
+The Graphite-Amber GTK/xfwm4 themes and Zafiro icons are **not** in the repo —
+`21-theme.sh` fetches a pinned **legacy upstream base** from
+`stevedylandev/darkmatter-linux` and the icons from `zayronxio/Zafiro-icons`,
+then auto-tweaks them via `scripts/lib/graphite-amber-fetch.sh`
+(amber-accent remap #e78a53→#E8A33D, variant assembly, Zafiro-icons-Dark
+rename + trim), so the git payload stays ~29 MB lighter. Darkmatter is only
+that optional fetch source; the installed default is Graphite-Amber. Cached
+builds live in `~/.cache/xfcemlg/`.
 ```
 
 ---
@@ -296,4 +298,4 @@ MIT. See [LICENSE](LICENSE). The vendored ButterBash payload in
 
 ## Repository standard
 
-This repo follows the SOSMLG standard: [contributing](CONTRIBUTING.md), [security](SECURITY.md), [changelog](CHANGELOG.md). Local workflow: [English guide](https://github.com/SOSMLG/.github/blob/main/docs/GIT_GUIDE.md) / [Arabic guide](https://github.com/SOSMLG/.github/blob/main/docs/GIT_GUIDE.ar.md).
+This repo follows the SOSMLG standard: [contributing](CONTRIBUTING.md), [security](SECURITY.md), [changelog](CHANGELOG.md). Local workflow: [English guide](https://github.com/SOSMLG/.github/blob/main/docs/GIT_GUIDE.md) / [Arabic guide](https://github.com/SOSMLG/.github/blob/main/docs/GIT_GUIDE.ar.md). Visual standard: [theme](https://github.com/SOSMLG/.github/blob/main/docs/THEME.md) / [الطابع البصري](https://github.com/SOSMLG/.github/blob/main/docs/THEME.ar.md).

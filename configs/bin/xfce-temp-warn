@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# xfce-temp-warn — darkmatter thermal notifier daemon for xfce.
+# xfce-temp-warn — graphite-amber thermal notifier daemon for xfce.
 # Watches the first /sys/class/thermal thermal zone (acpitz on ThinkPads)
 # and fires ONE dunst notification per threshold crossing: 80°C (normal),
 # 90°C (critical, persistent). Re-arms below 75°C. Single instance via

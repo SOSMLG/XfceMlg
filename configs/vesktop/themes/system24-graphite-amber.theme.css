@@ -1,6 +1,6 @@
 /**
- * @name system24-darkmatter
- * @description a tui-style discord theme recolored to the Darkmatter rice (near-black #121113, coral accent #e75353).
+ * @name system24-graphite-amber
+ * @description a tui-style discord theme recolored to the Graphite-Amber rice (near-black #16181D, amber accent #E8A33D).
  * @author refact0r
  * @version 2.1.0
  * @invite nz87hXyvcy
@@ -86,79 +86,85 @@ body {
 /* color options */
 :root {
     color-scheme: dark;
-    --colors: on; /* off: discord default colors, on: darkmatter custom colors */
+    --colors: on; /* off: discord default colors, on: graphite-amber custom colors */
 
-    /* text colors (grays follow terminal fg #ffffff / #c1c1c1 / #999999) */
+    /* text colors (Graphite Amber text #D8D3C8 / muted #9A9AA2) */
     --text-0: var(--bg-4); /* text on colored elements */
-    --text-1: oklch(97% 0 24); /* other normally white text */
-    --text-2: oklch(88% 0 24); /* headings and important text */
-    --text-3: oklch(80% 0 24); /* normal text */
-    --text-4: oklch(66% 0 24); /* icon buttons and channels */
-    --text-5: oklch(48% 0 24); /* muted channels/chats and timestamps */
+    --text-1: #D8D3C8; /* other normally white text */
+    --text-2: #D8D3C8; /* headings and important text */
+    --text-3: #D8D3C8; /* normal text */
+    --text-4: #9A9AA2; /* icon buttons and channels */
+    --text-5: #9A9AA2; /* muted channels/chats and timestamps */
 
     /* background and dark colors */
-    --bg-1: oklch(31% 0.005 24); /* dark buttons when clicked */
-    --bg-2: oklch(27% 0.005 24); /* dark buttons */
-    --bg-3: oklch(22% 0.005 24); /* spacing, secondary elements (#1c1b1d) */
-    --bg-4: oklch(18% 0.005 24); /* main background color (#121113) */
-    --hover: oklch(98% 0 24 / 0.06); /* channels and buttons when hovered */
-    --active: oklch(98% 0 24 / 0.12); /* channels and buttons when clicked or selected */
-    --active-2: oklch(98% 0 24 / 0.18); /* extra state for transparent buttons */
+    --bg-1: #30343B; /* dark buttons when clicked */
+    --bg-2: #202329; /* dark buttons */
+    --bg-3: #202329; /* spacing, secondary elements */
+    --bg-4: #16181D; /* main background color */
+    --hover: #D8D3C814; /* channels and buttons when hovered */
+    --active: #D8D3C82B; /* channels and buttons when clicked or selected */
+    --active-2: #D8D3C842; /* extra state for transparent buttons */
     --message-hover: var(--hover); /* messages when hovered */
 
-    /* accent colors (coral scale, #e75353 at --accent-3) */
-    --accent-1: var(--red-1); /* links and other accent text */
-    --accent-2: var(--red-2); /* small accent elements */
-    --accent-3: var(--red-3); /* accent buttons */
-    --accent-4: var(--red-4); /* accent buttons when hovered */
-    --accent-5: var(--red-5); /* accent buttons when clicked */
-    --accent-new: var(--red-2); /* stuff that's normally red like mute/deafen buttons */
+    /* accent colors (amber scale, #E8A33D at --accent-3) */
+    --accent-1: var(--amber-1); /* links and other accent text */
+    --accent-2: var(--amber-2); /* small accent elements */
+    --accent-3: var(--amber-3); /* accent buttons */
+    --accent-4: var(--amber-4); /* accent buttons when hovered */
+    --accent-5: var(--amber-5); /* accent buttons when clicked */
+    --accent-new: var(--amber-2); /* mute/deafen buttons follow the amber accent */
     --mention: linear-gradient(to right, color-mix(in hsl, var(--accent-2), transparent 88%) 40%, transparent); /* background of messages that mention you */
     --mention-hover: linear-gradient(to right, color-mix(in hsl, var(--accent-2), transparent 93%) 40%, transparent); /* background of messages that mention you when hovered */
     --reply: linear-gradient(to right, color-mix(in hsl, var(--text-3), transparent 90%) 40%, transparent); /* background of messages that reply to you */
     --reply-hover: linear-gradient(to right, color-mix(in hsl, var(--text-3), transparent 95%) 40%, transparent); /* background of messages that reply to you when hovered */
 
     /* status indicator colors */
-    --online: var(--green-2); /* change to #40a258 for default */
-    --dnd: var(--red-2); /* change to #d83a41 for default */
-    --idle: var(--yellow-2); /* change to #cc954c for default */
-    --streaming: var(--purple-2); /* change to ##9147ff for default */
-    --offline: var(--text-4); /* change to #82838b for default offline color */
+    --online: var(--green-2);
+    --dnd: var(--red-2);
+    --idle: var(--yellow-2);
+    --streaming: var(--purple-2);
+    --offline: var(--text-4);
 
     /* border colors */
     --border-light: var(--hover); /* general light border color */
     --border: var(--active); /* general normal border color */
     --border-hover: var(--accent-2); /* border color of panels when hovered */
-    --button-border: oklch(100% 0 24 / 0.1); /* neutral border color of buttons */
+    --button-border: #D8D3C81A; /* neutral border color of buttons */
 
     /* base colors */
-    --red-1: oklch(74% 0.17 24);
-    --red-2: oklch(69% 0.17 24);
-    --red-3: oklch(64% 0.17 24);
-    --red-4: oklch(59% 0.17 24);
-    --red-5: oklch(54% 0.17 24);
+    --amber-1: #D2992F;
+    --amber-2: #E0A639;
+    --amber-3: #E8A33D;
+    --amber-4: #EDB45F;
+    --amber-5: #F1C47F;
 
-    --green-1: oklch(64% 0.05 196);
-    --green-2: oklch(59% 0.05 196);
-    --green-3: oklch(55% 0.05 196);
-    --green-4: oklch(51% 0.05 196);
-    --green-5: oklch(47% 0.05 196);
+    --red-1: #D9867B;
+    --red-2: #C97064;
+    --red-3: #B96358;
+    --red-4: #A8564C;
+    --red-5: #934A41;
 
-    --blue-1: oklch(75% 0.02 215);
-    --blue-2: oklch(70% 0.02 215);
-    --blue-3: oklch(65% 0.02 215);
-    --blue-4: oklch(60% 0.02 215);
-    --blue-5: oklch(55% 0.02 215);
+    --green-1: #A6C795;
+    --green-2: #8FB57A;
+    --green-3: #7CA268;
+    --green-4: #688E56;
+    --green-5: #557A45;
 
-    --yellow-1: oklch(90% 0.08 69);
-    --yellow-2: oklch(85% 0.08 69);
-    --yellow-3: oklch(80% 0.08 69);
-    --yellow-4: oklch(75% 0.08 69);
-    --yellow-5: oklch(70% 0.08 69);
+    --blue-1: #9CB6C9;
+    --blue-2: #7E9DB5;
+    --blue-3: #6C8AA2;
+    --blue-4: #5A778E;
+    --blue-5: #48647A;
 
-    --purple-1: oklch(73% 0.15 28);
-    --purple-2: oklch(68% 0.15 28);
-    --purple-3: oklch(63% 0.15 28);
-    --purple-4: oklch(58% 0.15 28);
-    --purple-5: oklch(53% 0.15 28);
+    --yellow-1: #E0B165;
+    --yellow-2: #D2992F;
+    --yellow-3: #BC8728;
+    --yellow-4: #9F7322;
+    --yellow-5: #835F1C;
+
+    --purple-1: #BEA3C9;
+    --purple-2: #A78BB5;
+    --purple-3: #92789F;
+    --purple-4: #7C6588;
+    --purple-5: #675171;
 }

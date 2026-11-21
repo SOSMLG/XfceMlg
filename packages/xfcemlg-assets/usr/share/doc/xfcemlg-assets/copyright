@@ -50,8 +50,9 @@ Copyright: 2024-2026 theme authors
 License: GPL-3.0-or-later
  See the theme files for full license text.
 
-# The Darkmatter GTK/xfwm4 themes and Zafiro icons are NOT shipped in this
-# package anymore: they are fetched at install time from
+# The Graphite-Amber GTK/xfwm4 themes and Zafiro icons are NOT shipped in this
+# package anymore: the Graphite-Amber theme is built at install time from the
+# pinned legacy upstream base (GPL-3.0):
 #   https://github.com/stevedylandev/darkmatter-linux   (GPL-3.0)
 #   https://github.com/zayronxio/Zafiro-icons           (GPL-3.0)
-# by scripts/lib/darkmatter-fetch.sh.
+# by scripts/lib/graphite-amber-fetch.sh.

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# XMLG_DESC: (optional) Vesktop (Discord) with Darkmatter system24 theme / Telegram
+# XMLG_DESC: (optional) Vesktop (Discord) with Graphite-Amber system24 theme / Telegram
 # XMLG_DEFAULT: Y
-#  45-chat.sh — Vesktop (Discord client) / Telegram
+#  45-chat.sh - Vesktop (Discord client) / Telegram
 #  Vesktop: latest GitHub release .deb (not pinned), then the bundled
-#  Darkmatter system24 theme (configs/vesktop/themes/) is deployed to
+#  Graphite-Amber system24 theme (configs/vesktop/themes/) is deployed to
 #  ~/.config/vesktop/themes/ and enabled in settings.json. Telegram:
-#  official tar.xz extracted to ~/.local/opt/Telegram — entirely
+#  official tar.xz extracted to ~/.local/opt/Telegram - entirely
 #  user-space, no privileges needed for that half at all.
 #  Privilege: priv() (doas-first, sudo fallback) (only for Vesktop's apt install)
 set -uo pipefail
@@ -104,19 +104,19 @@ EOF
 }
 
 deploy_vesktop_theme() {
-    local themesrc="$SCRIPT_DIR/../configs/vesktop/themes/system24-darkmatter.theme.css"
-    local theme_name="system24-darkmatter.theme.css"
+    local themesrc="$SCRIPT_DIR/../configs/vesktop/themes/system24-graphite-amber.theme.css"
+    local theme_name="system24-graphite-amber.theme.css"
     local vs_config="$HOME/.config/vesktop"
     local theme_dir="$vs_config/themes"
     local settings="$vs_config/settings/settings.json"
 
-    [[ -f "$themesrc" ]] || { log_warn "Vesktop theme seed missing at $themesrc — skipping."; return 1; }
+    [[ -f "$themesrc" ]] || { log_warn "Vesktop theme seed missing at $themesrc - skipping."; return 1; }
     if ! is_installed vesktop; then
-        log_info "Vesktop not installed — theme stays bundled until a run after install."
+        log_info "Vesktop not installed - theme stays bundled until a run after install."
         return 0
     fi
     if [[ ! -d "$vs_config/settings" ]]; then
-        log_info "No ~/.config/vesktop/settings yet (first launch not done) — theme deploys on a later re-run."
+        log_info "No ~/.config/vesktop/settings yet (first launch not done) - theme deploys on a later re-run."
         return 0
     fi
 
@@ -126,7 +126,7 @@ deploy_vesktop_theme() {
         log_info "Backed up existing $theme_dir/$theme_name."
     fi
     cp "$themesrc" "$theme_dir/$theme_name"
-    log_ok "system24 Darkmatter theme deployed to $theme_dir/$theme_name."
+    log_ok "system24 Graphite-Amber theme deployed to $theme_dir/$theme_name."
 
     if [[ -f "$settings" ]]; then
         cp "$settings" "${settings}.bak.$(date +%Y%m%d%H%M%S)"
@@ -153,7 +153,7 @@ PYEOF
 log_head "1/3  Vesktop"
 ask "Install Vesktop (Discord client)?" && install_vesktop
 
-log_head "2/3  Vesktop theme (Darkmatter system24)"
+log_head "2/3  Vesktop theme (Graphite-Amber system24)"
 deploy_vesktop_theme
 
 log_head "3/3  Telegram"

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # XMLG_DESC: Trim task apps, keep XFCE-native, silence the beep
 # XMLG_DEFAULT: Y
-#  20-xfce-debloat.sh — trim the default task-xfce-desktop app set.
+#  20-xfce-debloat.sh - trim the default task-xfce-desktop app set.
 #  Stays XFCE-native: VSCodium (40-*) replaces Mousepad, VLC replaces
 #  Parole; flocked out of the box are the Xfce Terminal (Alacritty is
 #  the toolkit's one true terminal, set up by 21-theme.sh) and
 #  xfce4-screenshooter (flameshot owns Print), and Dunst stays opt-in
-#  below. Also kills the system beep for good — that's genuinely
+#  below. Also kills the system beep for good - that's genuinely
 #  four unrelated
 #  sources (PC speaker, X11 bell, XFCE's own event-sound bell, and
 #  bash's readline bell), which is why so many "I turned it off but
@@ -16,7 +16,7 @@
 #  is mostly about targeted swaps, not a big bloat purge.
 #  Privilege: priv() (doas-first, sudo fallback)
 set -uo pipefail
-# NOTE: no -e — one failed package must degrade gracefully, not abort
+# NOTE: no -e - one failed package must degrade gracefully, not abort
 # everything after it (lib install_pkgs returns 1 on partial failure).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
@@ -45,24 +45,24 @@ purge_if_installed() {
 
 apt_update || log_warn "apt-get update failed (continuing with cached lists)."
 
-log_head "1/7  Mousepad (+ Geany, if present) → replaced by VSCodium"
+log_head "1/7  Mousepad (+ Geany, if present) -> replaced by VSCodium"
 if ask "Remove Mousepad and Geany (VSCodium is installed instead by 40-vscodium.sh)?"; then
     purge_if_installed "Mousepad/Geany" mousepad geany
 fi
 
-log_head "2/7  Parole/QuodLibet → replaced by VLC"
+log_head "2/7  Parole/QuodLibet -> replaced by VLC"
 if ask "Remove Parole and QuodLibet (VLC is installed instead by 33-useful-apps.sh)?"; then
     purge_if_installed "Parole/QuodLibet" parole quodlibet
 fi
 
 log_head "3/7  Unused optical-disc tooling"
-if ask "Remove Xfburn (CD/DVD burner — skip if you actually use an optical drive)?" "Y"; then
+if ask "Remove Xfburn (CD/DVD burner - skip if you actually use an optical drive)?" "Y"; then
     purge_if_installed "Xfburn" xfburn
 fi
 
 log_head "4/7  Screenshots: flameshot owns Print, stock widgets purged"
 # The stock task install binds Print to xfce4-screenshooter. This toolkit
-# standardizes on flameshot (installed by 10-xfce-core.sh) — so kill the
+# standardizes on flameshot (installed by 10-xfce-core.sh) - so kill the
 # duplicate and pin Print to flameshot's region-select overlay. genmon
 # (the old update-indicator widget) is retired too.
 purge_if_installed "xfce4-screenshooter" xfce4-screenshooter
@@ -76,10 +76,10 @@ if is_installed flameshot; then
     fi
     log_ok "Print Screen opens flameshot's region-select overlay."
 else
-    log_warn "flameshot not installed (10-xfce-core.sh installs it) — Print binding left untouched."
+    log_warn "flameshot not installed (10-xfce-core.sh installs it) - Print binding left untouched."
 fi
 
-log_head "5/7  Xfce Terminal → Alacritty"
+log_head "5/7  Xfce Terminal -> Alacritty"
 # Alacritty is the toolkit's default terminal (see 21-theme.sh) and also
 # takes over the x-terminal-emulator alternative. Xfce Terminal stays only
 # if you explicitly want a second fallback terminal.
@@ -87,9 +87,9 @@ if ask "Remove Xfce Terminal and its data package (Alacritty is the default term
     purge_if_installed "Xfce Terminal" xfce4-terminal xfce4-terminal-data
 fi
 
-log_head "6/7  xfce4-notifyd → Dunst"
+log_head "6/7  xfce4-notifyd -> Dunst"
 if ask "Replace xfce4-notifyd with Dunst (lighter, far more configurable notification daemon)?" "N"; then
-    priv apt-get install -y dunst || log_warn "Dunst failed to install — leaving xfce4-notifyd in place."
+    priv apt-get install -y dunst || log_warn "Dunst failed to install - leaving xfce4-notifyd in place."
     if is_installed dunst; then
         purge_if_installed "xfce4-notifyd" xfce4-notifyd
 
@@ -101,28 +101,28 @@ if ask "Replace xfce4-notifyd with Dunst (lighter, far more configurable notific
         fi
         if [[ -f "$SCRIPT_DIR/../configs/dunst/dunstrc" ]]; then
             cp "$SCRIPT_DIR/../configs/dunst/dunstrc" "$DUNST_CONF_DIR/dunstrc"
-            log_ok "Dunst configured (Darkmatter-accented) at $DUNST_CONF_DIR/dunstrc"
+            log_ok "Dunst configured (Graphite-Amber-accented) at $DUNST_CONF_DIR/dunstrc"
         else
-            log_warn "Bundled configs/dunst/dunstrc missing — leaving your current dunstrc in place."
+            log_warn "Bundled configs/dunst/dunstrc missing - leaving your current dunstrc in place."
         fi
 
         # dunst registers org.freedesktop.Notifications via D-Bus service
-        # activation once installed — it starts itself on the first
+        # activation once installed - it starts itself on the first
         # notification, no autostart entry needed. Just make sure any
         # already-running xfce4-notifyd process doesn't hold the name.
         pkill -x xfce4-notifyd 2>/dev/null || true
         log_ok "Dunst will take over notifications from here on (starts itself on first notification)."
     fi
 else
-    log_warn "Skipped — keeping xfce4-notifyd."
+    log_warn "Skipped - keeping xfce4-notifyd."
 fi
 
 log_head "7/7  Stop the system beep"
-# The "beep" is actually up to four independent, unrelated sources —
+# The "beep" is actually up to four independent, unrelated sources -
 # fixing only one is why so many "I turned it off but it's still
 # beeping" reports exist. This addresses all four:
 if ask "Silence the system beep/bell (PC speaker, X11 bell, GTK event sounds, and bash's own bell)?"; then
-    # 1. PC speaker kernel driver — the actual physical "boink" noise.
+    # 1. PC speaker kernel driver - the actual physical "boink" noise.
     BLACKLIST_CONF="/etc/modprobe.d/pcspkr-blacklist.conf"
     if [[ ! -f "$BLACKLIST_CONF" ]]; then
         printf 'blacklist pcspkr\nblacklist snd_pcsp\n' | priv tee "$BLACKLIST_CONF" > /dev/null
@@ -133,7 +133,7 @@ if ask "Silence the system beep/bell (PC speaker, X11 bell, GTK event sounds, an
     priv modprobe -r pcspkr 2>/dev/null || true
     priv modprobe -r snd_pcsp 2>/dev/null || true
 
-    # 2. X11 bell — GTK widgets (backspace-at-start-of-line, tab-complete
+    # 2. X11 bell - GTK widgets (backspace-at-start-of-line, tab-complete
     #    fail in a dialog, etc.) ring this independently of the PC
     #    speaker. `xset b off` only lasts the current X session, so it
     #    needs an autostart entry, not just running it once now.
@@ -149,7 +149,7 @@ EOF
     xset b off 2>/dev/null || true
     log_ok "X11 bell disabled now, and on every future login."
 
-    # 3. XFCE/GTK's own synthesized event-sound bell — a separate layer
+    # 3. XFCE/GTK's own synthesized event-sound bell - a separate layer
     #    from the raw X11 bell above (this is the libcanberra sound
     #    theme XFCE plays for "system events"). Both keys default to
     #    true; create-if-missing rather than assuming they already exist.
@@ -162,7 +162,7 @@ EOF
     done
     log_ok "XFCE's own event-sound bell disabled."
 
-    # 4. readline's bell — bash's own tab-complete-fail beep, independent
+    # 4. readline's bell - bash's own tab-complete-fail beep, independent
     #    of X11/GTK entirely (this is what still beeps even in a plain
     #    TTY with no X running at all). System-wide via /etc/inputrc.
     INPUTRC="/etc/inputrc"
@@ -175,15 +175,15 @@ EOF
         else
             printf '\nset bell-style none\n' | priv tee -a "$INPUTRC" > /dev/null
         fi
-        log_ok "readline's bell disabled system-wide ($INPUTRC) — takes effect in new shells."
+        log_ok "readline's bell disabled system-wide ($INPUTRC) - takes effect in new shells."
     else
-        log_warn "$INPUTRC not found — readline bell left as-is (unusual, but not fatal)."
+        log_warn "$INPUTRC not found - readline bell left as-is (unusual, but not fatal)."
     fi
 
     log_ok "All four beep sources addressed. If you still hear anything after a reboot, it's almost"
     log_ok "certainly a per-application setting (e.g. a terminal's own bell toggle in its preferences)."
 else
-    log_warn "Skipped — the beep lives on."
+    log_warn "Skipped - the beep lives on."
 fi
 
 log_info "Cleaning up orphaned dependencies..."

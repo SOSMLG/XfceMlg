@@ -1,4 +1,4 @@
-# alacritty.toml — Darkmatter palette (near-black, red accent)
+# alacritty.toml — Graphite-Amber palette (near-black, amber accent)
 # Seed for 21-theme.sh. TOML is the only config format alacritty 0.13+ reads.
 
 [window]
@@ -21,33 +21,33 @@ shell = { program = "/bin/bash", args = ["-lc", "command -v tmux >/dev/null 2>&1
 draw_bold_text_with_bright_colors = true
 
 [colors.primary]
-background = "#121113"
-foreground = "#ffffff"
+background = "#16181D"
+foreground = "#D8D3C8"
 
 [colors.normal]
-black   = "#060506"
-red     = "#e75353"
-green   = "#5f8787"
-yellow  = "#fbcb97"
-blue    = "#999999"
-magenta = "#e75353"
-cyan    = "#fbcb97"
-white   = "#c1c1c1"
+black   = "#16181D"
+red     = "#E8A33D"
+green   = "#79A9A6"
+yellow  = "#D2992F"
+blue    = "#9A9AA2"
+magenta = "#E8A33D"
+cyan    = "#D2992F"
+white   = "#D8D3C8"
 
 [colors.bright]
-black   = "#333333"
-red     = "#e75353"
-green   = "#5f8787"
-yellow  = "#fbcb97"
-blue    = "#aaaaaa"
-magenta = "#e75353"
-cyan    = "#fbcb97"
-white   = "#ffffff"
+black   = "#30343B"
+red     = "#E8A33D"
+green   = "#79A9A6"
+yellow  = "#D2992F"
+blue    = "#9A9AA2"
+magenta = "#E8A33D"
+cyan    = "#D2992F"
+white   = "#D8D3C8"
 
 [colors.cursor]
-text = "#121113"
-cursor = "#e75353"
+text = "#16181D"
+cursor = "#E8A33D"
 
 [colors.selection]
-text = "#ffffff"
-background = "#1c1b1d"
+text = "#D8D3C8"
+background = "#202329"

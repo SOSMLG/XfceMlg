@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# XMLG_DESC: VSCodium editor (Darkmatter theme) + Neovim retirement
+# XMLG_DESC: VSCodium editor (Graphite-Amber theme) + Neovim retirement
 # XMLG_DEFAULT: Y
-#  40-vscodium.sh — VSCodium (primary GUI editor) + Neovim retirement
+#  40-vscodium.sh - VSCodium (primary GUI editor) + Neovim retirement
 #  Telemetry-free VS Code build, installed via its official APT
 #  repo so it updates normally afterward. VSCodium is THE editor
 #  (Mousepad/Geany removed by 20-xfce-debloat.sh, Neovim retired here).
-#  Ships + activates the bundled Darkmatter color theme extension
-#  (configs/vscodium/xfcemlg.darkmatter-theme) and sets
-#  workbench.colorTheme=Darkmatter in the user settings.
+#  Ships + activates the bundled Graphite-Amber color theme extension
+#  (configs/vscodium/xfcemlg.graphite-amber-theme) and sets
+#  workbench.colorTheme=Graphite-Amber in the user settings.
 #  Privilege: priv() (doas-first, sudo fallback)
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -44,13 +44,13 @@ else
 	# We PIN that fingerprint rather than trusting whatever a URL hands
 	# back. The old code accepted any parseable key, and its second URL
 	# (repo.vscodium.dev) serves a *different* key (9F82ADC6..., Augrain)
-	# that does not sign this repo at all — so that "fallback" installed a
+	# that does not sign this repo at all - so that "fallback" installed a
 	# key which could only ever produce "No public key" while looking like
 	# success. Override VSCODIUM_KEY_FPR only on a genuine key rotation.
 	VSCODIUM_KEY_FPR="${VSCODIUM_KEY_FPR:-1302DE60231889FE1EBACADC54678CF75A278D9C}"
 	KEY_URL="https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg"
 
-	log_info "Fetching VSCodium's GPG key (pinned to ${VSCODIUM_KEY_FPR:0:16}…)..."
+	log_info "Fetching VSCodium's GPG key (pinned to ${VSCODIUM_KEY_FPR:0:16}...)..."
 	KEY_TMP="$(mktemp)"
 	KEY_BIN="$(mktemp)"
 	cleanup_key_tmp() { rm -f "$KEY_TMP" "$KEY_BIN"; }
@@ -80,7 +80,7 @@ else
 		# working setup, a transient network failure must not delete a good
 		# keyring and break an already-working repository.
 		cleanup_key_tmp
-		log_err "VSCodium signing key not installed — APT repo not configured."
+		log_err "VSCodium signing key not installed - APT repo not configured."
 		log_info "Fix: check network access to $KEY_URL, or drop the correct key"
 		log_info "     at $KEYRING yourself (fingerprint $VSCODIUM_KEY_FPR)."
 		exit 1
@@ -113,7 +113,7 @@ else
 	# New repo just added: must refresh even when the runner otherwise skips per-script updates.
 	# The vscodium index omits Valid-Until and is refreshed rarely (server keeps re-serving a
 	# stale InRelease), so a transient fetch blip can leave apt-cache without a candidate even
-	# though the repo is fine — wipe the cached index and retry once rather than failing first.
+	# though the repo is fine - wipe the cached index and retry once rather than failing first.
 	cand() { apt-cache policy codium 2>/dev/null | awk -F': ' '/Candidate:/{gsub(/ /,"",$2); print $2}'; }
 	registered() {
 		local c
@@ -128,13 +128,13 @@ else
 		}
 		registered && break
 		if [[ $attempt -eq 1 ]]; then
-			log_warn "codium not resolved — wiping the cached vscodium index and retrying once."
+			log_warn "codium not resolved - wiping the cached vscodium index and retrying once."
 			priv rm -f /var/lib/apt/lists/download.vscodium.com*_InRelease \
 				/var/lib/apt/lists/download.vscodium.com*_Packages 2>/dev/null || true
 		fi
 	done
 	if ! registered; then
-		log_err "codium has no install candidate — the VSCodium repo did not register after two refreshes."
+		log_err "codium has no install candidate - the VSCodium repo did not register after two refreshes."
 		log_info "Sources file ($SOURCES_FILE):"
 		priv cat "$SOURCES_FILE" | sed 's/^/  /'
 		log_info "Key fingerprints in $KEYRING:"
@@ -151,14 +151,14 @@ else
 	fi
 fi
 
-log_head "4/5  Darkmatter color theme"
-THEME_EXT_SRC="$SCRIPT_DIR/../configs/vscodium/xfcemlg.darkmatter-theme"
+log_head "4/5  Graphite-Amber color theme"
+THEME_EXT_SRC="$SCRIPT_DIR/../configs/vscodium/xfcemlg.graphite-amber-theme"
 VSCODIUM_CONFIG="$HOME/.config/VSCodium/User"
 VSCODIUM_SETTINGS="$VSCODIUM_CONFIG/settings.json"
 EXT_DIR=""
 # VSCodium deliberately uses ~/.vscode-oss as its user-data directory (so
 # it cannot collide with real VS Code's ~/.vscode). That is where the editor
-# actually reads extensions from — confirmed on this box, where the
+# actually reads extensions from - confirmed on this box, where the
 # previously-installed theme lives in ~/.vscode-oss/extensions. The old list
 # preferred ~/.vscodium/extensions, a path nothing creates, so a fresh
 # install got a theme the editor would never load.
@@ -177,17 +177,17 @@ if command -v codium &>/dev/null; then
 		mkdir -p "$EXT_DIR"
 	fi
 	if [[ -d "$THEME_EXT_SRC" ]]; then
-		EXT_DEST="$EXT_DIR/xfcemlg.darkmatter-theme"
+		EXT_DEST="$EXT_DIR/xfcemlg.graphite-amber-theme"
 		if [[ -f "$EXT_DEST/package.json" ]]; then
 			cp "$EXT_DEST/package.json" "${EXT_DEST}/package.json.bak.$(date +%Y%m%d%H%M%S)" 2>/dev/null || true
-			log_info "Backed up existing Darkmatter theme extension metadata."
+			log_info "Backed up existing Graphite-Amber theme extension metadata."
 		fi
 		rm -rf "$EXT_DEST"
 		cp -r "$THEME_EXT_SRC" "$EXT_DEST"
 		chmod -R u+rwX,go+rX "$EXT_DEST"
-		log_ok "Darkmatter theme extension deployed to $EXT_DEST."
+		log_ok "Graphite-Amber theme extension deployed to $EXT_DEST."
 	else
-		log_warn "Darkmatter theme extension seed missing at $THEME_EXT_SRC."
+		log_warn "Graphite-Amber theme extension seed missing at $THEME_EXT_SRC."
 	fi
 	mkdir -p "$VSCODIUM_CONFIG"
 	if [[ -f "$VSCODIUM_SETTINGS" ]]; then
@@ -202,9 +202,9 @@ try:
         data = json.load(f)
 except (FileNotFoundError, json.JSONDecodeError):
     data = {}
-if data.get("workbench.colorTheme") != "Darkmatter":
-    data["workbench.colorTheme"] = "Darkmatter"
-# Darkmatter-consistent editor defaults — only keys the user hasn't set
+if data.get("workbench.colorTheme") != "Graphite-Amber":
+    data["workbench.colorTheme"] = "Graphite-Amber"
+# Graphite-Amber-consistent editor defaults - only keys the user hasn't set
 # themselves, so hand-made settings always win.
 DEFAULTS = {
     "editor.fontFamily": "'JetBrainsMono Nerd Font', 'monospace'",
@@ -223,11 +223,11 @@ for k, v in DEFAULTS.items():
 with open(path, "w") as f:
     json.dump(data, f, indent=4)
     f.write("\n")
-print("colorTheme set to Darkmatter; editor defaults merged")
+print("colorTheme set to Graphite-Amber; editor defaults merged")
 PYEOF
-	log_ok "VSCodium colorTheme set to Darkmatter (relaunch codium to pick up the new theme)."
+	log_ok "VSCodium colorTheme set to Graphite-Amber (relaunch codium to pick up the new theme)."
 
-	# Keybindings — seed once, never clobber the user's own overrides
+	# Keybindings - seed once, never clobber the user's own overrides
 	KEYBIND_SRC="$SCRIPT_DIR/../configs/vscodium/keybindings.json"
 	KEYBIND_DST="$VSCODIUM_CONFIG/keybindings.json"
 	if [[ -f "$KEYBIND_SRC" ]] && [[ ! -f "$KEYBIND_DST" ]]; then
@@ -235,11 +235,11 @@ PYEOF
 		log_ok "VSCodium keybindings.json seeded (ctrl+alt+t terminal, ctrl+alt+b sidebar)."
 	fi
 else
-	log_warn "codium not on PATH — theme deploy skipped (re-run after installing VSCodium)."
+	log_warn "codium not on PATH - theme deploy skipped (re-run after installing VSCodium)."
 fi
 
-log_head "5/5  Retire Neovim (optional — VSCodium is the primary editor)"
-# Neovim and VSCodium coexist fine — nothing in this toolkit needs Neovim
+log_head "5/5  Retire Neovim (optional - VSCodium is the primary editor)"
+# Neovim and VSCodium coexist fine - nothing in this toolkit needs Neovim
 # gone, and its config is the user's, not ours. So this is a prompt that
 # defaults to No, it never uses `purge` unless asked a second time, and it
 # NEVER touches ~/.config/nvim.
@@ -278,14 +278,14 @@ if is_installed neovim || command -v nvim &>/dev/null; then
 				log_warn "Neovim remove had issues (continuing)."
 		fi
 	else
-		log_ok "Neovim left installed — it coexists with VSCodium, no conflict."
+		log_ok "Neovim left installed - it coexists with VSCodium, no conflict."
 	fi
 else
-	log_ok "No Neovim package installed — nothing to do."
+	log_ok "No Neovim package installed - nothing to do."
 fi
 # Reported, never moved or deleted: this is the user's editor config (an
 # active LazyVim setup, for instance) and no part of this step owns it.
 if [[ -d "$HOME/.config/nvim" ]]; then
-	log_info "Found a neovim config at $HOME/.config/nvim — left untouched (yours, not this step's)."
+	log_info "Found a neovim config at $HOME/.config/nvim - left untouched (yours, not this step's)."
 fi
 log_ok "VSCodium step complete."

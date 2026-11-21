@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =======================================================
-# darkmatter-fetch.sh — fetch + build + tweak the Darkmatter
+# graphite-amber-fetch.sh - fetch + build + tweak the Graphite-Amber
 # theme and Zafiro icons at INSTALL time (nothing is bundled
-# in git — that was ~29 MB of payload this toolkit no longer
+# in git - that was ~29 MB of payload this toolkit no longer
 # carries).
 # -------------------------------------------------------
 # Sourced by scripts/21-theme.sh (and by the sandboxed unit
@@ -11,13 +11,15 @@
 # it in a sandbox without any side effects.
 #
 # Upstreams (both GPL-3.0):
-#   themes: https://github.com/stevedylandev/darkmatter-linux
+#   themes: legacy upstream base https://github.com/stevedylandev/darkmatter-linux
 #           root gtk-3.0 / gtk-4.0 / assets / index.theme plus
-#           xfwm4 ← xfwm4/Darkmatter{,hdpi,xhdpi}/xfwm4
+#           xfwm4 <- xfwm4/Darkmatter{,hdpi,xhdpi}/xfwm4 (upstream layout)
+#   The Darkmatter name is retained only for this optional legacy fetch base;
+#   the deployed/default theme is Graphite-Amber after the remap below.
 #   icons:  https://github.com/zayronxio/Zafiro-icons  (Dark/ dir)
 #
 # The "tweak"s applied here (what used to be done by hand in 0.6.0):
-#   * orange accent #e78a53 -> red #e75353 in EVERY text asset
+#   * upstream orange #e78a53 -> Graphite Amber #E8A33D in EVERY text asset
 #     (css/scss/svg) and every PNG pixel (ImageMagick, if present)
 #   * per-variant index.theme: Name=<variant>, IconTheme=Zafiro-icons-Dark
 #     (upstream's root index.theme only knows "Zafiro-icons")
@@ -27,7 +29,7 @@
 # Env overrides:
 #   DM_FETCH_DIR      cache dir                     (~/.cache/xfcemlg)
 #   DM_SKIP_FETCH=1   reuse previously fetched sources (offline/dev/tests)
-#   DM_THEME_URL      darkmatter-linux tarball URL override
+#   DM_THEME_URL      upstream theme tarball URL override
 #   DM_ICONS_URL      Zafiro tarball URL override
 #   DM_THEME_SHA256   require this sha256 for the theme tarball (empty = skip)
 #   DM_ICONS_SHA256   require this sha256 for the icon tarball (empty = skip)
@@ -37,7 +39,7 @@
 # Recorded checksums of the tarballs this toolkit was built against.
 #
 # The default URLs below are immutable commit SHAs, so these are the checksums
-# of a fixed artefact and should not need recomputing — if a fetch ever fails on
+# of a fixed artefact and should not need recomputing - if a fetch ever fails on
 # a checksum mismatch with an unmodified env, that is a *tampered or substituted
 # download*, not an upstream move, and it should be investigated rather than
 # papered over by pasting in the hash the download actually produced. Keep each
@@ -59,19 +61,19 @@ dm_fetch_tarball() {
 	tmp="${dest}.part"
 	rm -f "$tmp"
 	if ! curl -fsSL --connect-timeout 15 --max-time 300 -o "$tmp" "$url"; then
-		echo "[darkmatter] download failed: $url" >&2
+		echo "[graphite-amber] download failed: $url" >&2
 		rm -f "$tmp"
 		return 1
 	fi
 	local size
 	size="$(stat -c %s "$tmp" 2>/dev/null || echo 0)"
 	if [ "$size" -lt "$min_bytes" ]; then
-		echo "[darkmatter] suspiciously small download ($size bytes) from $url" >&2
+		echo "[graphite-amber] suspiciously small download ($size bytes) from $url" >&2
 		rm -f "$tmp"
 		return 1
 	fi
 	if ! tar -tzf "$tmp" >/dev/null 2>&1; then
-		echo "[darkmatter] '$tmp' is not a valid tar.gz (got an error page?)" >&2
+		echo "[graphite-amber] '$tmp' is not a valid tar.gz (got an error page?)" >&2
 		rm -f "$tmp"
 		return 1
 	fi
@@ -79,7 +81,7 @@ dm_fetch_tarball() {
 		local actual
 		actual="$(sha256sum "$tmp" | cut -d' ' -f1)"
 		if [ "$actual" != "$sha" ]; then
-			echo "[darkmatter] sha256 MISMATCH for $(basename "$tmp")" >&2
+			echo "[graphite-amber] sha256 MISMATCH for $(basename "$tmp")" >&2
 			echo "            expected $sha" >&2
 			echo "            actual   $actual" >&2
 			echo "            update DM_THEME_SHA256 / DM_ICONS_SHA256, or pass via env" >&2
@@ -90,8 +92,8 @@ dm_fetch_tarball() {
 	mv "$tmp" "$dest"
 }
 
-# dm_fetch_themes → echoes the extracted source dir on success (1 on failure).
-#   Downloads the darkmatter-linux tarball once into $DM_FETCH_DIR and
+# dm_fetch_themes -> echoes the extracted source dir on success (1 on failure).
+#   Downloads the pinned legacy upstream tarball once into $DM_FETCH_DIR and
 #   extracts it into <cache>/darkmatter-linux-src. With DM_SKIP_FETCH=1 it
 #   reuses an existing tree without touching the network.
 dm_fetch_themes() {
@@ -110,7 +112,7 @@ dm_fetch_themes() {
 	mkdir -p "$cache"
 	if [ "${DM_SKIP_FETCH:-0}" = "1" ]; then
 		[ -d "$src" ] || {
-			echo "[darkmatter] DM_SKIP_FETCH=1 but $src is missing" >&2
+			echo "[graphite-amber] DM_SKIP_FETCH=1 but $src is missing" >&2
 			return 1
 		}
 		echo "$src"
@@ -129,25 +131,25 @@ dm_fetch_themes() {
 	local top
 	top="$(find "$cache" -maxdepth 1 -type d -name 'darkmatter-linux-*' | head -1)"
 	[ -n "$top" ] || {
-		echo "[darkmatter] could not locate extracted theme tree" >&2
+		echo "[graphite-amber] could not locate extracted theme tree" >&2
 		return 1
 	}
 	mv "$top" "$src"
 	echo "$src"
 }
 
-# dm_fetch_icons → echoes the extracted source dir on success (1 on failure).
+# dm_fetch_icons -> echoes the extracted source dir on success (1 on failure).
 #   Same story for zayronxio/Zafiro-icons (Dark/ variant on master).
 dm_fetch_icons() {
 	local cache="${DM_FETCH_DIR:-$HOME/.cache/xfcemlg}"
-	# Commit SHA, not refs/heads/master — same reasoning as the theme above.
+	# Commit SHA, not refs/heads/master - same reasoning as the theme above.
 	local url="${DM_ICONS_URL:-https://codeload.github.com/zayronxio/Zafiro-icons/tar.gz/5c7f38ca3b01194104481ffb803111e31851cf5d}"
 	local sha="${DM_ICONS_SHA256:-}"
 	local src="$cache/zafiro-icons-src"
 	mkdir -p "$cache"
 	if [ "${DM_SKIP_FETCH:-0}" = "1" ]; then
 		[ -d "$src" ] || {
-			echo "[darkmatter] DM_SKIP_FETCH=1 but $src is missing" >&2
+			echo "[graphite-amber] DM_SKIP_FETCH=1 but $src is missing" >&2
 			return 1
 		}
 		echo "$src"
@@ -165,7 +167,7 @@ dm_fetch_icons() {
 	local top
 	top="$(find "$cache" -maxdepth 1 -type d -name 'Zafiro-icons-*' | head -1)"
 	[ -n "$top" ] || {
-		echo "[darkmatter] could not locate extracted icon tree" >&2
+		echo "[graphite-amber] could not locate extracted icon tree" >&2
 		return 1
 	}
 	mv "$top" "$src"
@@ -175,22 +177,22 @@ dm_fetch_icons() {
 # ---- build + tweak (pure, offline, unit-testable) -------------------------
 
 # dm_build_theme_variants <src> <out>
-#   Assembles Darkmatter / Darkmatter-hdpi / Darkmatter-xhdpi from the
+#   Assembles Graphite-Amber / Graphite-Amber-hdpi / Graphite-Amber-xhdpi from the
 #   upstream layout (root gtk-3.0+gtk-4.0+assets shared; xfwm4 decorations
 #   under xfwm4/<variant>/xfwm4) and writes a per-variant index.theme that
 #   points at Zafiro-icons-Dark. <out> must not exist yet.
 dm_build_theme_variants() {
 	local src="$1" out="$2"
 	[ -d "$src/gtk-3.0" ] || {
-		echo "[darkmatter] theme src missing gtk-3.0 at $src" >&2
+		echo "[graphite-amber] theme src missing gtk-3.0 at $src" >&2
 		return 1
 	}
 	[ -d "$src/xfwm4" ] || {
-		echo "[darkmatter] theme src missing xfwm4 at $src" >&2
+		echo "[graphite-amber] theme src missing xfwm4 at $src" >&2
 		return 1
 	}
 	mkdir -p "$out"
-	for V in Darkmatter Darkmatter-hdpi Darkmatter-xhdpi; do
+	for V in Graphite-Amber Graphite-Amber-hdpi Graphite-Amber-xhdpi; do
 		local D="$out/$V"
 		mkdir -p "$D"
 		cp -a "$src/gtk-3.0" "$src/gtk-4.0" "$src/assets" "$D/"
@@ -198,30 +200,30 @@ dm_build_theme_variants() {
 		sed -e 's/^Name=.*$/Name='"$V"'/' \
 			-e 's/^IconTheme=.*$/IconTheme=Zafiro-icons-Dark/' \
 			"$src/index.theme" >"$D/index.theme"
-		if [ "$V" = "Darkmatter" ]; then
+		if [ "$V" = "Graphite-Amber" ]; then
 			cp -a "$src/xfwm4/." "$D/xfwm4/"
 			rm -rf "$D/xfwm4/Darkmatter-hdpi" "$D/xfwm4/Darkmatter-xhdpi"
 		else
-			[ -d "$src/xfwm4/$V/xfwm4" ] || {
-				echo "[darkmatter] missing $src/xfwm4/$V/xfwm4" >&2
+			[ -d "$src/xfwm4/${V/Graphite-Amber/Darkmatter}/xfwm4" ] || {
+				echo "[graphite-amber] missing $src/xfwm4/${V/Graphite-Amber/Darkmatter}/xfwm4" >&2
 				return 1
 			}
-			cp -a "$src/xfwm4/$V/xfwm4" "$D/xfwm4"
+			cp -a "$src/xfwm4/${V/Graphite-Amber/Darkmatter}/xfwm4" "$D/xfwm4"
 		fi
 	done
 }
 
 # dm_remap_accent <dir>
-#   Turns the upstream orange accent #e78a53 into the Darkmatter red
-#   #e75353 everywhere: text files (css/scss/svg/themerc) via sed, PNG
+#   Turns the upstream orange accent #e78a53 into the Graphite Amber amber
+#   #E8A33D everywhere: text files (css/scss/svg/themerc) via sed, PNG
 #   pixels via ImageMagick when available (skipped otherwise with a note).
 dm_remap_accent() {
 	local dir="$1"
-	grep -rlI '#e78a53' "$dir" 2>/dev/null | xargs -r sed -i -E 's/#e78a53/#e75353/Ig'
+	grep -rlI '#e78a53' "$dir" 2>/dev/null | xargs -r sed -i -E 's/#e78a53/#E8A33D/Ig'
 	if command -v convert >/dev/null 2>&1; then
 		local f n=0
 		while IFS= read -r -d '' f; do
-			if convert "$f" -fill '#e75353' -opaque '#e78a53' "$f.r" >/dev/null 2>&1 &&
+			if convert "$f" -fill '#E8A33D' -opaque '#e78a53' "$f.r" >/dev/null 2>&1 &&
 				[ -s "$f.r" ] && ! cmp -s "$f" "$f.r"; then
 				mv "$f.r" "$f"
 				n=$((n + 1))
@@ -229,9 +231,9 @@ dm_remap_accent() {
 				rm -f "$f.r"
 			fi
 		done < <(find "$dir" -name '*.png' -print0)
-		echo "[darkmatter] recolored $n PNGs to red accent (#e75353)"
+		echo "[graphite-amber] recolored $n PNGs to amber accent (#E8A33D)"
 	else
-		echo "[darkmatter] ImageMagick absent — PNG assets keep upstream colors (CSS/SVG remapped)" >&2
+		echo "[graphite-amber] ImageMagick absent - PNG assets keep upstream colors (CSS/SVG remapped)" >&2
 	fi
 }
 
@@ -241,7 +243,7 @@ dm_remap_accent() {
 dm_build_icons() {
 	local src="$1" out="$2"
 	[ -d "$src/Dark" ] || {
-		echo "[darkmatter] icon src missing Dark/ at $src" >&2
+		echo "[graphite-amber] icon src missing Dark/ at $src" >&2
 		return 1
 	}
 	mkdir -p "$out"
@@ -249,7 +251,7 @@ dm_build_icons() {
 	rm -rf "$out/Zafiro-icons-Dark/apps/scalable" \
 		"$out/Zafiro-icons-Dark/previews"
 	[ -f "$out/Zafiro-icons-Dark/index.theme" ] || {
-		echo "[darkmatter] built icon tree has no index.theme" >&2
+		echo "[graphite-amber] built icon tree has no index.theme" >&2
 		return 1
 	}
 }

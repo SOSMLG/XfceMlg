@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # XMLG_DESC: power-user commands (menu, update-check/gui, lock, suspend, health, selfupdate)
 # XMLG_DEFAULT: Y
-#  24-power-user.sh — deploy xfce-menu, xfce-update-{check,gui},
+#  24-power-user.sh - deploy xfce-menu, xfce-update-{check,gui},
 #  xfce-lock, xfce-suspend, xfcemlg (self-update), and the cron
 #  update notifier, and autostart the login health check.
 #
@@ -39,7 +39,7 @@ if [[ -d "$APP_DIR" ]]; then
 	chmod 755 "$TOOL_DIR"/*.py 2>/dev/null || true
 	log_ok "Python apps deployed to $TOOL_DIR"
 else
-	log_warn "$APP_DIR not found — GUI commands will not work."
+	log_warn "$APP_DIR not found - GUI commands will not work."
 fi
 
 # Shell launchers + CLI commands from configs/bin/
@@ -54,7 +54,7 @@ for f in $LAUNCHERS $CLI_CMDS; do
 done
 log_ok "Shell launchers deployed to $LOCAL_BIN"
 
-# xfcemlg-health — the read-only end-state reporter, deployed separately from
+# xfcemlg-health - the read-only end-state reporter, deployed separately from
 # the loop above because it is a diagnostic rather than a launcher, and because
 # it needs to be findable under a name a user would actually type.
 #
@@ -72,7 +72,7 @@ if [[ -f "$BIN_DIR/xfcemlg-health" ]]; then
 		log_info "  Cron entry:  0 9,18 * * * $LOCAL_BIN/xfcemlg-health --quiet"
 
 		# Login-time health check: silent on success, notifies ONLY on
-		# problems (same contract as the cron entry — quiet + notify on FAIL).
+		# problems (same contract as the cron entry - quiet + notify on FAIL).
 		# Only written when verification is resolvable, so a deb-only box
 		# without a checkout never nags at every login.
 		mkdir -p "$HOME/.config/autostart"
@@ -102,7 +102,7 @@ for d in xfce-battery-warn xfce-temp-warn; do
 		echo "[Desktop Entry]"
 		echo "Type=Application"
 		echo "Name=$d"
-		echo "Comment=Darkmatter battery/thermal notifier (dunst)"
+		echo "Comment=Graphite-Amber battery/thermal notifier (dunst)"
 		echo "Exec=$LOCAL_BIN/$d"
 		echo "X-GNOME-Autostart-enabled=true"
 		echo "NoDisplay=true"
@@ -122,7 +122,7 @@ NEW_CRON=$(mktemp)
 if crontab "$NEW_CRON"; then
 	log_ok "Cron job installed (runs at 09:00 and 18:00 daily)."
 else
-	log_err "Failed to install the cron job — add manually: crontab -e"
+	log_err "Failed to install the cron job - add manually: crontab -e"
 	echo "  0 9,18 * * * $CHECKER"
 fi
 rm -f "$NEW_CRON"

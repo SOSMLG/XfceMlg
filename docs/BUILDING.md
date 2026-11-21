@@ -23,7 +23,7 @@ Devuan 6 (excalibur) **live ISO** using the official
 
 What you get:
 
-- Boots to a Darkmatter-themed XFCE desktop (panel seed, Alacritty,
+- Boots to a Graphite-Amber-themed XFCE desktop (panel seed, Alacritty,
   themed greeter) in a live session
 - **OpenRC** init (Devuan's hybrid: sysvinit stays PID1, openrc is the
   service manager — the same transition the Devuan installer performs)
@@ -123,7 +123,7 @@ blend/xfcemlg-thinkpad/
 | Release codename / version / ISO name | `config` |
 | Kernel cmdline / boot menu | `iso_write_isolinux_cfg` + `iso_write_grub_cfg` in the `.blend` |
 | In-rootfs post-processing | `blend_finalize` in the `.blend` |
-| Darkmatter / panel / terminal / wallpapers | `configs/` (re-run `sync-overlay.sh`) |
+| Graphite-Amber / panel / terminal / wallpapers | `configs/` (re-run `sync-overlay.sh`) |
 
 To bump to the next release: change `release`/`version`/`image_name` in
 `config`, retarget `extra/syslinux`, and move `excalibur/` to

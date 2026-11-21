@@ -13,22 +13,22 @@
 #                      21-theme.sh copies these into ~/.config/xfce4/xfconf/
 #                      (backing up what's there) then restarts xfce4-panel
 #                      and xfwm4. Also exported to /etc/skel by 52-skel-export.sh.
-#   alacritty/alacritty.toml — Darkmatter palette (0.13+ TOML format), deployed
+#   alacritty/alacritty.toml — Graphite-Amber palette (0.13+ TOML format), deployed
 #                      by 21-theme.sh to ~/.config/alacritty/ (backing up)
 #   Thunar/uca.xml   — Thunar custom actions, installed by 30-desktop-essentials.sh
 #                      (Open Terminal Here via exo, Open as Root via pkexec)
-#   lightdm/gtk.css  — Darkmatter login-box shim, installed by 22-theme-boot.sh
+#   lightdm/gtk.css  — Graphite-Amber login-box shim, installed by 22-theme-boot.sh
 #                      to /var/lib/lightdm/.config/gtk-3.0/gtk.css (lightdm-owned)
-#                      NOTE: the Darkmatter GTK/xfwm4 themes and Zafiro icons
+#                      NOTE: the Graphite-Amber GTK/xfwm4 themes and Zafiro icons
 #                      are NOT stored here — 21-theme.sh fetches them at install
-#                      time from stevedylandev/darkmatter-linux and
-#                      zayronxio/Zafiro-icons and auto-tweaks them via
-#                      scripts/lib/darkmatter-fetch.sh (red-accent remap,
+#                      time from the legacy stevedylandev/darkmatter-linux base
+#                      and zayronxio/Zafiro-icons and auto-tweaks them via
+#                      scripts/lib/graphite-amber-fetch.sh (amber-accent remap,
 #                      hdpi/xhdpi assembly, Zafiro-icons-Dark rename + trim)
 #                      into /usr/share/themes/ and /usr/share/icons/.
-#   wallpapers/      — curated dark/red wallpaper set, deployed by 21-theme.sh
-#                      to /usr/share/backgrounds/xfce/devuan-darkmatter/
-#   dunst/dunstrc    — Darkmatter-accented Dunst config (20-* opt-in)
+#   wallpapers/      - curated graphite/amber wallpaper set, deployed by 21-theme.sh
+#                      to /usr/share/backgrounds/xfce/devuan-graphite-amber/
+#   dunst/dunstrc    — Graphite-Amber-accented Dunst config (20-* opt-in)
 #   fastfetch/devuan.txt — the Devuan logo, deployed by 19-fastfetch.sh.
 #                      A *template*, not a picture: the leading `$1` on every
 #                      line is a fastfetch colour placeholder, swapped for the

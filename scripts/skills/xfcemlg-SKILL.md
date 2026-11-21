@@ -3,7 +3,7 @@
 This machine was set up with `xfcemlg`, a post-install toolkit for a
 ThinkPad-class laptop running Devuan 6 (excalibur) — binary-compatible with
 Debian 13 (Trixie) — with a lean **XFCE** desktop (X11, floating) on a dark
-**Darkmatter** rice (background `#121113`, red accent `#e75353`). Keep the
+**Graphite-Amber** rice (background `#16181D`, amber accent `#E8A33D`). Keep the
 following in mind when suggesting commands or diagnosing issues on this
 system:
 
@@ -27,7 +27,7 @@ system:
   `rc-update add <svc> default` and `rc-service <svc> start`, list with
   `rc-status`.
 - Display manager is **LightDM + lightdm-gtk-greeter** (themed to match the
-  Darkmatter desktop). SLiM and greetd must NOT be enabled alongside it —
+  Graphite-Amber desktop). SLiM and greetd must NOT be enabled alongside it —
   exactly one DM owns the console. Default session: `Xfce Session`.
 
 ## Desktop environment
@@ -40,7 +40,7 @@ system:
   - Keyboard shortcuts are `/commands/custom/<keysym>` properties in the
     `xfce4-keyboard-shortcuts` channel — there is no sway-style config file
     with `bindsym` lines.
-  - Terminal is **Alacritty** (GPU-composited, Darkmatter colorscheme) and
+  - Terminal is **Alacritty** (GPU-composited, Graphite-Amber colorscheme) and
     is THE default: `x-terminal-emulator` alternative +
     `~/.config/xfce4/helpers.rc` (`TerminalEmulator=alacritty`) — covers
     Thunar "Open Terminal Here", Whisker Menu, and panel launchers.
@@ -65,17 +65,17 @@ system:
     and `xfwm4`. No genmon — the old update-indicator widget is gone;
     updates are handled by the power-user commands + notifier in
     `24-power-user.sh`.
-- The Darkmatter rice is **fetched at install time**, not bundled:
-  `scripts/lib/darkmatter-fetch.sh` pulls the theme from
-  `stevedylandev/darkmatter-linux` (assembling the plain/hdpi/xhdpi
-  variants) and the icons from `zayronxio/Zafiro-icons` (renamed to
+- The Graphite-Amber rice is **built at install time**, not bundled:
+  `scripts/lib/graphite-amber-fetch.sh` pulls a pinned **legacy upstream base**
+  from `stevedylandev/darkmatter-linux` (assembling the plain/hdpi/xhdpi
+  variants as Graphite-Amber) and the icons from `zayronxio/Zafiro-icons` (renamed to
   **Zafiro-icons-Dark**, `apps/scalable` trimmed), auto-applies the
-  red-accent remap (`#e78a53`→`#e75353`) and deploys to
+  amber-accent remap (`#e78a53`→`#E8A33D`) and deploys to
   `/usr/share/themes/` + `/usr/share/icons/` via `21-theme.sh`; there is
-  **no theme engine** and no palette switcher — `Darkmatter` is the GTK +
-  xfwm4 theme, period. Wallpapers are the curated dark/red set in
-  `configs/wallpapers/darkmatter/` (deployed to
-  `/usr/share/backgrounds/xfce/devuan-darkmatter/`). The static
+  **no theme engine** and no palette switcher — `Graphite-Amber` is the GTK +
+  xfwm4 theme, period. Wallpapers are the curated graphite/amber set in
+  `configs/wallpapers/graphite-amber/` (deployed to
+  `/usr/share/backgrounds/xfce/devuan-graphite-amber/`). The static
   `~/.config/xfcemlg/picker.colors` file carries the palette for
   the Python menu/update-gui widgets. Plymouth, GRUB and the LightDM greeter
   are themed to match.
@@ -96,14 +96,14 @@ system:
     over those tarballs, and `DM_SKIP_FETCH=1`.
   State log:
   `~/.local/state/xfcemlg/last-run.log`.
-  Notable steps: `21-theme.sh` applies the rice — it fetches the Darkmatter
-  GTK/xfwm4 themes + Zafiro icons via `scripts/lib/darkmatter-fetch.sh`
-  (nothing bundled in git), writes the Darkmatter
+  Notable steps: `21-theme.sh` applies the rice — it fetches the Graphite-Amber
+  GTK/xfwm4 themes + Zafiro icons via `scripts/lib/graphite-amber-fetch.sh`
+  (nothing bundled in git), writes the Graphite-Amber
   `alacritty.toml`, seeds the rounded panel and the xfwm4 compositor, writes
   the static
   `picker.colors`, and cleans up any old palette-engine leftovers.
   `22-theme-boot.sh` themes Plymouth/GRUB/LightDM to match (near-black
-  `#121113` + red `#e75353`). Most steps now default to **Y**, including the
+  `#16181D` + red `#E8A33D`). Most steps now default to **Y**, including the
   4x optional phase (`43-photogimp`, `44-gaming`, `45-chat`,
   `46-heavy-optins` — Thunderbird, LibreOffice, OBS) and the 5x utils.
   `24-power-user.sh` deploys the power-user commands (xfce-menu,
@@ -122,5 +122,5 @@ system:
   (`build/xfcemlg-assets_*.deb`, ~7 MB, installed under
   `/usr/share/xfcemlg-assets/`); `make check-deb` verifies it with
   dpkg-deb + lintian (zero errors). `packages/xfcemlg-assets/` holds
-  the metadata; the ~7 MB payload (configs/ — the Darkmatter themes/icons
+  the metadata; the ~7 MB payload (configs/ — the Graphite-Amber themes/icons
   are fetched at install, not shipped) is staged from the repo at build time.

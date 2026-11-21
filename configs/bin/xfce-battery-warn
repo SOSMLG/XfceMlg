@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# xfce-battery-warn — darkmatter battery notifier daemon (X) for xfce.
+# xfce-battery-warn — graphite-amber battery notifier daemon (X) for xfce.
 # Watches /sys/class/power_supply (no acpi dependency) and fires ONE
 # dunst notification per threshold crossing: 20% (normal), 10% (normal),
 # 5% (critical, persistent). Re-arms once charging back above 25%.

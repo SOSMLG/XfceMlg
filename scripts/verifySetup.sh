@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =======================================================
-# Verify Setup — end-state audit (XFCE edition)
+# Verify Setup - end-state audit (XFCE edition)
 # -------------------------------------------------------
 # One-pass check of the toolkit's expected end state:
 # group membership, key packages, fonts, Firefox policy,
-# Darkmatter theme markers, Thunar plugins, LightDM config,
+# Graphite-Amber theme markers, Thunar plugins, LightDM config,
 # and enabled services. Designed to be run from
 # run.sh --verify after a run, or standalone at any time.
 #
@@ -14,7 +14,7 @@
 #   verifySetup.sh --json     emit a machine-readable JSON object as the
 #                             final line ({"passed":N,"failed":N,"warned":N,
 #                             "checks":[{"name","status","detail"},...]})
-#                             — the exit code contract is unchanged.
+#                             - the exit code contract is unchanged.
 # =======================================================
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -76,18 +76,18 @@ pkg() { # pkg <name> [critical|optional]
 		detail="installed"
 	elif [ "$level" = "optional" ]; then
 		state="warn"
-		detail="not installed (optional — OK to skip)"
+		detail="not installed (optional - OK to skip)"
 	else
 		state="fail"
-		detail="missing — re-run the relevant script"
+		detail="missing - re-run the relevant script"
 	fi
 	report "$name" "$state" "$detail"
 }
 
-pkg_absent() { # pkg_absent <name> — must NOT be installed
+pkg_absent() { # pkg_absent <name> - must NOT be installed
 	local name="$1"
 	if is_installed "$name"; then
-		report "$name absent" fail "still installed — purge it (20-xfce-debloat.sh)"
+		report "$name absent" fail "still installed - purge it (20-xfce-debloat.sh)"
 	else
 		report "$name absent" ok
 	fi
@@ -101,10 +101,10 @@ bin() { # bin <command> [critical|optional]
 		detail="$(command -v "$name")"
 	elif [ "$level" = "optional" ]; then
 		state="warn"
-		detail="not installed (optional — OK to skip)"
+		detail="not installed (optional - OK to skip)"
 	else
 		state="fail"
-		detail="missing — re-run the relevant script"
+		detail="missing - re-run the relevant script"
 	fi
 	report "bin: $name" "$state" "$detail"
 }
@@ -117,10 +117,10 @@ cfg() { # cfg <label> <path> [critical|optional]
 		detail="present"
 	elif [ "$level" = "optional" ]; then
 		state="warn"
-		detail="missing (optional — OK to skip)"
+		detail="missing (optional - OK to skip)"
 	else
 		state="fail"
-		detail="missing — re-run the relevant script"
+		detail="missing - re-run the relevant script"
 	fi
 	report "cfg: $label" "$state" "$detail"
 }
@@ -176,7 +176,7 @@ pkg xfce-polkit
 
 # --- 2b. Single polkit auth agent -----------------------------------------
 # polkitd accepts one auth agent per subject; duplicates fail at login.
-# 10-xfce-core.sh masks foreign agents — assert nothing else survives.
+# 10-xfce-core.sh masks foreign agents - assert nothing else survives.
 foreign_polkit=""
 for f in /etc/xdg/autostart/*.desktop "$HOME"/.config/autostart/*.desktop; do
 	[ -f "$f" ] || continue
@@ -201,12 +201,12 @@ else
 fi
 
 if is_installed slim; then
-	report "slim absent" fail "installed — purge it (10-xfce-core.sh) so it can't fight LightDM"
+	report "slim absent" fail "installed - purge it (10-xfce-core.sh) so it can't fight LightDM"
 else
 	report "slim absent" ok
 fi
 
-# Purged by 20-xfce-debloat.sh — Alacritty is the toolkit's terminal.
+# Purged by 20-xfce-debloat.sh - Alacritty is the toolkit's terminal.
 pkg_absent xfce4-terminal
 pkg_absent xfce4-screenshooter
 
@@ -271,7 +271,7 @@ pkg gnome-software optional
 if [ -n "$(fc-list 2>/dev/null | grep -i "JetBrainsMono Nerd Font")" ]; then
 	report "JetBrainsMono Nerd Font" ok
 else
-	report "JetBrainsMono Nerd Font" fail "not found — re-run 17-fonts.sh"
+	report "JetBrainsMono Nerd Font" fail "not found - re-run 17-fonts.sh"
 fi
 
 # --- 6. Firefox policy ----------------------------------------------------
@@ -286,39 +286,39 @@ else
 	report "Firefox Betterfox defaults" warn "not installed (re-run 16-firefox.sh)"
 fi
 
-# --- 7. Darkmatter theme markers -----------------------------------------
+# --- 7. Graphite-Amber theme markers -----------------------------------------
 
 # GTK + xfwm4 theme dirs exist
-if [ -d "/usr/share/themes/Darkmatter" ]; then
-	report "Darkmatter theme dir" ok
+if [ -d "/usr/share/themes/Graphite-Amber" ]; then
+	report "Graphite-Amber theme dir" ok
 else
-	report "Darkmatter theme dir" fail "missing — re-run 21-theme.sh"
+	report "Graphite-Amber theme dir" fail "missing - re-run 21-theme.sh"
 fi
-if [ -d "/usr/share/themes/Darkmatter/xfwm4" ]; then
-	report "Darkmatter xfwm4 dir" ok
+if [ -d "/usr/share/themes/Graphite-Amber/xfwm4" ]; then
+	report "Graphite-Amber xfwm4 dir" ok
 else
-	report "Darkmatter xfwm4 dir" fail "missing — re-run 21-theme.sh"
+	report "Graphite-Amber xfwm4 dir" fail "missing - re-run 21-theme.sh"
 fi
 
 # Active theme references
 CURRENT_GTK=$(xfconf-query -c xsettings -p /Net/ThemeName 2>/dev/null || true)
-if [[ "$CURRENT_GTK" == "Darkmatter" ]]; then
-	report "Active GTK theme" ok "Darkmatter"
+if [[ "$CURRENT_GTK" == "Graphite-Amber" ]]; then
+	report "Active GTK theme" ok "Graphite-Amber"
 else
-	report "Active GTK theme" warn "set to '$CURRENT_GTK', expected Darkmatter"
+	report "Active GTK theme" warn "set to '$CURRENT_GTK', expected Graphite-Amber"
 fi
 CURRENT_XFWM=$(xfconf-query -c xfwm4 -p /general/theme 2>/dev/null || true)
-if [[ "$CURRENT_XFWM" == "Darkmatter" ]]; then
-	report "Active xfwm4 theme" ok "Darkmatter"
+if [[ "$CURRENT_XFWM" == "Graphite-Amber" ]]; then
+	report "Active xfwm4 theme" ok "Graphite-Amber"
 else
-	report "Active xfwm4 theme" warn "set to '$CURRENT_XFWM', expected Darkmatter"
+	report "Active xfwm4 theme" warn "set to '$CURRENT_XFWM', expected Graphite-Amber"
 fi
 
-# Icons — Zafiro (dark), fetched at install time
+# Icons - Zafiro (dark), fetched at install time
 if [ -d "/usr/share/icons/Zafiro-icons-Dark" ]; then
 	report "Zafiro-icons-Dark dir" ok
 else
-	report "Zafiro-icons-Dark dir" fail "missing — re-run 21-theme.sh"
+	report "Zafiro-icons-Dark dir" fail "missing - re-run 21-theme.sh"
 fi
 CURRENT_ICONS=$(xfconf-query -c xsettings -p /Net/IconThemeName 2>/dev/null || true)
 if [[ "$CURRENT_ICONS" == "Zafiro-icons-Dark" ]]; then
@@ -327,14 +327,15 @@ else
 	report "Active icon theme" warn "set to '$CURRENT_ICONS', expected Zafiro-icons-Dark"
 fi
 
-# Static picker.colors (power-user widget palette) — engine is gone
+# Static picker.colors (power-user widget palette) - engine is gone
 XMLG_ENGINE="$HOME/.config/xfcemlg"
 cfg "picker.colors" "$XMLG_ENGINE/picker.colors"
 if [ -f "$XMLG_ENGINE/picker.colors" ]; then
-	if grep -q '^bg0=#121113' "$XMLG_ENGINE/picker.colors" 2>/dev/null; then
-		report "picker palette" ok "Darkmatter bg0 present"
+	if grep -q '^bg0=#16181D' "$XMLG_ENGINE/picker.colors" 2>/dev/null &&
+		grep -q '^bg3=#E8A33D' "$XMLG_ENGINE/picker.colors" 2>/dev/null; then
+		report "picker palette" ok "Graphite-Amber bg0/bg3 present"
 	else
-		report "picker palette" warn "picker.colors present but bg0 is not Darkmatter"
+		report "picker palette" warn "picker.colors present but not Graphite-Amber"
 	fi
 fi
 
@@ -345,7 +346,7 @@ else
 	report "old theme engine absent" ok
 fi
 if [ -e "$HOME/.config/gtk-3.0/gtk.css" ]; then
-	report "legacy session gtk.css absent" warn "present — Darkmatter themes itself, this is obsolete (remove it)"
+	report "legacy session gtk.css absent" warn "present - Graphite-Amber themes itself, this is obsolete (remove it)"
 else
 	report "legacy session gtk.css absent" ok
 fi
@@ -358,7 +359,7 @@ cfg "xfce-lock" "$HOME/.local/bin/xfce-lock"
 cfg "xfce-suspend" "$HOME/.local/bin/xfce-suspend"
 # The file existing is not the same as suspend working. xfce-suspend walks a
 # fallback chain (xfce4-session-logout, then busctl) and, if neither
-# resolves, prints a diagnostic and exits 1 — so on a degraded install the
+# resolves, prints a diagnostic and exits 1 - so on a degraded install the
 # command is present, the health check above says "ok", and the user only
 # finds out when the laptop does not sleep. Resolve the chain here instead.
 if [ -f "$HOME/.local/bin/xfce-suspend" ]; then
@@ -367,7 +368,7 @@ if [ -f "$HOME/.local/bin/xfce-suspend" ]; then
 	elif command -v busctl >/dev/null 2>&1; then
 		report "suspend works" warn "only the busctl fallback resolves (no xfce4-session-logout); install xfce4-session"
 	else
-		report "suspend works" fail "xfce-suspend is deployed but NEITHER xfce4-session-logout NOR busctl is installed — it will only print an error. Install xfce4-session (or elogind for busctl)."
+		report "suspend works" fail "xfce-suspend is deployed but NEITHER xfce4-session-logout NOR busctl is installed - it will only print an error. Install xfce4-session (or elogind for busctl)."
 	fi
 fi
 if crontab -l 2>/dev/null | grep -q 'xfce-update-check'; then
@@ -409,7 +410,7 @@ if [ -f "$PANEL_XML" ]; then
 		report "panel XML" warn "missing docklike ref (re-run 21-theme.sh)"
 	fi
 	if [[ "$HAS_GENMON" -gt 0 ]]; then
-		report "panel genmon absent" warn "genmon refs still in panel XML — removing it broke nothing, but clean it manually"
+		report "panel genmon absent" warn "genmon refs still in panel XML - removing it broke nothing, but clean it manually"
 	else
 		report "panel genmon absent" ok
 	fi
@@ -436,7 +437,7 @@ if [ -x "$HOME/.local/bin/check-apt-updates.sh" ]; then
 else
 	report "update helper script" warn "missing (re-run 30-desktop-essentials.sh)"
 fi
-# Compositor — xfwm4 built-in (picom is gone)
+# Compositor - xfwm4 built-in (picom is gone)
 XCOMP=$(xfconf-query -c xfwm4 -p /general/use_compositing 2>/dev/null || true)
 if [ "$XCOMP" = "true" ]; then
 	report "xfwm4 compositor" ok "built-in (use_compositing, shadows + dim)"
@@ -450,19 +451,19 @@ else
 fi
 
 # Wallpapers
-if [ -d "/usr/share/backgrounds/xfce/devuan-darkmatter" ]; then
-	WP_COUNT=$(ls /usr/share/backgrounds/xfce/devuan-darkmatter/*.{jpg,jpeg,png} 2>/dev/null | wc -l)
+if [ -d "/usr/share/backgrounds/xfce/devuan-graphite-amber" ]; then
+	WP_COUNT=$(ls /usr/share/backgrounds/xfce/devuan-graphite-amber/*.{jpg,jpeg,png} 2>/dev/null | wc -l)
 	report "wallpapers" ok "${WP_COUNT} files"
 else
 	report "wallpapers" warn "missing (re-run 21-theme.sh)"
 fi
 
-# LightDM greeter CSS (root-only dir — skip inspection when unreadable)
+# LightDM greeter CSS (root-only dir - skip inspection when unreadable)
 if [ -r /var/lib/lightdm/.config/gtk-3.0/gtk.css ]; then
-	if grep -q '#121113' /var/lib/lightdm/.config/gtk-3.0/gtk.css 2>/dev/null; then
-		report "greeter login-box CSS" ok "Darkmatter"
+	if grep -q '#16181D' /var/lib/lightdm/.config/gtk-3.0/gtk.css 2>/dev/null; then
+		report "greeter login-box CSS" ok "Graphite-Amber"
 	else
-		report "greeter login-box CSS" warn "present but not Darkmatter (re-run 22-theme-boot.sh)"
+		report "greeter login-box CSS" warn "present but not Graphite-Amber (re-run 22-theme-boot.sh)"
 	fi
 elif [ ! -r /var/lib/lightdm ] && [ -e /var/lib/lightdm ]; then
 	report "greeter login-box CSS" info "root-only; run as root to inspect"
@@ -488,7 +489,7 @@ service_state cups cupsd optional
 service_state chrony chronyd optional
 # `ufw status` refuses to run unprivileged ("You need to be root to run this
 # script"), so probing it here reported every correctly-configured box as
-# "not active" — a permanent false WARN for a normal-user audit, whose advice
+# "not active" - a permanent false WARN for a normal-user audit, whose advice
 # (re-run 30-desktop-essentials.sh) could never clear it. /etc/ufw/ufw.conf is
 # world-readable and holds the same ENABLED=yes/no the enable/disable path
 # writes, so read that instead; only escalate when the file is missing.
@@ -559,7 +560,7 @@ else
 	echo -e "${GREEN}  ${PASS} passed${NC}, ${RED}${FAIL} failed${NC}, ${YELLOW}${WARN} warnings${NC}"
 fi
 if [ "$FAIL" -gt 0 ]; then
-	[ "$JSON" -eq 1 ] || log_err "Some checks failed — see lines above, then re-run the relevant script."
+	[ "$JSON" -eq 1 ] || log_err "Some checks failed - see lines above, then re-run the relevant script."
 	exit 1
 fi
 exit 0

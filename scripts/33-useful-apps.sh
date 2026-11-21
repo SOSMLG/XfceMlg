@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # XMLG_DESC: Base tools, Python stack, Ristretto, Atril, Disks
 # XMLG_DEFAULT: Y
-#  33-useful-apps.sh — daily-use essentials
+#  33-useful-apps.sh - daily-use essentials
 #  Base tools, Python/data-science stack (VSCodium in 40-* is this
 #  project's editor of choice, replacing Mousepad), VLC, plus the Mint-style
-#  everyday apps (Ristretto/Atril/GNOME Disks) — same job Mint's
+#  everyday apps (Ristretto/Atril/GNOME Disks) - same job Mint's
 #  own xviewer/xreader/mintstick do, using packages Debian/Devuan
 #  actually carry instead of Mint's Ubuntu-built .debs.
 #  Privilege: priv() (doas-first, sudo fallback)
 set -uo pipefail
-# NOTE: no -e — one failed package must degrade gracefully, not abort
+# NOTE: no -e - one failed package must degrade gracefully, not abort
 # everything after it (lib install_pkgs returns 1 on partial failure).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
@@ -21,7 +21,7 @@ set_default() {
 	local desktop_file="$1"
 	shift
 	command -v xdg-mime &>/dev/null || {
-		log_warn "xdg-mime not found — skipping default-app association."
+		log_warn "xdg-mime not found - skipping default-app association."
 		return
 	}
 	for mime in "$@"; do
@@ -50,14 +50,14 @@ if ask "Install VLC (media player)?"; then
 	install_pkgs "VLC" vlc qt5-gtk-platformtheme
 
 	# Qt apps (VLC first among them) follow the active GTK theme when run
-	# with the gtk3 Qt platform theme — that is what makes VLC's chrome
-	# Darkmatter-dark instead of the bright default. Sessions pick up the
+	# with the gtk3 Qt platform theme - that is what makes VLC's chrome
+	# Graphite-Amber-dark instead of the bright default. Sessions pick up the
 	# env var via the XFCE session xinitrc, appended through the shared
 	# helper so it is written once and the /etc/xdg/xfce4/xinitrc handoff
 	# that actually launches xfce4-session is preserved.
 	if is_installed qt5-gtk-platformtheme; then
-		if xfce_xinitrc_append 'xfcemlg: Qt apps follow the Darkmatter GTK theme' <<'EOF'
-# -- xfcemlg: Qt apps follow the Darkmatter GTK theme --
+		if xfce_xinitrc_append 'xfcemlg: Qt apps follow the Graphite-Amber GTK theme' <<'EOF'
+# -- xfcemlg: Qt apps follow the Graphite-Amber GTK theme --
 if [ -f /usr/lib/x86_64-linux-gnu/qt5/plugins/platformthemes/libqgtk3.so ]; then
     export QT_QPA_PLATFORMTHEME=gtk3
 fi
@@ -65,7 +65,7 @@ EOF
 		then
 			log_ok "Qt platform theme seeded in $(xfce_xinitrc_path) (takes effect next login)."
 		else
-			log_info "Qt platform theme already present in $(xfce_xinitrc_path) — left as is."
+			log_info "Qt platform theme already present in $(xfce_xinitrc_path) - left as is."
 		fi
 	fi
 
@@ -80,12 +80,12 @@ EOF
 			audio/mpeg audio/mp4 audio/flac audio/x-wav audio/ogg 2>/dev/null; then
 			log_ok "VLC set as default for common video/audio types."
 		else
-			log_warn "Could not set MIME defaults (non-fatal — set manually via right-click > Open With if needed)."
+			log_warn "Could not set MIME defaults (non-fatal - set manually via right-click > Open With if needed)."
 		fi
 	fi
 fi
 
-log_head "4/6  Image viewer (Ristretto — Mint-style everyday app)"
+log_head "4/6  Image viewer (Ristretto - Mint-style everyday app)"
 if ask "Install/confirm Ristretto and set it as the default image viewer?"; then
 	if install_pkgs "Ristretto" ristretto; then
 		set_default org.xfce.ristretto.desktop \
@@ -103,9 +103,9 @@ if ask "Install Atril (lightweight PDF viewer) and set it as the default?"; then
 fi
 
 log_head "6/6  USB/ISO writer (GNOME Disks)"
-if ask "Install GNOME Disks (ISO/IMG-to-USB writer, right-click a drive → Restore Disk Image)?"; then
+if ask "Install GNOME Disks (ISO/IMG-to-USB writer, right-click a drive -> Restore Disk Image)?"; then
 	install_pkgs "GNOME Disks" gnome-disk-utility
-	log_info "Open 'Disks', select the target USB drive, then use its menu → 'Restore Disk Image...' —"
+	log_info "Open 'Disks', select the target USB drive, then use its menu -> 'Restore Disk Image...' -"
 	log_info "the closest match to Mint's single-purpose USB Image Writer (mintstick)."
 fi
 

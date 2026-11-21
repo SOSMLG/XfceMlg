@@ -2,7 +2,7 @@
 
 The maintainer's main target scenario: a **pre-installed Devuan 6 (excalibur)
 + XFCE** ThinkPad-class laptop, polished by this toolkit with a **full
-Darkmatter takeover**. This page is the run-day clipboard: exact commands and
+Graphite-Amber takeover**. This page is the run-day clipboard: exact commands and
 the output to expect at each step. Everything here is read-only except the
 "Install" phase itself, and every destructive write the toolkit makes is
 backed up first (`*.bak.<timestamp>`, `deploy_seed_file` stamps).
@@ -13,7 +13,7 @@ the target machine gets this tree as-is via `rsync`).
 ## 0. Scope, locked
 
 - **Full takeover is the point.** The stock XFCE panel, window-manager
-  decor, GTK theme and power settings are replaced by the Darkmatter seed.
+  decor, GTK theme and power settings are replaced by the Graphite-Amber seed.
   Originals are preserved as `.bak.<timestamp>` copies next to each file, so
   the pre-run desktop is restorable per-file (see Rollback).
 - Never-clobber discipline still applies to *user* content: `~/.bashrc`
@@ -80,7 +80,7 @@ cd ~/xfcemlg && ./install.sh
 ```
 
 Unattended (`XMLG_ASSUME_YES=1 run.sh --full --verify`). Typical wall time
-**20–60 minutes**, dominated by apt + the GitHub fetch (Darkmatter + Zafiro
+**20–60 minutes**, dominated by apt + the GitHub fetch (Graphite-Amber + Zafiro
 icons) + Nerd Fonts + VSCodium + dev toolchains. Run it from the target's
 desktop session (the panel and xfwm4 restart once during 21-theme — a brief
 blink) or over SSH (restarts skipped, which is fine).
@@ -139,7 +139,7 @@ Step highlights that matter on a pre-installed laptop:
   xfce4-genmon-plugin, xfce4-terminal(+data) → Alacritty, xfce4-notifyd →
   dunst. Everything else in the toolkit is additive.
 - **21-theme** — the takeover: `xfce4-panel.xml`, `xfwm4.xml`,
-  `xsettings.xml`, `xfce4-power-manager.xml` get the Darkmatter seed with
+  `xsettings.xml`, `xfce4-power-manager.xml` get the Graphite-Amber seed with
   `.bak.<timestamp>` backups; panel launchers likewise; Thunar views are
   create-only.
 - **22-theme-boot** — Plymouth+GRUB+LightDM theming; the Plymouth part
@@ -169,14 +169,14 @@ firmware/microcode, the input fixes and the theme fully.
 
 ## 5. Verify — after the run
 
-`install.sh --verify` already runs `scripts/verifySetup.sh` (Darkmatter /
-Zafiro-icons-Dark / devuan-darkmatter names, power-user bins). Spot checks:
+`install.sh --verify` already runs `scripts/verifySetup.sh` (Graphite-Amber /
+Zafiro-icons-Dark / devuan-graphite-amber names, power-user bins). Spot checks:
 
 ```sh
 tail ~/.local/state/xfcemlg/last-run.log         # all steps, no failures
-xfconf-query -c xsettings -p /Gtk/ThemeName      # Darkmatter
+xfconf-query -c xsettings -p /Gtk/ThemeName      # Graphite-Amber
 xfconf-query -c xsettings -p /Net/IconThemeName  # Zafiro-icons-Dark
-xfconf-query -c xfwm4 -p /general/theme          # Darkmatter
+xfconf-query -c xfwm4 -p /general/theme          # Graphite-Amber
 grep -n 'BEGIN xfcemlg-shell' ~/.bashrc          # hook present (append-only)
 command -v xfce-menu xfce-update-gui xfce-lock xfce-suspend
 python3 -m json.tool /etc/firefox/policies/policies.json   # ESR hardening live
@@ -184,8 +184,8 @@ doas tlp-stat -s                                 # TLP active, charge cap at 80%
 tlp-stat -c                                      # battery tuning (70-maxbattery.conf)
 ```
 
-Then open a **new** terminal: the two-line Nerd-Font PS1 in Darkmatter
-colors (`#e75353`/`#5f8787`/`#fbcb97`) should be there; `fastfetch` shows the
+Then open a **new** terminal: the two-line Nerd-Font PS1 in Graphite-Amber
+colors (`#E8A33D`/`#79A9A6`/`#D2992F`) should be there; `fastfetch` shows the
 bundled art. If timeshift(31) ran, optionally take the first snapshot now.
 
 ## 6. Rollback — full takeover without a reinstall

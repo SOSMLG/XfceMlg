@@ -3,7 +3,7 @@
 
 Falls back to a plain xfce4-terminal window if VTE is unavailable
 (gir1.2-vte-2.91 not installed). Reads palette from picker.colors
-(the same file xfce-menu uses), falling back to Darkmatter defaults.
+(the same file xfce-menu uses), falling back to Graphite-Amber defaults.
 """
 import os
 import subprocess
@@ -30,7 +30,7 @@ CONFIG_DIR = (
     or os.path.expanduser("~/.config/xfcemlg")
 )
 PICKER = os.path.join(CONFIG_DIR, "picker.colors")
-DEFAULTS = {"bg0": "#121113F2", "bg1": "#1c1b1d", "bg3": "#e75353F2", "fg0": "#ffffff"}
+DEFAULTS = {"bg0": "#16181DF2", "bg1": "#202329", "bg3": "#E8A33DF2", "fg0": "#D8D3C8"}
 
 
 def theme_colors():
@@ -55,7 +55,7 @@ def parse_rgba(value, alpha=1.0):
     if len(v) == 9:
         v = v[:7]
     if not (v.startswith("#") and len(v) == 7):
-        v = "#121113"
+        v = "#16181D"
     return Gdk.RGBA(
         red=int(v[1:3], 16) / 255.0,
         green=int(v[3:5], 16) / 255.0,
