@@ -1,33 +1,17 @@
+![banner](assets/banner.svg)
+
 # xfcemlg
 
-![Debian 13](https://img.shields.io/badge/Debian-13-202329?logo=debian&logoColor=E8A33D)
-![Devuan 6](https://img.shields.io/badge/Devuan-6-202329?logo=devuan&logoColor=E8A33D)
-![XFCE 4.20](https://img.shields.io/badge/XFCE-4.20-202329?logo=xfce&logoColor=E8A33D)
-![License: MIT](https://img.shields.io/badge/License-MIT-8FB57A.svg)
+turns a fresh devuan 6 or debian 13 install into a lean xfce desktop with graphite amber theming, alacritty, hardened firefox esr and tlp battery limits.
 
-A post-install toolkit that turns a fresh **Devuan 6 (Excalibur)** install
-(binary-compatible with **Debian 13 (Trixie)**) into a lean, finished
-**XFCE** desktop — **Graphite-Amber** themed (dark `#16181D`, amber accent `#E8A33D`)
-from boot splash to login screen to terminal, **Alacritty** as the default
-terminal, Firefox ESR hardened, TLP battery-capped, Thunar fully plugged in,
-and installable with **one command, fully unattended**.
+[read the quick start](#quick-start)
 
-Works from two starting points: a distro installer where **XFCE is already
-present**, or a **minimal netinst** with no desktop at all (the toolkit
-installs its own lean set and never touches tasksel — so the hated SLiM
-login never enters the picture).
-
-```
-./install.sh        # everything, unattended, verified — that's it
-./run.sh --list     # see every step in order, defaults and all
-./run.sh            # pick-and-choose interactively
-```
-
-You run it as your **normal user** (never `doas bash install.sh`); each script
-escalates itself (`priv()` helper: doas first, sudo fallback) for the parts
-that need it.
-
----
+| | |
+| --- | --- |
+| **starting point** | works with an existing xfce install or a minimal netinst. tasksel is not touched. |
+| **install** | `./install.sh` runs every step unattended. `./run.sh --list` shows the order before you run it. |
+| **theme** | graphite amber from boot splash to login screen. one palette, no wallpaper-derived colors. |
+| **verify** | the installer ends with a report. `./run.sh --verify` rechecks state without writing. |
 
 ## Quick start
 
