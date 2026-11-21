@@ -203,9 +203,8 @@ if ask "Apply battery-first power-manager profile (blank 3/10 min, suspend 30 mi
 	#
 	# A substring search of the daemon binary is NOT a usable guard here:
 	# the settings GUI's widget id is also "brightness-on-ac", so it
-	# false-positives. This list is therefore the single source of truth,
-	# and tests/consistency.sh binds it to the seed XML so the script and
-	# the seed cannot drift apart again.
+	# false-positives. This list is therefore the single source of truth
+	# for the daemon names.
 	# ------------------------------------------------------------------
 	XFPM_PROPS="presentation-mode dpms-enabled
 inactivity-on-ac inactivity-on-battery

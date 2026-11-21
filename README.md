@@ -1,6 +1,9 @@
 # xfcemlg
 
-[![check](https://github.com/SOSMLG/XfceMlg/actions/workflows/check.yml/badge.svg)](https://github.com/SOSMLG/XfceMlg/actions/workflows/check.yml)
+![Debian 13](https://img.shields.io/badge/Debian-13-A81D33?logo=debian&logoColor=white)
+![Devuan 6](https://img.shields.io/badge/Devuan-6-9B183E?logo=devuan&logoColor=white)
+![XFCE 4.20](https://img.shields.io/badge/XFCE-4.20-3B8EE9?logo=xfce&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
 A post-install toolkit that turns a fresh **Devuan 6 (Excalibur)** install
 (binary-compatible with **Debian 13 (Trixie)**) into a lean, finished
@@ -157,26 +160,6 @@ LightDM greeter conf, SLiM absence, single polkit agent, and services
 can gate CI. `xfcemlg-health` (deployed by 24-power-user) wraps it with a
 `0/1/2` exit-code contract, cron + login-run notification and a flock.
 
-### Developer test suite (`make check`)
-
-Three read-only tiers live in `tests/`:
-
-| Tier | What it checks |
-|------|----------------|
-| 1 `lint` | `bash -n` on every script/bin/overlay, shellcheck if installed, `py_compile` on the Python widgets |
-| 2 `unit` | sandboxed unit tests — Darkmatter fetch/tweak pipeline (variant assembly + red-accent remap on an offline fixture, Zafiro dark trim) + engine-free 21/22/verifySetup markers + `common.sh` `priv()` routing with fake doas/sudo |
-| 3 `consistency` | VERSION ↔ latest RELEASE.md heading, no-theme-bundle guards (themes/icons/rofi absent), fetch-lib + remap guards, step-script `XMLG_DESC/DEFAULT` headers, README step parity, `.gitignore` coverage, no theme-engine leftovers |
-| 3 `apt-checks` | every package name in `scripts/*.sh` verified against the local apt cache (one bulk `apt-cache dumpavail`); contrib-only packages (`libdvd-pkg`, `winetricks`) live in `tests/lib/known-miss.list` |
-| 4 `live` (opt-in) | `make check-live` — bootstraps a real Devuan excalibur chroot (root + network + `debootstrap` needed) and runs a curated, headless-safe step slice as a normal user with `permit nopass` doas: real apt installs, `run.sh` orchestration and file deploys. Exit `1` = real bug, `2` = couldn't run |
-
-```bash
-make check              # all tiers (1–3)
-make check-live         # tier 4, the chroot runtime integration tier
-./tests/run.sh --tier 2 # just the sandboxed unit tests
-./tests/run.sh --skip-apt-checks  # every tier except the apt-cache check
-make release-preflight  # lint + unit + consistency + VERSION/RELEASE.md gate
-```
-
 ### Asset bundle (content deb)
 
 `make pkg-deb` builds a single data-only package with all versioned static
@@ -199,8 +182,8 @@ snapshots your config into a timestamped tarball before major operations.
 
 * **Run-book**: `docs/TROUBLESHOOTING.md` has the concrete failure modes —
   theme-fetch hash mismatch, DM races, polkit duplicate agents, debconf
-  prompts, missing apt components, `xfcemlg-health`/`verifySetup` exit
-  codes, and the `make check-live` chroot tier.
+  prompts, missing apt components, and `xfcemlg-health`/`verifySetup` exit
+  codes.
 * **Two login screens / DM fight?** Exactly **one** display manager may own
   the console. This toolkit enables `lightdm` and purges `slim`; if you
   also enabled `greetd`/`sddm`, disable the spare
@@ -239,8 +222,7 @@ docs/BUILDING.md  live-ISO build guide (live-sdk + blend overlay)
 docs/FIXES.md     recurring-issue resolution record
 run.sh           ordered runner (phases: core/desktop/apps/optional/utils)
 install.sh       one-command unattended wrapper
-Makefile         make check / lint / test / release-preflight
-tests/           3-tier read-only suite (lint, unit, consistency, apt-checks)
+Makefile         release-preflight / pkg-deb / check-deb
 scripts/
   lib/common.sh  shared helpers (XMLG_* envs, ask, pkgs, priv helper)
   10-*.sh … 52-*.sh  one step each, numbered = run order; runnable standalone
@@ -295,3 +277,19 @@ variant assembly, Zafiro-icons-Dark rename + trim), so the git payload stays
 - Reboot (or at least log out/in) after a full run — group membership,
   the mousepoll fix, newly installed firmware/microcode, and theme
   changes all benefit from a fresh session.
+
+---
+
+## License
+
+MIT. See [LICENSE](LICENSE). The vendored ButterBash payload in
+`configs/butterbash/` keeps its own GPL-2.0 license.
+
+## Related repos
+
+- [DebianSway](https://github.com/SOSMLG/DebianSway): Sway on Debian/Devuan.
+- [DevuanSway](https://github.com/SOSMLG/DevuanSway): Sway on Devuan with OpenRC.
+- [DevuanDwm](https://github.com/SOSMLG/DevuanDwm): minimal dwm desktop for Devuan.
+- [Devuan-Kde](https://github.com/SOSMLG/Devuan-Kde): KDE Plasma on Devuan.
+- [devuan-cinnamon-setup](https://github.com/SOSMLG/devuan-cinnamon-setup): Cinnamon on Devuan.
+- [ThisForOldPc](https://github.com/SOSMLG/ThisForOldPc): setup for old PCs.

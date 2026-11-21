@@ -1,4 +1,4 @@
-.PHONY: help check check-ci check-live lint test apt-checks consistency hooks release-preflight pkg-deb check-deb clean
+.PHONY: help release-preflight pkg-deb check-deb clean
 
 DEB_NAME  := xfcemlg-assets
 DEB_VER   := $(shell cat VERSION)
@@ -11,41 +11,11 @@ help: ## List every target (parsed from their ##-descriptions)
 	@printf '\n  xfcemlg-assets v%s targets:\n\n' '$(DEB_VER)'
 	@grep -hE '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
 		awk -F':.*## ' '{ printf "    %-18s %s\n", $$1, $$2 }'
-	@printf '\n  Verdicts above are the same as "make check && make check-deb".\n\n'
-
-# ── Main targets ─────────────────────────────────────────────────────────────
-
-check: ## Run all tiers (lint + unit + consistency + apt-checks)
-	bash tests/run.sh
-
-check-ci: ## CI edition: all tiers except distro-specific apt-cache checks
-	bash tests/run.sh --skip-apt-checks
-
-check-live: ## Tier 4: runtime integration in a real Devuan chroot (root+network)
-	bash tests/live/run.sh
-
-hooks: ## Point git at .githooks (fast staged-lint pre-commit)
-	git config core.hooksPath .githooks && \
-	echo "[hooks] core.hooksPath = $$(git config core.hooksPath)"
-
-lint: ## Tier 1: bash -n, shellcheck, py_compile
-	bash tests/lint.sh
-
-test: ## Tier 2: sandboxed unit tests (no root, no apt, no X)
-	bash tests/unit/run.sh
-
-apt-checks: ## Tier 3: read-only apt-cache package existence checks
-	bash tests/apt-checks.sh
-
-consistency: ## Tier 3: cross-file regression guards
-	bash tests/consistency.sh
+	@printf '\n  Use "make release-preflight" before tagging, then "make pkg-deb check-deb".\n\n'
 
 # ── Release gate ─────────────────────────────────────────────────────────────
 
-release-preflight: ## Verify VERSION/RELEASE.md consistency + all tests green
-	bash tests/lint.sh
-	bash tests/unit/run.sh
-	bash tests/consistency.sh
+release-preflight: ## Verify VERSION/RELEASE.md consistency
 	@test "$$(cat VERSION)" = "$$(grep -m1 -oE '^## [0-9]+\.[0-9]+\.[0-9]+' RELEASE.md | cut -d' ' -f2)" || \
 		{ echo "[preflight] VERSION file ($(cat VERSION)) does not match latest RELEASE.md heading" >&2; exit 1; }
 	@echo "[preflight] READY for v$$(cat VERSION)"

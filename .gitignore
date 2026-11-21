@@ -5,3 +5,10 @@ Thumbs.db
 .idea/
 .vscode/
 __pycache__/
+*.pyc
+/live-sdk/
+/build/
+/dist/
+*.iso
+*.img
+blend/*/excalibur/rootfs-overlay/

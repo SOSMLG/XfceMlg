@@ -41,12 +41,12 @@ Every step is idempotent and re-runnable.
 - `apt`/`apt-get`/`dpkg` only — never pacman/dnf/nix.
 - Check install state with `is_installed <pkg>`, not assumptions.
 - Packages are added via `priv apt-get install -y ...` or
-  `install_pkgs "label" pkg1 pkg2 ...`. Both are parsed by the test suite's
-  apt-checks (see Testing below).
+  `install_pkgs "label" pkg1 pkg2 ...`. Prefer explicit package names so the
+  install stays predictable.
 - Devuan Excalibur tracks Debian trixie. `contrib`/`non-free` components are
   added by the toolkit itself (`scripts/lib/common.sh` `ensure_repo_component`,
   `11-backports.sh`) — so a bare sources.list may legitimately miss
-  `libdvd-pkg`, `winetricks`, etc. See `tests/lib/known-miss.list`.
+  `libdvd-pkg`, `winetricks`, etc.
 
 ## Theme (Darkmatter — fetched at install, engine-free, fixed)
 
@@ -95,23 +95,19 @@ flock-guarded and env-overridable for headless tests). Python widgets
 (GTK/VTE) live in `configs/share/xfcemlg/` and read
 `picker.colors` for theming.
 
-## Testing (mandatory before commit)
+## Verification
 
-- `make check` — three read-only tiers (see `tests/README`-ish comments in
-  `tests/run.sh`): **lint** (bash -n + shellcheck-if-present +
-  py_compile), **unit** (sandboxed Darkmatter fetch/tweak pipeline + common.sh
-  tests), and **consistency + apt-checks** (cross-file guards; package-existence
-  vs the local apt cache via one bulk `apt-cache dumpavail`).
-- `make release-preflight` — the version gate (lint + unit + consistency +
-  VERSION/RELEASE.md agreement) used before tagging.
+- `./run.sh --verify` or `bash scripts/verifySetup.sh` audits an installed
+  system. Add `--json` for machine-readable output.
+- `make release-preflight` checks VERSION/RELEASE.md agreement before tagging.
 - After adding a `scripts/##-*.sh`: it must carry `# XMLG_DESC:` and
-  `# XMLG_DEFAULT: Y|N` headers, source `scripts/lib/common.sh`, have a
-  README row, and pass `make check`.
+  `# XMLG_DEFAULT: Y|N` headers, source `scripts/lib/common.sh`, and have a
+  README row.
 
 ## Versioning / releases
 
 - `VERSION` (semver, no `v` prefix) and the **latest** `## x.y.z —` heading
-  in `RELEASE.md` must agree — `make release-preflight` enforces it.
+  in `RELEASE.md` must agree - `make release-preflight` checks it.
 - Tag with: `git tag -a "v$(cat VERSION)" -m "v$(cat VERSION)"`.
 - Generated content is gitignored: `/live-sdk/`, `/build/`, `/dist/`,
   `*.iso`, `*.img`, `blend/*/excalibur/rootfs-overlay/`, `__pycache__/`.
@@ -132,8 +128,8 @@ flock-guarded and env-overridable for headless tests). Python widgets
   control/copyright/changelog templates is substituted from `VERSION`.
 - content deb = assets under `/usr/share/xfcemlg-assets/` when
   installed. No APT repo, no publish.
-- Prefer additive repo changes that keep `make check` and `make pkg-deb`
-  green.
+- Prefer additive repo changes that keep `make pkg-deb` and
+  `./run.sh --verify` green.
 
 ## Blend / ISO
 

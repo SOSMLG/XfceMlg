@@ -15,7 +15,7 @@
 #  has ever existed in fastfetch's schema. fastfetch rejected the whole
 #  file with "JsonConfig Error: Unknown general property", printed nothing
 #  and exited 221 — so every "run fastfetch to see your system" in the
-#  docs produced a one-line error. Nothing in the test suite covered it.
+#  docs produced a one-line error. The step now validates the config itself.
 #  A one-line grep is a cheap price for never shipping that again.
 #
 #  Key shape is pinned to the fastfetch in the archive (2.40.x on

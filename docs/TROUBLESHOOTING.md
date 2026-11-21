@@ -115,22 +115,3 @@ permit — inspect `/etc/default/ufw` and `ufw status` before changing policy.
 - Requires network + `curl`; zero-prompt under your run-day
   `permit nopass` doas rule.
 
-## Developer / testing
-
-### `make check-live` (tier-4 chroot runtime tests)
-`tests/live/run.sh` bootstraps a real Devuan excalibur minbase chroot and
-runs a curated, headless-safe slice of the toolkit as a normal user with a
-`permit nopass tester as root` doas rule — the exact run-day permission
-layout. It needs **root + network + `debootstrap`** (`doas apt-get install -y
-debootstrap`) and is deliberately not part of `make check`:
-
-```sh
-doas bash tests/live/run.sh        # or, as root: make check-live
-```
-
-It exits `0` (all green), `1` (a step/assertion failed — a real bug) or `2`
-(couldn't run). Overrides: `XMLG_LIVE_SUITE`, `XMLG_LIVE_MIRROR`,
-`XMLG_LIVE_STEPS`, `XMLG_LIVE_KEEP=1` (keep the chroot for debugging).
-X-dependent steps (theme apply, xfconf, input fix) intentionally stay in the
-sandboxed unit tier + the run-day manual pass; the chroot tier covers real
-apt installs, `run.sh` orchestration, doas escalation and file deploys.

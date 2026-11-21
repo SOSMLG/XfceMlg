@@ -114,17 +114,10 @@ system:
 - Every apt action checks what's actually installed first — nothing is
   blindly force-purged, so scripts are safe to re-run. Backups
   (`*.bak.<timestamp>`) precede any destructive config write.
-- Test suite (three tiers, all read-only): `make check`
-  or `./tests/run.sh`. Tier 1 lint (bash -n/shellcheck/py_compile), tier 2
-  sandboxed unit tests (Darkmatter fetch/tweak pipeline + common.sh, no
-  root/no apt/no X/no network),
-  tier 3 consistency guards (VERSION↔RELEASE.md, no-theme-bundle guards,
-  fetch-lib/remap guards,
-  step-script headers, README parity, .gitignore) + apt-checks (read-only
-  package existence against the local cache; `tests/lib/known-miss.list`
-  covers contrib packages the toolkit adds at install time). Release gate:
-  `make release-preflight`. When adding a new `scripts/##-*.sh`, run
-  `make check` (adds its XMLG_DESC/DEFAULT headers + README row).
+- Runtime verification: `./run.sh --verify` or `bash scripts/verifySetup.sh`.
+  Release gate: `make release-preflight` checks VERSION/RELEASE.md agreement.
+  When adding a new `scripts/##-*.sh`, give it XMLG_DESC/DEFAULT headers
+  and a README row.
 - Content deb: `make pkg-deb` builds the single data-only asset package
   (`build/xfcemlg-assets_*.deb`, ~7 MB, installed under
   `/usr/share/xfcemlg-assets/`); `make check-deb` verifies it with

@@ -1,4 +1,7 @@
-# xfcemlg — Release Notes
+# xfcemlg - Release Notes
+
+Historical entries below describe the former test suite and CI, which are no
+longer part of this repo. Runtime verification lives in `scripts/verifySetup.sh`.
 
 Tag a release with: `git tag -a "v$(cat VERSION)" -m "v$(cat VERSION)" && git push --tags`
 

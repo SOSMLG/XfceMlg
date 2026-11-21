@@ -40,8 +40,8 @@
 # of a fixed artefact and should not need recomputing — if a fetch ever fails on
 # a checksum mismatch with an unmodified env, that is a *tampered or substituted
 # download*, not an upstream move, and it should be investigated rather than
-# papered over by pasting in the hash the download actually produced. Guard C18
-# in tests/consistency.sh enforces that the pairing stays intact.
+# papered over by pasting in the hash the download actually produced. Keep each
+# URL and its recorded checksum paired when changing an upstream pin.
 #
 # To move to a different upstream commit on purpose: change the URL, download it
 # once, and update the matching default in scripts/21-theme.sh.
