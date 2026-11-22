@@ -44,7 +44,7 @@
 ```
 ~/.config/bash/
 ├── aliases.bash          # All command shortcuts
-├── prompt.bash           # Git-aware prompt configuration  
+├── prompt.bash           # Git-aware prompt configuration
 ├── keybinds.bash         # Keyboard shortcuts
 ├── fzf.bash             # FZF fuzzy finder setup
 ├── zoxide.bash          # zoxide smarter-cd hook
