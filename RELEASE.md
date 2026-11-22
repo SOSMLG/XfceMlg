@@ -601,7 +601,7 @@ XFCE rice (dark `#16181D`, accent `#E8A33D`), plus a packing/robustness batch.
   Plymouth + GRUB + LightDM greeter all re-themed, bundled wallpapers +
   genmon wiring, rounded single bottom panel rice, Alacritty becomes the
   default terminal (`helpers.rc` `TerminalEmulator=alacritty`), fastfetch
-  draws bundled anime ascii art
+  draws the Devuan ASCII logo
 - New optional heavy script `46-heavy-optins.sh` (default N): Thunderbird,
   LibreOffice (GTK3-themed with a pre-seeded quiet first-run profile), OBS
   Studio
