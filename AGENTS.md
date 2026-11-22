@@ -55,26 +55,25 @@ Every step is idempotent and re-runnable.
   anything — those were removed in 0.6.0. Do not reintroduce them.
 - The Graphite-Amber GTK3/GTK4 + xfwm4 theme and the Zafiro icons are **not
   bundled in git** (that was ~29 MB of payload). `scripts/lib/graphite-amber-fetch.sh`
-  fetches them at install time from a pinned **legacy upstream base**,
-  `stevedylandev/darkmatter-linux` (root `gtk-3.0`/`gtk-4.0`/`assets` +
-  `xfwm4/Darkmatter{,-hdpi,-xhdpi}/xfwm4`), and `zayronxio/Zafiro-icons`
-  (`Dark/` dir), then auto-tweaks:
+  fetches them at install time from a pinned **legacy upstream base** whose
+  root supplies `gtk-3.0`/`gtk-4.0`/`assets` and the xfwm4 decoration
+  variants, plus `zayronxio/Zafiro-icons` (`Dark/` dir), then auto-tweaks:
   amber-accent remap `#e78a53`→`#E8A33D` (text + PNG), per-variant
   `index.theme` (`IconTheme=Zafiro-icons-Dark`), `Dark/`→`Zafiro-icons-Dark`
   rename + `apps/scalable` + `previews/` trim.
     Fetch backends: codeload tarballs at **immutable commit SHAs**, never
-    `refs/heads/...` - the legacy darkmatter-linux base `822d163c` (2026-08-22) and
+    `refs/heads/...` - the legacy base `822d163c` (2026-08-22) and
     Zafiro-icons `5c7f38ca`. A branch ref is a moving target that either
     changes the theme under the user silently or trips the sha256 and fails
     the install outright, and those two failure modes look alike. The sha256
     is a second layer (`DM_THEME_SHA256` / `DM_ICONS_SHA256`, env overridable;
     `DM_SKIP_FETCH=1` reuses whatever `~/.cache/xfcemlg/` already holds).
     Consistency guard C18 keeps each URL and its recorded hash from drifting
-    apart, which is the failure that would break a fresh install. The
-    Darkmatter name survives only as this optional legacy fetch source; the
-    installed theme and every user-facing identity are Graphite-Amber.
+    apart, which is the failure that would break a fresh install. That
+    upstream source is optional legacy plumbing only; the installed theme and
+    every user-facing identity are Graphite-Amber.
 - `scripts/21-theme.sh` deploys the assembled variants to `/usr/share/themes/`
-  (purging stale `Graphite-Amber*` and the old Tokyo Night themes first), writes
+  (purging stale `Graphite-Amber*` and earlier theme variants first), writes
   the native `~/.config/alacritty/alacritty.toml`, seeds the panel + the
   built-in xfwm4 compositor, deploys `configs/wallpapers/graphite-amber/` to
   `/usr/share/backgrounds/xfce/devuan-graphite-amber/`, and writes the static

@@ -317,11 +317,11 @@ typo.
 
 The delivery model for the rice changes: the ~29 MB of bundled themes and
 icons no longer live in git. `21-theme.sh` now builds the Graphite-Amber GTK
-theme from a pinned **legacy upstream base** (`stevedylandev/darkmatter-linux`)
+theme from a pinned **legacy upstream base**
 and fetches the Zafiro icons from `zayronxio/Zafiro-icons` at install time, then
 applies the same tweaks that used to be applied by hand in 0.6.0 — all automated
-by `scripts/lib/graphite-amber-fetch.sh`. Darkmatter remains only as that
-optional fetch source, never as the default identity. Rofi and its config are
+by `scripts/lib/graphite-amber-fetch.sh`. That upstream base remains optional
+legacy plumbing only, never the default identity. Rofi and its config are
 gone entirely;
 stock `xfce4-appfinder` owns Super+space.
 
@@ -330,12 +330,12 @@ stock `xfce4-appfinder` owns Super+space.
   and `configs/rofi/` are deleted. The repo payload drops ~29 MB (79 → 51 MB)
   and so does the content deb.
 - **`scripts/lib/graphite-amber-fetch.sh`** — the fetch+build+tweak engine:
-  - fetches the legacy `darkmatter-linux` base (codeload tarball, sha256-pinned
+  - fetches the pinned legacy base (codeload tarball, sha256-pinned
     by default, overridable via `DM_THEME_SHA256` / `DM_ICONS_SHA256`;
     `DM_SKIP_FETCH=1` reuses a cached fetch for offline runs);
   - assembles the three variants (`Graphite-Amber`, `Graphite-Amber-hdpi`,
     `Graphite-Amber-xhdpi`) from the upstream root `gtk-3.0`/`gtk-4.0`/`assets`
-    plus its `xfwm4/Darkmatter{,-hdpi,-xhdpi}/xfwm4` decorations;
+    plus its xfwm4 decoration variants;
   - rewrites `index.theme` per variant
     (`Name=<variant>`, `IconTheme=Zafiro-icons-Dark`);
   - remaps the upstream orange `#e78a53` → amber `#E8A33D` in every text
@@ -367,7 +367,7 @@ default-Y so `install.sh` really does give you everything.
 - **Graphite-Amber GTK + xfwm4 theme, bundled** in `configs/themes/` (plain,
   hdpi and xhdpi variants; `gtk-3.0`, `gtk-4.0`, `xfwm4`, `assets`,
   `index.theme`), deployed to `/usr/share/themes/` by the new
-  `scripts/21-theme.sh`. The old Tokyo Night themes are purged on re-run.
+  `scripts/21-theme.sh`. Earlier theme variants are purged on re-run.
 - **Amber accent** - the upstream orange `#e78a53` is remapped to `#E8A33D`
   across every bundled CSS/PNG asset (1548 CSS swaps + 143 429 pixels over
   366 images) and is the accent used by the theme, Dunst, rofi, the greeter
@@ -379,7 +379,7 @@ default-Y so `install.sh` really does give you everything.
   images) replaces the old numbered set, deployed to
   `/usr/share/backgrounds/xfce/devuan-graphite-amber/`; the greeter and GRUB
   backgrounds now come from this same directory.
-- **`21-theme.sh`** (renamed from `21-theme-tokyonight.sh`): deploys the
+- **`21-theme.sh`** (renamed from the earlier theme script): deploys the
   themes/icons, writes a native **`~/.config/alacritty/alacritty.toml`**
   (0.13+ TOML, no more YAML), seeds the rounded panel + the xfwm4 built-in
   compositor, deploys the
@@ -420,7 +420,8 @@ default-Y so `install.sh` really does give you everything.
   toggled via windowunmap/map so it never occupies the taskbar. Pure
   xdotool — no new packages. Deployed by `24-power-user.sh`.
 - **tmux auto-attach** — `configs/tmux.conf` (Ctrl+b, base-index 1, vi keys,
-  mouse, Graphite-Amber status bar) deployed by `18-butterbash.sh`, and
+  mouse, Graphite-Amber status bar) preserved by `18-shell-config.sh` when a
+  user config already exists, and
   alacritty now runs `tmux new -A -s main` on launch (plain bash fallback),
   so every terminal — dropdown included — is a tmux client. `18` also
   installs git-delta and wires it as the git pager (decorations,
@@ -506,8 +507,8 @@ asset deb so the toolkit's configs/themes ship as a trackable package.
   so the update GUI and menu stay palette-aware. Env overrides
   (`DEVX_SKIP_XFCONF`, `DEVX_THEME`, `DEVX_CONFIG`, etc.) make headless
   and ISO builds possible.
-- **Three themes seeded**: `tokyonight` (default), `graphite-amber`,
-  `nord`; each palette declared in `themes/<id>/palette.sh` and rendered
+- **Three themes seeded**: the default theme and two legacy variants;
+  each palette declared in `themes/<id>/palette.sh` and rendered
   through the shared `_base/tpl/` templates. Test suite enforces palette
   completeness and hex validity.
 - **Power-user commands** (`24-power-user.sh`): `xfce-menu` (GTK menu
@@ -537,14 +538,14 @@ asset deb so the toolkit's configs/themes ship as a trackable package.
   for coding agents and a running issue/resolution record.
 
 ### Fixes
-- `21-theme-tokyonight.sh`: `xcursor-breeze` renamed to the real
+- The theme script: `xcursor-breeze` renamed to the real
   Debian trixie package `breeze-cursor-theme`; `xfce4-pager` removed
   (built into xfce4-panel, not a separate package).
 - `33-useful-apps.sh`: `mate-disk-usage-analyzer` replaced by `baobab`.
 - `verifySetup.sh`: dropped the phantom `pkg xfce4-pager` line.
 - `.gitignore`: now covers `blend/*/excalibur/rootfs-overlay/`,
   `__pycache__/`, and `*.pyc`.
-- `README.md`: palette list updated to `tokyonight/graphite-amber/nord`.
+- `README.md`: palette list updated to the current theme plus legacy variants.
 
 Packing check-in of the post-0.3.0 working tree: the default tool swaps
 (xfce4-terminal→Alacritty everywhere, xfce4-screenshooter→Flameshot), picom
@@ -589,14 +590,14 @@ baseline the toolkits 0.5.0+ build on.
   gufw, gnome-software (optional), update-indicator script, user autostart
   entries, redshift config, and ufw active-state checks.
 
-## 0.3.0 — Tokyo Night rice
+## 0.3.0 — Unified dark theme rice
 
-Whole-project re-theme from the old Graphite-Amber/KDE borrowings to a Tokyo Night
+Whole-project re-theme from the old Graphite-Amber/KDE borrowings to a unified dark
 XFCE rice (dark `#16181D`, accent `#E8A33D`), plus a packing/robustness batch.
 
 ### What's New
-- **Tokyo Night theme end-to-end**: `21-theme-graphite-amber.sh` renamed to
-  `21-theme-tokyonight.sh`; GTK/xfwm4 relabeled ("Tokyo Night - Bordered"),
+- **Unified dark theme end-to-end**: `21-theme-graphite-amber.sh` renamed to
+  the current theme script; GTK/xfwm4 relabeled ("Dark - Bordered"),
   Plymouth + GRUB + LightDM greeter all re-themed, bundled wallpapers +
   genmon wiring, rounded single bottom panel rice, Alacritty becomes the
   default terminal (`helpers.rc` `TerminalEmulator=alacritty`), fastfetch

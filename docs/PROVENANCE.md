@@ -74,10 +74,10 @@ one — but it should be read as: **no code was taken.**
 The Graphite-Amber GTK/xfwm4 themes and the Zafiro icons are **not vendored and
 are not being removed.** They used to sit in git as ~29 MB of binary payload;
 as of 0.8.0 they are built at install time by
-`scripts/lib/graphite-amber-fetch.sh` from the pinned legacy upstream base
-`stevedylandev/darkmatter-linux` plus `zayronxio/Zafiro-icons` (sha256-pinned
+`scripts/lib/graphite-amber-fetch.sh` from a pinned legacy upstream base
+plus `zayronxio/Zafiro-icons` (sha256-pinned
 codeload tarballs, digests set in `scripts/21-theme.sh`) and installed by
-`scripts/21-theme.sh`. Darkmatter here is only an optional legacy fetch source;
+`scripts/21-theme.sh`. That upstream base is optional legacy plumbing only;
 the default identity shipped to the desktop is Graphite-Amber. The change is a
 packaging decision — smaller repo, no drift from upstream — and not a licensing
 one. A future reader should not "fix" this.
@@ -88,7 +88,7 @@ Each is downloaded by the step that needs it and remains under its own
 upstream licence. Versions are pinned — sha256 for the legacy base tarballs,
 upstream release tags for the rest.
 
-- Graphite-Amber GTK3/GTK4 + xfwm4 themes (from the legacy Darkmatter base),
+- Graphite-Amber GTK3/GTK4 + xfwm4 themes (from a pinned legacy upstream base),
   Zafiro icons — sha256-pinned.
 - JetBrainsMono Nerd Font (`17-fonts.sh`); the Noto and Font Awesome
   families come from APT, not a download here.

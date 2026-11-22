@@ -8,7 +8,7 @@ script before guessing.
 
 ### The theme fetch fails with a sha256 mismatch
 `scripts/lib/graphite-amber-fetch.sh` pins the legacy upstream base
-`darkmatter-linux` `822d163c` and Zafiro-icons `5c7f38ca` at **immutable commit
+that legacy base at `822d163c` and Zafiro-icons `5c7f38ca` at **immutable commit
 SHAs** and verifies each
 tarball against `DM_THEME_SHA256` / `DM_ICONS_SHA256`. A mismatch means the
 archive changed (either the commit moved — it can't, it's immutable — or the

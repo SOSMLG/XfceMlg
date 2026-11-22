@@ -83,7 +83,7 @@ matters:
 | Shell | Saner bash (`eza`/`bat`, fzf/zoxide) + starship + the XFCE `.bashrc` additions block |
 | Compositor | **xfwm4 built-in** (picom removed): compositing on with subtle window/popup shadows, inactive dim, move/resize fade — no extra daemon, unredirects fullscreen |
 | Notifications | **xfce4-notifyd** stock (Dunst stays opt-in, matches the theme) |
-| Capture | **Flameshot** on `Print` (region-select with annotate/blur; xfce4-screenshooter removed) |
+| Capture | **Flameshot**: `Print` = full screen, `Super+Print` = region-select with annotate/blur; xfce4-screenshooter removed |
 | Clipboard | **xfce4-clipman** panel plugin |
 | Night light | **Redshift** (geoclue-located, 6500K→4500K) |
 | Battery | **TLP** + 80% charge cap on supporting ThinkPads |
@@ -222,12 +222,12 @@ configs/         versioned static config (Thunar/uca.xml — deployed by 30-*)
   share/         power-user widgets (xfce-menu, xfce-update-gui)
 
 The Graphite-Amber GTK/xfwm4 themes and Zafiro icons are **not** in the repo —
-`21-theme.sh` fetches a pinned **legacy upstream base** from
-`stevedylandev/darkmatter-linux` and the icons from `zayronxio/Zafiro-icons`,
-then auto-tweaks them via `scripts/lib/graphite-amber-fetch.sh`
-(amber-accent remap #e78a53→#E8A33D, variant assembly, Zafiro-icons-Dark
-rename + trim), so the git payload stays ~29 MB lighter. Darkmatter is only
-that optional fetch source; the installed default is Graphite-Amber. Cached
+`21-theme.sh` fetches a pinned **legacy upstream base** and the icons from
+`zayronxio/Zafiro-icons`, then auto-tweaks them via
+`scripts/lib/graphite-amber-fetch.sh` (amber-accent remap #e78a53→#E8A33D,
+variant assembly, Zafiro-icons-Dark rename + trim), so the git payload stays
+~29 MB lighter. That upstream base is optional legacy plumbing only; the
+installed default is Graphite-Amber. Cached
 builds live in `~/.cache/xfcemlg/`.
 ```
 

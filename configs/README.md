@@ -21,8 +21,8 @@
 #                      to /var/lib/lightdm/.config/gtk-3.0/gtk.css (lightdm-owned)
 #                      NOTE: the Graphite-Amber GTK/xfwm4 themes and Zafiro icons
 #                      are NOT stored here — 21-theme.sh fetches them at install
-#                      time from the legacy stevedylandev/darkmatter-linux base
-#                      and zayronxio/Zafiro-icons and auto-tweaks them via
+#                      time from a pinned legacy upstream base and
+#                      zayronxio/Zafiro-icons and auto-tweaks them via
 #                      scripts/lib/graphite-amber-fetch.sh (amber-accent remap,
 #                      hdpi/xhdpi assembly, Zafiro-icons-Dark rename + trim)
 #                      into /usr/share/themes/ and /usr/share/icons/.

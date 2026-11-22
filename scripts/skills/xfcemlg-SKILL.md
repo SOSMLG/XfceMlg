@@ -49,7 +49,7 @@ system:
     `font-manager`) plus `gvfs-backends` (Trash/MTP) and `tumbler`
     thumbnails. Custom actions live in `~/.config/Thunar/uca.xml`.
   - Notifications are **xfce4-notifyd** (stock), screenshots are
-    **Flameshot** (`Print` = `flameshot gui`, `Super+S` shortcuts via
+    **Flameshot** (`Print` = `flameshot full`, `Super+Print` = `flameshot gui`, `Super+S` shortcuts via
     `23-input-fix.sh`), clipboard history is
     **xfce4-clipman**, night-light is **Redshift**, compositor is **xfwm4's
     built-in compositor** (picom is gone): subtle window/popup shadows,
@@ -67,7 +67,7 @@ system:
     `24-power-user.sh`.
 - The Graphite-Amber rice is **built at install time**, not bundled:
   `scripts/lib/graphite-amber-fetch.sh` pulls a pinned **legacy upstream base**
-  from `stevedylandev/darkmatter-linux` (assembling the plain/hdpi/xhdpi
+  from a pinned legacy upstream base (assembling the plain/hdpi/xhdpi
   variants as Graphite-Amber) and the icons from `zayronxio/Zafiro-icons` (renamed to
   **Zafiro-icons-Dark**, `apps/scalable` trimmed), auto-applies the
   amber-accent remap (`#e78a53`→`#E8A33D`) and deploys to

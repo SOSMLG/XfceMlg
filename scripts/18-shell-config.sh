@@ -375,7 +375,7 @@ for pair in "fd:fdfind" "bat:batcat"; do
 done
 
 if [ -f "$HOME/.config/tmux/tmux.conf" ]; then
-	KEEP_REPORT+=("$HOME/.config/tmux/tmux.conf — deployed from this toolkit's own configs/tmux.conf, not the retired project's. Kept.")
+	KEEP_REPORT+=("$HOME/.config/tmux/tmux.conf — preserved when present; this toolkit ships a matching template in configs/tmux.conf.")
 fi
 
 if command -v delta >/dev/null 2>&1; then

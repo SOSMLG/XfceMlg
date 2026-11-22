@@ -15,7 +15,7 @@
     "editor.findMatchHighlightBackground": "#79A9A655",
     "editor.hoverHighlightBackground": "#202329",
     "editor.wordHighlightBackground": "#30343B",
-    "editorWordHighlightStrongBackground": "#30343B",
+    "editor.wordHighlightStrongBackground": "#30343B",
     "editorLineNumber.foreground": "#9A9AA2",
     "editorLineNumber.activeForeground": "#D8D3C8",
     "editorIndentGuide.background1": "#30343B",
@@ -117,7 +117,6 @@
     "menu.border": "#30343B",
 
     "notificationCenterHeader.background": "#202329",
-    "notificationToast.background": "#202329",
     "notifications.background": "#202329",
     "notifications.border": "#30343B",
 

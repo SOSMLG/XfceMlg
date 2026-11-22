@@ -188,7 +188,7 @@ class UpdateWindow(Gtk.ApplicationWindow):
             self.set_busy(False)
             self.status.set_text("Check complete — lines ending in 'upgradable' are pending updates.")
 
-        self.spawn(["bash", "-lc", "sudo -n apt-get update; apt list --upgradable"], on_exit=_done)
+        self.spawn(["bash", "-lc", "sudo apt-get update; apt list --upgradable"], on_exit=_done)
 
     def on_update(self, _btn):
         if self.busy:

@@ -335,7 +335,13 @@ trap _stop_keepalive EXIT INT TERM
 # onto xfcemlg before any step runs, so the rename does not orphan live
 # files (a no-op on a fresh install). Runs after the privilege cache so the
 # /usr/share move can escalate.
-migrate_legacy_paths
+# common.sh owns this helper; load it in a subshell so its colors/priv()
+# cannot leak into the runner's own definitions (run.sh:296-300).
+(
+	# shellcheck source=scripts/lib/common.sh
+	. "$SCRIPT_DIR/scripts/lib/common.sh"
+	migrate_legacy_paths
+)
 
 export XMLG_SKIP_APT_UPDATE=1
 if [ "$SKIP_APT_UPDATE" -eq 0 ]; then
