@@ -1,8 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="220" viewBox="0 0 1200 220" role="img" aria-label="xfcemlg in graphite and amber">
   <rect width="1200" height="220" rx="10" fill="#16181D"/>
   <rect x="1" y="1" width="1198" height="218" rx="9" fill="none" stroke="#30343B" stroke-width="2"/>
-  <rect x="40" y="44" width="4" height="132" rx="2" fill="#E8A33D"/>
-  <text x="68" y="98" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="40" font-weight="700" fill="#D8D3C8">xfcemlg</text>
-  <text x="68" y="136" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="18" fill="#9A9AA2">xfce desktop setup for devuan and debian</text>
-  <text x="68" y="166" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" fill="#9A9AA2">one palette from boot splash to login screen.</text>
+  <g stroke="#202329" stroke-width="1"><path d="M60 0V220"/><path d="M120 0V220"/><path d="M180 0V220"/><path d="M240 0V220"/><path d="M300 0V220"/><path d="M360 0V220"/><path d="M420 0V220"/><path d="M480 0V220"/><path d="M540 0V220"/><path d="M600 0V220"/><path d="M660 0V220"/><path d="M720 0V220"/><path d="M780 0V220"/><path d="M840 0V220"/><path d="M900 0V220"/><path d="M960 0V220"/><path d="M1020 0V220"/><path d="M1080 0V220"/><path d="M1140 0V220"/><path d="M1200 0V220"/><path d="M0 55H1200"/><path d="M0 110H1200"/><path d="M0 165H1200"/></g>
+  <path d="M780 24V196" stroke="#30343B" stroke-width="1"/>
+  <g stroke-linecap="square" stroke-linejoin="miter">
+  <rect x="812" y="34" width="336" height="96" rx="6" fill="#202329" stroke="#30343B" stroke-width="2"/>
+  <path d="M812 62H1148M860 34V130" stroke="#30343B" stroke-width="1"/>
+  <rect x="812" y="136" width="336" height="34" rx="4" fill="#16181D" stroke="#30343B" stroke-width="2"/>
+  <rect x="830" y="142" width="20" height="20" fill="none" stroke="#30343B" stroke-width="2"/><rect x="864" y="142" width="20" height="20" fill="none" stroke="#30343B" stroke-width="2"/><rect x="898" y="142" width="20" height="20" fill="none" stroke="#30343B" stroke-width="2"/><rect x="932" y="142" width="20" height="20" fill="none" stroke="#30343B" stroke-width="2"/><rect x="966" y="142" width="20" height="20" fill="none" stroke="#30343B" stroke-width="2"/><rect x="1000" y="142" width="20" height="20" fill="none" stroke="#30343B" stroke-width="2"/><rect x="1034" y="142" width="20" height="20" fill="none" stroke="#30343B" stroke-width="2"/><rect x="1068" y="142" width="20" height="20" fill="none" stroke="#30343B" stroke-width="2"/>
+  <path d="M1062 142L1082 152L1062 162Z" fill="#9A9AA2"/>
+  <path d="M884 84H1096M884 104H1020" stroke="#9A9AA2" stroke-width="3"/>
+  </g>
+  <rect x="40" y="42" width="5" height="136" fill="#E8A33D"/>
+  <text x="64" y="102" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="54" font-weight="700" letter-spacing="-1" fill="#D8D3C8">xfcemlg</text>
+  <text x="64" y="142" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="17" fill="#9A9AA2">xfce desktop setup for devuan and debian</text>
+  <text x="64" y="170" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="15" fill="#9A9AA2">one palette from boot splash to login screen.</text>
 </svg>

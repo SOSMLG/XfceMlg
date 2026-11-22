@@ -55,8 +55,8 @@ system:
     built-in compositor** (picom is gone): subtle window/popup shadows,
     inactive dim and move/resize fade, all handled by the xfwm4.xml seed —
     no extra daemon.
-  - System info in the terminal/login is **fastfetch** with bundled anime
-    ascii art (not neofetch).
+  - System info in the terminal/login is **fastfetch** with the Devuan
+    ASCII logo (not neofetch).
   - Panel + window-manager rice is a static seed in
     `configs/xfce4/xfconf/xfce-perchannel-xml/` (`xfce4-panel.xml`,
     `xfwm4.xml`) — item layout, decorations and the JetBrainsMono Nerd
