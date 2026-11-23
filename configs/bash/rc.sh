@@ -31,6 +31,7 @@ for _xfc_part in functions aliases prompt hooks; do
 	if [ "$_xfc_part" = prompt ] && [ "$_xfc_have_vendor" = 1 ]; then
 		continue
 	fi
+	# shellcheck source=/dev/null
 	[ -r "$_xfc_bash_dir/$_xfc_part.sh" ] && source "$_xfc_bash_dir/$_xfc_part.sh"
 done
 
@@ -47,10 +48,12 @@ unset _xfc_part
 # so it is alphabetical: aliases, fzf, keybinds, prompt, zoxide.
 if [ "$_xfc_have_vendor" = 1 ]; then
 	for _xfc_v in "$_xfc_vendor_dir"/*.bash; do
+		# shellcheck source=/dev/null
 		[ -r "$_xfc_v" ] && source "$_xfc_v"
 	done
 	if [ -d "$_xfc_vendor_dir/functions" ]; then
 		for _xfc_vf in "$_xfc_vendor_dir/functions"/*.bash; do
+			# shellcheck source=/dev/null
 			[ -r "$_xfc_vf" ] && source "$_xfc_vf"
 		done
 	fi

@@ -12,7 +12,7 @@
 #   ./install.sh --only a,b  just those scripts (unattended)
 #   ./install.sh --list      show what's included, then exit
 #
-# Anything else is passed through to run.sh. You run this as
+# Anything else is passed through to the step runner. You run this as
 # your NORMAL user; the scripts escalate themselves (doas) as needed.
 # ==========================================
 
@@ -54,10 +54,10 @@ export DEBIAN_FRONTEND=noninteractive
 # groups (a plain --yes would still pull the default-Y optional steps
 # 40-vscodium.sh / 41-dev-essentials.sh into a "core" run).
 if [ "$CORE" -eq 1 ]; then
-	PASSTHRU+=(--yes --phase core,desktop,apps)
+	PASSTHRU+=(--yes --phase "core,desktop,apps")
 else
 	PASSTHRU+=(--full)
 fi
 [ "$NO_VERIFY" -eq 0 ] && RUN_EXTRA+=(--verify)
 
-exec bash "$SCRIPT_DIR/run.sh" "${PASSTHRU[@]}" "${RUN_EXTRA[@]}"
+exec bash "$SCRIPT_DIR/scripts/lib/runner.sh" "${PASSTHRU[@]}" "${RUN_EXTRA[@]}"

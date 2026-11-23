@@ -12,7 +12,7 @@ desktop: Graphite-Amber theme (fetched at install, engine-free), ThinkPad extras
 commands (menu/update GUI), update notifier, CLI stack + xfcemlg shell config, Firefox ESR
 hardening, first-run wizard, dev toolchains, AI agents + VSCodium.
 
-`run.sh` is the ordered runner (discovers `scripts/??-*.sh`, groups into
+`install.sh` is the ordered runner (discovers `scripts/??-*.sh`, groups into
 phases by leading digit, reads per-script `# XMLG_DESC:` / `#
 XMLG_DEFAULT:` headers). `install.sh` wraps it as `--full --verify`.
 Every step is idempotent and re-runnable.
@@ -99,7 +99,7 @@ flock-guarded and env-overridable for headless tests). Python widgets
 
 ## Verification
 
-- `./run.sh --verify` or `bash scripts/verifySetup.sh` audits an installed
+- `./install.sh --verify` or `bash scripts/verifySetup.sh` audits an installed
   system. Add `--json` for machine-readable output.
 - `make release-preflight` checks VERSION/RELEASE.md agreement before tagging.
 - After adding a `scripts/##-*.sh`: it must carry `# XMLG_DESC:` and
@@ -131,7 +131,7 @@ flock-guarded and env-overridable for headless tests). Python widgets
 - content deb = assets under `/usr/share/xfcemlg-assets/` when
   installed. No APT repo, no publish.
 - Prefer additive repo changes that keep `make pkg-deb` and
-  `./run.sh --verify` green.
+  `./install.sh --verify` green.
 
 ## Blend / ISO
 

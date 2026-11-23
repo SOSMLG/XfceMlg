@@ -152,7 +152,7 @@ fi
 # 3. Refresh + verify
 # ---------------------------------------------------------------------------
 log_info "Refreshing package lists (backports included)..."
-# run.sh already refreshes once and exports XMLG_SKIP_APT_UPDATE=1; only
+# install.sh already refreshes once and exports XMLG_SKIP_APT_UPDATE=1; only
 # re-update here when this script actually wrote a source file (Debian case).
 if [ "$NEED_WRITE" -ne 1 ] && [ -n "${XMLG_SKIP_APT_UPDATE:-}" ]; then
 	log_info "Package lists already refreshed this run (XMLG_SKIP_APT_UPDATE=1)."

@@ -57,11 +57,11 @@
 #                      sources it after the xfcemlg parts, so its prompt and
 #                      aliases are what the user sees. Every file is
 #                      byte-identical to upstream — see docs/PROVENANCE.md.
-#   firefox/bookmarks.html — curated bookmarks imported by 35-first-run.sh
+#   firefox/bookmarks.html — curated bookmarks imported by 35-first-install.sh
 #   bin/xfce-first-run      — welcome wizard (update + Timeshift), deployed by
-#                      35-first-run.sh to ~/.local/bin + autostart (once per user)
+#                      35-first-install.sh to ~/.local/bin + autostart (once per user)
 #   bin/xfce-seed-wallpaper — default backdrop for monitors with none yet
-#                      (never overwrites), deployed by 35-first-run.sh
+#                      (never overwrites), deployed by 35-first-install.sh
 #
 #   bin/xfce-menu / xfce-update-gui — themed GTK launchers, deployed by
 #                      24-power-user.sh; they exec python3 apps from
