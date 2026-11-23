@@ -118,7 +118,7 @@
 #     a verdict?" guard in check_verify().
 #
 #   * verifySetup.sh is also mode 0644 (not executable) in git, so it must be
-#     invoked as `bash <path>`, exactly as run.sh --verify does.
+#     invoked as `bash <path>`, exactly as install.sh --verify does.
 set -uo pipefail
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -473,7 +473,7 @@ check_verify() {
 	local -a fail_lines=()
 
 	# `bash` explicitly: in git verifySetup.sh is mode 0644 (not executable),
-	# and it must be run under bash rather than exec'd — as run.sh --verify does.
+	# and it must be run under bash rather than exec'd — as install.sh --verify does.
 	if command -v timeout >/dev/null 2>&1; then
 		raw="$(timeout "$VERIFY_TIMEOUT" bash "$VERIFY_PATH" 2>&1)"
 	else
