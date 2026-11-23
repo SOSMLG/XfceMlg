@@ -139,11 +139,11 @@ live system so a user can re-run/adjust anything:
 ```sh
 # from repo root, before building:
 mkdir -p blend/xfcemlg-thinkpad/excalibur/rootfs-overlay/opt/xfcemlg
-cp -r scripts install.sh run.sh VERSION configs \
+cp -r scripts install.sh install.sh VERSION configs \
       blend/xfcemlg-thinkpad/excalibur/rootfs-overlay/opt/xfcemlg/
 ```
 
-Then in the live session: `cd /opt/xfcemlg && bash run.sh --yes`
+Then in the live session: `cd /opt/xfcemlg && bash install.sh --yes`
 re-applies everything as a normal user.
 
 ## Notes & Caveats

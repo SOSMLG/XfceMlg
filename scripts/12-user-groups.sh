@@ -50,7 +50,7 @@ echo -e "${YELLOW}⚠ You need to log out and back in (or reboot) for new group 
 # last match wins, default deny — so one explicit line is the whole policy:
 #   permit persist <you> as root
 # `persist` caches one successful auth for ~5 min (no password spam during
-# a toolkit run); run.sh additionally refreshes the timestamp in the
+# a toolkit run); install.sh additionally refreshes the timestamp in the
 # background so a long install asks only once, upfront.
 # priv() prefers doas whenever opendoas is installed, so the rule is
 # ensured unconditionally — even when a sudo/wheel group already exists.

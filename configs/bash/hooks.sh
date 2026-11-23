@@ -24,6 +24,7 @@ if command -v fzf >/dev/null 2>&1; then
 	for _f in /usr/share/doc/fzf/examples/key-bindings.bash \
 		/usr/share/doc/fzf/examples/completion.bash \
 		/usr/share/bash-completion/completions/fzf; do
+		# shellcheck source=/dev/null
 		[ -r "$_f" ] && source "$_f" 2>/dev/null
 	done
 	unset _f

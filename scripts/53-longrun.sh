@@ -29,7 +29,7 @@
 # SAFETY CONTRACT
 #   Every action that DELETES data (§3 autoclean, §4 trims, §6
 #   prune) sits behind ask_no_full with default N. ask_no_full
-#   ignores XMLG_FULL, so `./run.sh --full` and install.sh can
+#   ignores XMLG_FULL, so `./install.sh --full` and install.sh can
 #   never delete anything: the answer there is the default, "no".
 #   Everything else is either read-only (SMART) or a
 #   content-compare-then-write config drop, so a second run is a

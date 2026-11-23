@@ -85,8 +85,8 @@ system:
   3x apps, 4x optional, 5x utils), each independently runnable
   (`bash scripts/<name>.sh`), all sourcing `scripts/lib/common.sh` for
   shared `ask()`/`log_*`/`install_pkgs`/`priv()` helpers. Metadata comes
-  from `# XMLG_DESC:` / `# XMLG_DEFAULT:` headers read by `run.sh`.
-- `run.sh` discovers steps automatically (`--list/--phase/--only/--yes/
+  from `# XMLG_DESC:` / `# XMLG_DEFAULT:` headers read by `install.sh`.
+- `install.sh` discovers steps automatically (`--list/--phase/--only/--yes/
   --full/--no-update/--verify`); `install.sh` is the fully-unattended
   one-command wrapper. Env vars honored: `XMLG_ASSUME_YES=1`,
   `XMLG_SKIP_APT_UPDATE=1`, plus upstream pins `XFCE_GTK_REF=`,
@@ -114,7 +114,7 @@ system:
 - Every apt action checks what's actually installed first — nothing is
   blindly force-purged, so scripts are safe to re-run. Backups
   (`*.bak.<timestamp>`) precede any destructive config write.
-- Runtime verification: `./run.sh --verify` or `bash scripts/verifySetup.sh`.
+- Runtime verification: `./install.sh --verify` or `bash scripts/verifySetup.sh`.
   Release gate: `make release-preflight` checks VERSION/RELEASE.md agreement.
   When adding a new `scripts/##-*.sh`, give it XMLG_DESC/DEFAULT headers
   and a README row.

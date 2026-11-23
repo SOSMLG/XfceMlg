@@ -9,9 +9,9 @@ turns a fresh devuan 6 or debian 13 install into a lean xfce desktop with graphi
 | | |
 | --- | --- |
 | **starting point** | works with an existing xfce install or a minimal netinst. tasksel is not touched. |
-| **install** | `./install.sh` runs every step unattended. `./run.sh --list` shows the order before you run it. |
+| **install** | `./install.sh` runs every step unattended. `./install.sh --list` shows the order before you run it. |
 | **theme** | graphite amber from boot splash to login screen. one palette, no wallpaper-derived colors. |
-| **verify** | `bash scripts/verifySetup.sh` reads state without writing. `./run.sh --verify` runs the setup first, then audits. |
+| **verify** | `bash scripts/verifySetup.sh` reads state without writing. `./install.sh --verify` runs the setup first, then audits. |
 
 ## Quick start
 
@@ -26,7 +26,7 @@ git clone <this-repo> && cd xfcemlg
 # 2. Reboot — LightDM gives you a themed login screen, pick "Xfce Session"
 ```
 
-`install.sh` = `run.sh --full --verify`: every step answers **yes** automatically
+`install.sh` = `install.sh --full --verify`: every step answers **yes** automatically
 (including the optional groups: VSCodium, dev tools, heavy opt-ins, gaming,
 chat, PhotoGIMP).
 Neovim was retired — VSCodium is the editor, and `40-vscodium.sh` purges it.
@@ -35,10 +35,10 @@ Variants:
 | Command | What it does |
 |---|---|
 | `./install.sh --core` | Core XFCE desktop only, skips optional groups |
-| `./run.sh --yes` | Everything, but only the default-Y steps (no optional groups) |
-| `./run.sh --phase core,desktop` | Only the core + desktop phases |
-| `./run.sh --only firefox,useful-apps` | Just those steps (short names work) |
-| `./run.sh --no-update` | Skip the runner's single `apt-get update` |
+| `./install.sh --yes` | Everything, but only the default-Y steps (no optional groups) |
+| `./install.sh --phase core,desktop` | Only the core + desktop phases |
+| `./install.sh --only firefox,useful-apps` | Just those steps (short names work) |
+| `./install.sh --no-update` | Skip the runner's single `apt-get update` |
 
 Install with `bash -x ./install.sh` to watch every step, if you're curious or
 something looks off.
@@ -91,7 +91,7 @@ matters:
 | Updates | apt lists refresh periodically; the power-user set (24-*) runs update checks + a notifier (no panel widget) |
 | Snapshots | **Timeshift** |
 
-### Scripts — phases in run order (`./run.sh --list` is authoritative)
+### Scripts — phases in run order (`./install.sh --list` is authoritative)
 
 | Phase | Script | Default |
 |---|---|---|
@@ -115,7 +115,7 @@ matters:
 | apps | `32-time-sync.sh` — chrony NTP time sync | Y |
 | apps | `33-useful-apps.sh` — base tools, Python stack, Ristretto, Atril, Disks | Y |
 | apps | `34-opencode-agent.sh` — OpenCode AI agent + Super+A hotkey + skill file | Y |
-| apps | `35-first-run.sh` — welcome wizard + wallpaper seeder (autostart) | Y |
+| apps | `35-first-install.sh` — welcome wizard + wallpaper seeder (autostart) | Y |
 | optional | `40-vscodium.sh` — VSCodium (primary editor, bundled Graphite-Amber theme) + Neovim purge | Y |
 | optional | `41-dev-essentials.sh` — C/C++ + Python toolchains | Y |
 | optional | `43-photogimp.sh` — GIMP + PhotoGIMP layout | Y |
@@ -132,7 +132,7 @@ matters:
 ## Verification
 
 ```bash
-./run.sh --verify        # after an install.sh run
+./install.sh --verify        # after an install.sh run
 bash scripts/verifySetup.sh   # anytime
 bash scripts/verifySetup.sh --json   # machine-readable, for scripting
 ```
@@ -204,13 +204,13 @@ VERSION / RELEASE.md   toolkit version + changelog (tag: git tag -a "v$(cat VERS
 AGENTS.md         project instructions for AI coding agents
 docs/BUILDING.md  live-ISO build guide (live-sdk + blend overlay)
 docs/FIXES.md     recurring-issue resolution record
-run.sh           ordered runner (phases: core/desktop/apps/optional/utils)
+install.sh           ordered runner (phases: core/desktop/apps/optional/utils)
 install.sh       one-command unattended wrapper
 Makefile         release-preflight / pkg-deb / check-deb
 scripts/
   lib/common.sh  shared helpers (XMLG_* envs, ask, pkgs, priv helper)
   10-*.sh … 52-*.sh  one step each, numbered = run order; runnable standalone
-  verifySetup.sh end-state audit (run.sh --verify)
+  verifySetup.sh end-state audit (install.sh --verify)
   policies.json  Firefox enterprise policy (used by 16-firefox.sh)
   skills/xfcemlg-SKILL.md   system context for AI agents
 configs/         versioned static config (Thunar/uca.xml — deployed by 30-*)
@@ -241,7 +241,7 @@ builds live in `~/.cache/xfcemlg/`.
   first (`*.bak.<timestamp>`).
 - Env vars honored: `XMLG_ASSUME_YES=1` (unattended, take each default),
   `XMLG_FULL=1` (full run — every `ask()` answers Yes automatically;
-  set by `run.sh --full` / `install.sh`), `XMLG_SKIP_APT_UPDATE=1`,
+  set by `install.sh --full` / `install.sh`), `XMLG_SKIP_APT_UPDATE=1`,
   `XMLG_PRIV=doas|sudo`, plus upstream pins `XFCE_GTK_REF=`,
   `XFCE_CURSOR_TAG=v2.0.0`, `NERD_FONT_TAG=3.4.0`, `BETTERFOX_TAG=150.0`.
   Theme fetch: `DM_THEME_URL=` / `DM_ICONS_URL=` (tarball overrides),

@@ -41,7 +41,8 @@ mkcd() {
 		printf 'Usage: mkcd <dir>\n' >&2
 		return 1
 	}
-	mkdir -p -- "$1" && cd -- "$1"
+	mkdir -p -- "$1" || return 1
+	cd -- "$1" || return 1
 }
 
 # ── cfile <filename> — copy a file to the clipboard, or back ──

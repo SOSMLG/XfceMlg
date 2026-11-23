@@ -13,7 +13,7 @@
 #
 # Environment variables honored (all optional):
 #   XMLG_ASSUME_YES=1        ask() answers with its default instead of prompting
-#   XMLG_SKIP_APT_UPDATE=1   apt_update() is a no-op (run.sh updates once)
+#   XMLG_SKIP_APT_UPDATE=1   apt_update() is a no-op (install.sh updates once)
 #   XMLG_PRIV=doas|sudo      force the privilege escalator (default: doas, sudo fallback)
 # =======================================================
 
@@ -321,9 +321,9 @@ ensure_doas_persist() {
 }
 
 # ask() — "Y/n" (default Y) or "y/N" (default N) prompt. With
-# XMLG_ASSUME_YES set (run.sh --yes, or install.sh), the default is
+# XMLG_ASSUME_YES set (install.sh --yes, or install.sh), the default is
 # taken without prompting so the toolkit can run unattended.
-# With XMLG_FULL set (run.sh --full, used by install.sh), every ask()
+# With XMLG_FULL set (install.sh --full, used by install.sh), every ask()
 # answers Yes automatically so a full run never stops mid-way.
 ask() {
 	local prompt="$1" default="${2:-Y}" reply
@@ -417,7 +417,7 @@ migrate_legacy_path() {
 }
 
 # migrate_legacy_paths() — move every pre-0.8.0 `devuan-xfce-*` path this
-# toolkit owns onto its `xfcemlg` equivalent. Called once by run.sh before
+# toolkit owns onto its `xfcemlg` equivalent. Called once by install.sh before
 # any step, and safe to call again from any step.
 migrate_legacy_paths() {
 	local legacy="devuan-xfce-setup"
@@ -535,7 +535,7 @@ EOF
 	return 0
 }
 
-# apt_update — refresh package lists exactly once per run. run.sh updates
+# apt_update — refresh package lists exactly once per run. install.sh updates
 # once up front and exports XMLG_SKIP_APT_UPDATE=1 so the per-script
 # refreshes are no-ops; standalone runs still refresh here. Returns
 # apt-get update's exit code so callers can abort if they want to.

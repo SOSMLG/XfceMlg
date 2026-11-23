@@ -50,7 +50,7 @@ Confirm the payload on the laptop:
 
 ```sh
 cat ~/xfcemlg/VERSION        # 0.8.2
-./run.sh --list              # must show 31 steps in core→desktop→apps→optional→utils
+./install.sh --list              # must show 31 steps in core→desktop→apps→optional→utils
 ```
 
 No `git`, no build step, no deb required — the scripts run in place.
@@ -59,7 +59,7 @@ No `git`, no build step, no deb required — the scripts run in place.
 ## 3. Preview + the one scope decision
 
 ```sh
-cd ~/xfcemlg && ./run.sh --list
+cd ~/xfcemlg && ./install.sh --list
 ```
 
 Decide the **optional** phase before the big run:
@@ -79,7 +79,7 @@ Full takeover is the default expectation of this checklist; trim with
 cd ~/xfcemlg && ./install.sh
 ```
 
-Unattended (`XMLG_ASSUME_YES=1 run.sh --full --verify`). Typical wall time
+Unattended (`XMLG_ASSUME_YES=1 install.sh --full --verify`). Typical wall time
 **20–60 minutes**, dominated by apt + the GitHub fetch (Graphite-Amber + Zafiro
 icons) + Nerd Fonts + VSCodium + dev toolchains. Run it from the target's
 desktop session (the panel and xfwm4 restart once during 21-theme — a brief

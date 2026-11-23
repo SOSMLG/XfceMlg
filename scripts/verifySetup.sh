@@ -6,7 +6,7 @@
 # group membership, key packages, fonts, Firefox policy,
 # Graphite-Amber theme markers, Thunar plugins, LightDM config,
 # and enabled services. Designed to be run from
-# run.sh --verify after a run, or standalone at any time.
+# install.sh --verify after a run, or standalone at any time.
 #
 # Prints PASS/FAIL/WARN lines and exits non-zero if any
 # critical check failed, so it can gate CI/validation.
